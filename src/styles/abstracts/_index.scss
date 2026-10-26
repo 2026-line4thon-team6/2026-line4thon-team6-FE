@@ -1,0 +1,4 @@
+// CSS를 출력하지 않는 토큰·함수·믹스인만 모은다.
+// vite.config.ts의 additionalData로 모든 .scss / .module.scss에 자동 주입된다.
+@forward 'colors';
+@forward 'typography';

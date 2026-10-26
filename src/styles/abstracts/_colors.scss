@@ -1,0 +1,62 @@
+@use 'sass:map';
+
+// Figma: Design System > Color (node 1:724)
+// 키 이름은 Figma 변수명을 영문으로 옮긴 것. 값 변경은 이 파일에서만 한다.
+
+$colors: (
+  // Main - 코랄
+  'coral': #f88379,
+  'coral-pressed': #cc5146,
+  'coral-pressed-2': #f49780,
+  'coral-2': #fdd6d2,
+  'coral-3': #ffeae6,
+  'coral-stroke': #ffb19d,
+  'coral-bg': #fffbfb,
+
+  // Main - 브라운
+  'brown': #492515,
+  'brown-2': #b47952, // Figma 변수 미등록 스와치
+  'brown-3': #daa576,
+  'brown-4': #944b1b,
+  'brown-outline': #5b3524, // 글꼴 테두리
+
+  // Sub
+  'beige': #ffc58d,
+  'beige-2': #ffb66f,
+  'beige-3': #ff9834,
+  'orange': #ff6b01,
+  'blue': #e8f2f7,
+  'green': #06ba00,
+  'red': #ff4144,
+  'divider': #faeeed,
+
+  // GrayScale
+  'black': #1a1a1a,
+  'gray-900': #2e2b2c,
+  'gray-800': #5b5658,
+  'gray-600': #7b7578,
+  'gray-400': #a89ea1,
+  'gray-200': #d9d2d4,
+  'gray-100': #f0edee,
+  'white': #ffffff,
+);
+
+$gradients: (
+  'gradient': linear-gradient(171.23deg, #ffe7e1 79.91%, #ff705a 86.71%),
+  'gradient-2': linear-gradient(132.77deg, #ffaa95 0.49%, #ff1d46 113.82%),
+);
+
+// 컴포넌트에서는 이 함수로 CSS 변수를 참조한다. 예) color: color('coral');
+@function color($name) {
+  @if not map.has-key($colors, $name) {
+    @error "Unknown color '#{$name}'. Available: #{map.keys($colors)}";
+  }
+  @return var(--color-#{$name});
+}
+
+@function gradient($name) {
+  @if not map.has-key($gradients, $name) {
+    @error "Unknown gradient '#{$name}'. Available: #{map.keys($gradients)}";
+  }
+  @return var(--#{$name});
+}

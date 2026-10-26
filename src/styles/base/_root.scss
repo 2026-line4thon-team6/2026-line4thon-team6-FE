@@ -1,0 +1,14 @@
+@use 'sass:meta';
+@use '../abstracts' as *;
+
+:root {
+  @each $name, $value in $colors {
+    --color-#{$name}: #{$value};
+  }
+
+  @each $name, $value in $gradients {
+    --#{$name}: #{$value};
+  }
+
+  --font-family-base: #{meta.inspect($font-family-base)};
+}
