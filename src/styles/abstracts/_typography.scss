@@ -1,0 +1,49 @@
+@use 'sass:list';
+@use 'sass:map';
+
+// Figma: Design System > Typo (node 1:881)
+// 각 스타일: (size, weight, line-height, letter-spacing)
+// Figma letterSpacing -2(%) → -0.02em
+
+$font-family-base: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui,
+  'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+
+$typography: (
+  // Title
+  'title-l': (32px, 400, 1.4, -0.02em),
+  'title-l-bold': (32px, 600, 1.4, -0.02em),
+  'title-m': (28px, 400, 1.4, -0.02em),
+  'title-m-bold': (28px, 600, 1.4, -0.02em),
+  'title-s': (24px, 400, 1.4, -0.02em),
+  'title-s-bold': (24px, 600, 1.4, -0.02em),
+
+  // Body
+  'body-l': (20px, 500, 1.5, -0.02em),
+  'body-l-bold': (20px, 600, 1.5, -0.02em),
+  'body-m': (16px, 400, 1.5, -0.02em),
+  'body-m-medium': (16px, 500, 1.5, -0.02em), // Figma: Body/M-Bold_Medium
+  'body-m-bold': (16px, 600, 1.5, -0.02em),
+  'body-m-15': (15px, 400, 1.5, -0.02em), // Figma: Body/M-Regualr
+  'body-m-15-bold': (15px, 600, 1.5, -0.02em), // Figma: Body/M-Regualr_Bold
+  'body-s': (14px, 500, 1.5, -0.02em),
+  'body-s-medium': (14px, 600, 1.5, -0.02em), // Figma 이름 유지 (실제 SemiBold)
+  'body-s-bold': (14px, 700, 1.5, -0.02em),
+
+  // Others
+  'caption': (12px, 500, 1.5, -0.02em),
+  'caption-bold': (12px, 600, 1.5, -0.02em),
+  'caption-small': (10px, 400, 1.5, -0.02em),
+  'caption-small-bold': (10px, 500, 1.5, 0),
+);
+
+// 사용 예) .title { @include typo('title-m-bold'); }
+@mixin typo($name) {
+  @if not map.has-key($typography, $name) {
+    @error "Unknown typography '#{$name}'. Available: #{map.keys($typography)}";
+  }
+  $style: map.get($typography, $name);
+  font-size: list.nth($style, 1);
+  font-weight: list.nth($style, 2);
+  line-height: list.nth($style, 3);
+  letter-spacing: list.nth($style, 4);
+}
