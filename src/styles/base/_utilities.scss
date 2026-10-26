@@ -1,0 +1,8 @@
+@use '../abstracts' as *;
+
+// JSX에서 바로 쓰는 타이포 클래스. 예) <p className="typo-body-s-bold" />
+@each $name, $_ in $typography {
+  .typo-#{$name} {
+    @include typo($name);
+  }
+}
