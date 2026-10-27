@@ -1,0 +1,82 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  @include typo('body-m-medium');
+  white-space: nowrap;
+  transition: background-color 0.1s;
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+.primary {
+  color: color('white');
+  background-color: color('coral');
+
+  &:active:not(:disabled) {
+    background-color: color('coral-pressed');
+  }
+}
+
+.secondary {
+  color: color('coral-pressed');
+  background-color: color('coral-2');
+
+  &:active:not(:disabled) {
+    background-color: color('coral-pressed-2');
+  }
+}
+
+.lg {
+  gap: 11px;
+  height: 44px;
+  border-radius: 100px;
+  box-shadow: shadow('button');
+
+  &.primary {
+    border: 0.5px solid color('coral-pressed');
+  }
+}
+
+.md {
+  height: 50px;
+  padding: 0 14px;
+  border-radius: 20px;
+}
+
+.sm {
+  height: 45px;
+  border-radius: 15px;
+}
+
+.icon {
+  display: inline-flex;
+}
+
+.iconDefault {
+  display: block;
+}
+
+.iconPressed {
+  display: none;
+}
+
+.button:active:not(:disabled) {
+  .iconDefault {
+    display: none;
+  }
+
+  .iconPressed {
+    display: block;
+  }
+}

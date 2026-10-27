@@ -1,0 +1,23 @@
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}
+
+// 아이콘 SVG에 반투명 원형 배경이 포함되어 있다
+.sm {
+  width: 29px;
+  height: 26px;
+  border-radius: 50%;
+}
+
+.lg {
+  width: 36px;
+  height: 36px;
+  @include glass;
+}

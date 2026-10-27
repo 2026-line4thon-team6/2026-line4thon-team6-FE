@@ -1,0 +1,96 @@
+.card {
+  position: relative;
+  flex-shrink: 0;
+  width: 152px;
+  height: 164px;
+  overflow: hidden;
+  border-radius: 10px;
+  background-color: color('white');
+  box-shadow: shadow('icon');
+
+  &:has(.link:focus-visible) {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}
+
+.thumbnail {
+  height: 75px;
+  background-color: color('gray-100');
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 7px 9px 9px;
+}
+
+.name {
+  @include typo('body-m-15-bold');
+  color: color('black');
+}
+
+.link {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+  @include typo('caption');
+  color: color('gray-600');
+  white-space: nowrap;
+
+  img {
+    flex-shrink: 0;
+  }
+}
+
+.tags {
+  display: flex;
+  gap: 5px;
+  overflow: hidden;
+}
+
+.tag {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 100px;
+  @include typo('caption-bold');
+  color: color('coral-pressed');
+  background-color: color('coral-2');
+}
+
+// 카드 클릭 영역(::after) 위로 올린다
+.like {
+  position: absolute;
+  top: 5px;
+  right: 3px;
+  z-index: 1;
+}

@@ -1,0 +1,25 @@
+@use 'sass:map';
+@use 'colors' as *;
+
+// Figma Effect 스타일. box-shadow blur = Figma radius
+$shadows: (
+  'icon': 0 0 10px rgb(0 0 0 / 5%), // icon shadow
+  'button': 0 4px 10px rgb(0 0 0 / 40%),
+);
+
+// 사용 예) box-shadow: shadow('icon');
+@function shadow($name) {
+  @if not map.has-key($shadows, $name) {
+    @error "Unknown shadow '#{$name}'. Available: #{map.keys($shadows)}";
+  }
+  @return map.get($shadows, $name);
+}
+
+// 글래스 원형 버튼 배경 (Figma: glass effect)
+@mixin glass {
+  border: 0.5px solid color('white');
+  border-radius: 50%;
+  background: gradient('glass');
+  box-shadow: shadow('icon');
+  backdrop-filter: blur(3px);
+}
