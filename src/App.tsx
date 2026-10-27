@@ -1,13 +1,6 @@
-import styles from './App.module.scss'
-
+// 화면은 라우터 도입 후 추가한다. 컴포넌트는 Storybook(pnpm storybook)에서 확인
 function App() {
-  return (
-    <main className={styles.app}>
-      <h1 className={styles.title}>붕붕어스</h1>
-      <p className="typo-body-m">디자인 시스템 적용 확인용 화면</p>
-      <span className={`${styles.badge} typo-caption-bold`}>D+000</span>
-    </main>
-  )
+  return null
 }
 
 export default App
