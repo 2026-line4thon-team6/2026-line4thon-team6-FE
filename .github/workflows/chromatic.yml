@@ -1,0 +1,33 @@
+name: Chromatic
+
+# 모든 브랜치 push마다 Storybook을 배포하고 스냅샷을 비교한다
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  chromatic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # 이전 빌드(기준 스냅샷)를 찾으려면 전체 git 기록이 필요
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 12.3.4
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: chromaui/action@v18.13.3
+        with:
+          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+          # 화면 변경이 있어도 CI는 통과시키고, 승인 여부는 PR의 UI Tests 체크로 판단
+          exitZeroOnChanges: true
+          # main에 merge된 변경은 새 기준으로 자동 승인
+          autoAcceptChanges: main
