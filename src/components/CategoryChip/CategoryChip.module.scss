@@ -1,0 +1,30 @@
+.chip {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 11px 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  @include typo('body-m-15');
+  color: color('black');
+  white-space: nowrap;
+  background-color: color('white');
+  box-shadow: shadow('icon');
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}
+
+.selected {
+  @include typo('body-m-15-bold');
+  border-color: color('coral-stroke');
+  background-color: color('coral-2');
+}
+
+.icon {
+  width: auto;
+  height: 18px;
+}
