@@ -1,0 +1,91 @@
+// Figma 기준 393 x 155 (하단 홈 인디케이터 영역 34px 포함)
+.nav {
+  position: relative;
+  width: 100%;
+  height: 155px;
+}
+
+// 가운데가 볼록한 흰 배경 + 그림자. SVG에 그림자 여백이 포함되어 있어 바깥으로 확장한다
+.background {
+  position: absolute;
+  top: -6.5px;
+  left: -11.5px;
+  width: calc(100% + 23px);
+  max-width: none;
+  height: 183px;
+  pointer-events: none;
+}
+
+.list {
+  position: relative;
+  display: grid;
+  grid-template-columns: 74px 74px 1fr 74px 74px;
+  height: 100%;
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+  padding-top: 69px;
+  @include typo('body-m');
+  color: color('black');
+  white-space: nowrap;
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: -4px;
+  }
+}
+
+.active {
+  @include typo('body-m-medium');
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+}
+
+.drive {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  padding-top: 15px;
+  @include typo('body-s');
+  color: color('coral');
+
+  &:active .driveCircle {
+    transform: scale(0.95);
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: -4px;
+  }
+}
+
+.driveCircle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 66px;
+  height: 66px;
+  transition: transform 0.1s;
+
+  img:first-child {
+    position: absolute;
+    inset: 0;
+  }
+}
+
+.driveCar {
+  position: relative;
+}
