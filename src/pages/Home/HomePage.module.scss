@@ -258,6 +258,9 @@ $brand-gradient: linear-gradient(160deg, #ffaea0 0%, #ff705a 100%);
   scroll-padding-inline: $gutter;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  // 마우스로 끌어 넘길 때 글자가 선택되지 않게 한다 (useDragScroll)
+  -webkit-user-select: none;
+  user-select: none;
 
   &::-webkit-scrollbar {
     display: none;

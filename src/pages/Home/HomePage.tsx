@@ -8,6 +8,7 @@ import Button from '@/components/Button/Button'
 import CategoryChip from '@/components/CategoryChip/CategoryChip'
 import NotificationButton from '@/components/NotificationButton/NotificationButton'
 import SpotCard from '@/components/SpotCard/SpotCard'
+import useDragScroll from '@/hooks/useDragScroll'
 import type { HomeSummary } from '@/types/home'
 import type { Category, SpotSummary } from '@/types/spot'
 import styles from './HomePage.module.scss'
@@ -41,6 +42,8 @@ function HomePage({
   onLikeToggle,
   onTabChange,
 }: HomePageProps) {
+  const categoryDrag = useDragScroll<HTMLUListElement>()
+  const spotDrag = useDragScroll<HTMLUListElement>()
   const [selectedCategoryId, setSelectedCategoryId] = useState(categories[0]?.id)
   const { nickname, mascotName, daysTogether, unreadNotificationCount, context } = home
   const visibleSpots = spots.filter((spot) => spot.categoryId === selectedCategoryId).slice(0, MAX_SPOTS)
@@ -108,7 +111,7 @@ function HomePage({
           </h2>
           <p className={styles.sectionDescription}>지금 기분에 맞는 드라이브를 찾아보세요.</p>
 
-          <ul className={[styles.scroller, styles.categories].join(' ')}>
+          <ul className={[styles.scroller, styles.categories].join(' ')} {...categoryDrag}>
             {categories.map(({ id, name, iconUrl }) => (
               <li key={id}>
                 <CategoryChip
@@ -122,7 +125,8 @@ function HomePage({
           </ul>
 
           {visibleSpots.length > 0 ? (
-            <ul className={[styles.scroller, styles.spots].join(' ')}>
+            // key: 카테고리를 바꾸면 목록을 새로 그려 스크롤 위치를 처음으로 되돌린다
+            <ul key={selectedCategoryId} className={[styles.scroller, styles.spots].join(' ')} {...spotDrag}>
               {visibleSpots.map((spot) => (
                 <li key={spot.id}>
                   <SpotCard spot={spot} onClick={onSpotClick} onLikeToggle={onLikeToggle} />
