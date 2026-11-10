@@ -11,7 +11,7 @@ $font-family-base: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSys
 $font-families: (
   'myungjo': ('Kim jung chul Myungjo', serif),
   'safety': ('Electrical Safety', $font-family-base),
-  'mamablock': ('210 Mamablock', $font-family-base),
+  'mamablock': ('mamablock-210', $font-family-base),
 );
 
 $typography: (
@@ -51,7 +51,7 @@ $typography: (
   // Figma: Card/Myungjo-L
   'home-car': (22px, 400, 1.5, -0.02em, 'safety'),
   // Figma: Home/Car
-  'home-d-day': (26px, 400, 1.5, -0.02em, 'mamablock'),
+  'home-d-day': (26px, 300, 1.5, -0.02em, 'mamablock'),
   // Figma: Home/D-day
 );
 
