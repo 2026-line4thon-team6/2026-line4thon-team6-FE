@@ -1,6 +1,3 @@
-import navBgHome from '@/assets/icons/nav-bg-home.svg'
-import navBgMap from '@/assets/icons/nav-bg-map.svg'
-import navBgMy from '@/assets/icons/nav-bg-my.svg'
 import navHome from '@/assets/icons/nav-home.svg'
 import navHomeActive from '@/assets/icons/nav-home-active.svg'
 import navMap from '@/assets/icons/nav-map.svg'
@@ -11,11 +8,10 @@ import styles from './BottomNav.module.scss'
 
 export type NavTab = 'home' | 'map' | 'my'
 
-// background: 선택된 탭 위치가 볼록하게 솟은 흰 배경
-const TABS: { value: NavTab; label: string; icon: string; activeIcon: string; background: string }[] = [
-  { value: 'home', label: '홈', icon: navHome, activeIcon: navHomeActive, background: navBgHome },
-  { value: 'map', label: '기록 지도', icon: navMap, activeIcon: navMapActive, background: navBgMap },
-  { value: 'my', label: '마이', icon: navMy, activeIcon: navMyActive, background: navBgMy },
+const TABS: { value: NavTab; label: string; icon: string; activeIcon: string }[] = [
+  { value: 'home', label: '홈', icon: navHome, activeIcon: navHomeActive },
+  { value: 'map', label: '기록 지도', icon: navMap, activeIcon: navMapActive },
+  { value: 'my', label: '마이', icon: navMy, activeIcon: navMyActive },
 ]
 
 interface BottomNavProps {
@@ -26,9 +22,11 @@ interface BottomNavProps {
 function BottomNav({ active, onChange }: BottomNavProps) {
   return (
     <nav className={styles.nav} aria-label="메인 메뉴">
-      {TABS.map(({ value, background }) => (
-        <img key={value} className={styles.background} src={background} alt="" hidden={value !== active} />
-      ))}
+      {/* 선택된 탭 위치가 볼록하게 솟은 흰 배경. 모양은 SCSS에서 탭별 SVG로 그린다 */}
+      <div className={`${styles.background} ${styles[active]}`} aria-hidden="true">
+        <span />
+        <span />
+      </div>
       <ul className={styles.list}>
         {TABS.map(({ value, label, icon, activeIcon }) => {
           const isActive = value === active
