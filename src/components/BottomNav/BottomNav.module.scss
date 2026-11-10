@@ -5,7 +5,7 @@
   height: 155px;
 }
 
-// 가운데가 볼록한 흰 배경 + 그림자. SVG에 그림자 여백이 포함되어 있어 바깥으로 확장한다
+// 선택된 탭 위치가 볼록한 흰 배경 + 그림자. SVG에 그림자 여백이 포함되어 있어 바깥으로 확장한다
 .background {
   position: absolute;
   top: -6.5px;
@@ -14,12 +14,16 @@
   max-width: none;
   height: 183px;
   pointer-events: none;
+
+  &[hidden] {
+    display: none;
+  }
 }
 
 .list {
   position: relative;
   display: grid;
-  grid-template-columns: 74px 74px 1fr 74px 74px;
+  grid-template-columns: repeat(3, 1fr);
   height: 100%;
 }
 
@@ -27,9 +31,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
   width: 100%;
-  padding-top: 69px;
+  padding-top: 62px;
   @include typo('body-m');
   color: color('black');
   white-space: nowrap;
@@ -40,52 +43,22 @@
   }
 }
 
-.active {
-  @include typo('body-m-medium');
-}
-
 .icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 28px;
+  height: 42px;
+  margin-bottom: -3px;
 }
 
-.drive {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  width: 100%;
-  padding-top: 15px;
-  @include typo('body-s');
+// 선택된 탭: 볼록한 영역 안의 그라데이션 원 아이콘 + 코랄 라벨
+.active {
+  padding-top: 14px;
+  @include typo('body-m-bold');
   color: color('coral');
 
-  &:active .driveCircle {
-    transform: scale(0.95);
+  .icon {
+    height: 66px;
+    margin-bottom: 6px;
   }
-
-  &:focus-visible {
-    outline: 2px solid color('coral-pressed');
-    outline-offset: -4px;
-  }
-}
-
-.driveCircle {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 66px;
-  height: 66px;
-  transition: transform 0.1s;
-
-  img:first-child {
-    position: absolute;
-    inset: 0;
-  }
-}
-
-.driveCar {
-  position: relative;
 }
