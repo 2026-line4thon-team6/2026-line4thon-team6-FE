@@ -1,0 +1,23 @@
+@use 'colors' as *;
+
+// 하단 네비바(155px) 중 safe-area가 없는 기기에서 화면에 보이는 높이.
+// 탭 라벨이 125px까지 내려오므로 그 아래 8px 여백을 남기고, 나머지 22px만 홈 인디케이터 영역으로 숨긴다
+$nav-height: 155px;
+$nav-visible-height: 133px;
+$nav-indicator-height: 22px;
+
+// 하단 네비바가 있는 화면의 기본 틀. Figma 기준 폭 390px, 그보다 넓으면 가운데 정렬한다
+// 사용 예) .page { @include app-page; }
+@mixin app-page {
+  position: relative;
+  max-width: var(--app-max-width);
+  min-height: 100vh; // dvh 미지원 웹뷰 대비
+  min-height: 100dvh;
+  margin: 0 auto;
+  // 노치·상태바 영역(PWA 전체화면)만큼 내리고, 브라우저에서는 최소 여백을 둔다
+  padding-top: max(env(safe-area-inset-top, 0px), 12px);
+  // 하단 고정 네비바에 내용이 가려지지 않게 한다
+  padding-bottom: calc(min(#{$nav-height}, #{$nav-visible-height} + env(safe-area-inset-bottom, 0px)) + 24px);
+  overflow-x: hidden;
+  background-color: color('coral-bg');
+}

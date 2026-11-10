@@ -3,7 +3,8 @@ import themeIcon from '@/assets/images/info/theme-palm.svg'
 import trafficIcon from '@/assets/images/info/traffic-car.svg'
 import weatherIcon from '@/assets/images/info/weather-sunny.svg'
 import heroImage from '@/assets/images/home-hero.webp'
-import BottomNav, { type NavTab } from '@/components/BottomNav/BottomNav'
+import type { NavTab } from '@/components/BottomNav/BottomNav'
+import BottomNavBar from '@/components/BottomNavBar/BottomNavBar'
 import Button from '@/components/Button/Button'
 import CategoryChip from '@/components/CategoryChip/CategoryChip'
 import NotificationButton from '@/components/NotificationButton/NotificationButton'
@@ -139,9 +140,7 @@ function HomePage({
         </section>
       </main>
 
-      <div className={styles.navBar}>
-        <BottomNav active="home" onChange={(tab) => onTabChange?.(tab)} />
-      </div>
+      <BottomNavBar active="home" onChange={onTabChange} />
     </div>
   )
 }

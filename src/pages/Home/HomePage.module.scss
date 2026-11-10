@@ -1,23 +1,8 @@
 // Figma 기준 390 x 844. 좌우 여백은 고정, 가운데 영역이 화면 폭에 맞춰 늘어난다
 $gutter: 25px;
-// 하단 네비바에서 화면에 보이는 높이 (155px 중 홈 인디케이터 영역 34px 제외)
-$nav-height: 121px;
-$nav-indicator: 34px;
-
-// 로고 글자에 쓰는 코랄 그라데이션 (Figma: Main/그라데이션 을 글자 영역에 맞춰 근사)
-$brand-gradient: linear-gradient(160deg, #ffaea0 0%, #ff705a 100%);
 
 .page {
-  position: relative;
-  max-width: var(--app-max-width);
-  min-height: 100vh; // dvh 미지원 웹뷰 대비
-  min-height: 100dvh;
-  margin: 0 auto;
-  // 노치·상태바 영역(PWA 전체화면)만큼 내리고, 브라우저에서는 최소 여백을 둔다
-  padding-top: max(env(safe-area-inset-top, 0px), 12px);
-  padding-bottom: calc(#{$nav-height} + env(safe-area-inset-bottom, 0px) + 24px);
-  overflow-x: hidden;
-  background-color: color('coral-bg');
+  @include app-page;
 }
 
 .header {
@@ -42,7 +27,7 @@ $brand-gradient: linear-gradient(160deg, #ffaea0 0%, #ff705a 100%);
 .mascot,
 .dday {
   color: color('coral'); // background-clip 미지원 시 대비
-  background-image: $brand-gradient;
+  background-image: gradient('coral-text');
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -287,26 +272,4 @@ $brand-gradient: linear-gradient(160deg, #ffaea0 0%, #ff705a 100%);
   @include typo('body-m-15');
   color: color('gray-600');
   text-align: center;
-}
-
-// 하단 고정 네비바. 홈 인디케이터 영역(34px)은 기기의 safe-area 만큼만 보이게 한다
-.navBar {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  z-index: 10;
-  width: 100%;
-  max-width: var(--app-max-width);
-  padding-top: 8px; // 네비바 위쪽 그림자 여유
-  overflow: hidden;
-  pointer-events: none; // 볼록한 부분 옆의 투명 영역은 뒤 콘텐츠를 누를 수 있게 한다
-  transform: translateX(-50%);
-
-  nav {
-    margin-bottom: min(0px, calc(env(safe-area-inset-bottom, 0px) - #{$nav-indicator}));
-  }
-
-  button {
-    pointer-events: auto;
-  }
 }
