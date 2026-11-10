@@ -50,6 +50,8 @@ $gradients: (
   // 글래스 배경 / 글래스 배경 pressed
   'glass': linear-gradient(78.16deg, rgb(255 255 255 / 65%) 1.2%, rgb(255 255 255 / 39%) 34.32%, rgb(255 255 255 / 65%) 85.2%),
   'glass-pressed': linear-gradient(78.16deg, rgb(202 202 202 / 65%) 1.2%, rgb(202 202 202 / 39%) 34.32%, rgb(202 202 202 / 65%) 85.2%),
+  // 글자에 입히는 코랄 그라데이션 (Figma: Main/그라데이션 을 글자 영역에 맞춰 근사)
+  'coral-text': linear-gradient(160deg, #ffaea0 0%, #ff705a 100%),
 );
 
 // 컴포넌트에서는 이 함수로 CSS 변수를 참조한다. 예) color: color('coral');

@@ -1,0 +1,21 @@
+// 홈 인디케이터 영역(34px)은 기기의 safe-area 만큼만 보이게 한다
+.bar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  z-index: 10;
+  width: 100%;
+  max-width: var(--app-max-width);
+  padding-top: 8px; // 네비바 위쪽 그림자 여유
+  overflow: hidden;
+  pointer-events: none; // 볼록한 부분 옆의 투명 영역은 뒤 콘텐츠를 누를 수 있게 한다
+  transform: translateX(-50%);
+
+  nav {
+    margin-bottom: min(0px, calc(env(safe-area-inset-bottom, 0px) - #{$nav-indicator-height}));
+  }
+
+  button {
+    pointer-events: auto;
+  }
+}
