@@ -1,0 +1,35 @@
+name: CI
+
+# PR과 main push마다 lint · test · build를 확인한다
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# 같은 브랜치에 새 커밋이 올라오면 이전 실행은 취소한다
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 12.3.4
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm lint
+
+      - run: pnpm test
+
+      - run: pnpm build
