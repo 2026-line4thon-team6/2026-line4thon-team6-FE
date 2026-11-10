@@ -10,5 +10,8 @@
     --#{$name}: #{$value};
   }
 
+  // 모바일 전용 화면 폭. 태블릿·데스크톱에서는 이 폭으로 가운데 정렬한다
+  --app-max-width: 430px;
+
   --font-family-base: #{meta.inspect($font-family-base)};
 }

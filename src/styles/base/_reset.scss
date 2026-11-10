@@ -11,9 +11,11 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
+  min-height: 100vh; // dvh 미지원 웹뷰 대비
   min-height: 100dvh;
   font-family: var(--font-family-base);
   color: color('black');
@@ -43,6 +45,7 @@ button {
   background: none;
   border: none;
   cursor: pointer;
+  touch-action: manipulation; // 더블탭 확대 지연 제거
 }
 
 a {
