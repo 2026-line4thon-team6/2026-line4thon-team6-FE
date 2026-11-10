@@ -32,7 +32,7 @@ $brand-gradient: linear-gradient(160deg, #ffaea0 0%, #ff705a 100%);
 .brand {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
+  gap: 12px;
   min-width: 0;
   line-height: 1.5;
   letter-spacing: -0.02em;
@@ -48,23 +48,23 @@ $brand-gradient: linear-gradient(160deg, #ffaea0 0%, #ff705a 100%);
   -webkit-text-fill-color: transparent;
 }
 
-// Figma: Home/Car (Electrical Safety Bold). 폰트 파일 추가 전까지는 Pretendard로 대체된다
+// Figma: Home/Car. 폰트는 #12에서 추가되며, 머지 후 typo('home-car')로 바꾼다
 .mascot {
   overflow: hidden;
-  margin-top: 4px;
+  margin-top: 5.5px;
   font-family: 'Electrical Safety', var(--font-family-base);
   font-size: 22px;
-  font-weight: 700;
+  font-weight: 400;
   text-overflow: ellipsis;
 }
 
-// Figma: Home/D-day (210 Mamablock Light)
+// Figma: Home/D-day. #12 머지 후 typo('home-d-day')로 바꾼다
 .dday {
   flex-shrink: 0;
-  margin-top: 6px;
-  font-family: '210 Mamablock', var(--font-family-base);
+  margin-top: 6.5px;
+  font-family: 'mamablock-210', var(--font-family-base);
   font-size: 26px;
-  font-weight: 700;
+  font-weight: 300;
 }
 
 .greeting {
