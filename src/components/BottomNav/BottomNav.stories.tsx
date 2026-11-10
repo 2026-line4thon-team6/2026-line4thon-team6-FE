@@ -13,10 +13,9 @@ const meta = {
   args: {
     active: 'home',
     onChange: fn(),
-    onDriveClick: fn(),
   },
   argTypes: {
-    active: { control: 'inline-radio', options: ['home', 'map', 'studio', 'my'] },
+    active: { control: 'inline-radio', options: ['home', 'map', 'my'] },
   },
   decorators: [
     (Story) => (
@@ -47,10 +46,6 @@ export const Home: Story = {}
 
 export const Map: Story = {
   args: { active: 'map' },
-}
-
-export const Studio: Story = {
-  args: { active: 'studio' },
 }
 
 export const My: Story = {
