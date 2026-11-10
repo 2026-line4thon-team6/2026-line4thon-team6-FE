@@ -14,5 +14,7 @@ export interface HomeSummary {
   // couple.daysTogether (시작일 당일이 1). 미연결 사용자의 값은 API 미정 — 백엔드 확인 필요
   daysTogether: number
   unreadNotificationCount: number
+  // 연결된 커플. 미연결이면 null (couple.id, 상대방 members[].nickname)
+  couple: { id: string; partnerNickname: string } | null
   context: DriveContext
 }
