@@ -169,11 +169,28 @@ describe('스마트 탐색 & 큐레이션', () => {
 
     expect(within(curation()).getByRole('button', { name: '근교 카페' })).toHaveAttribute('aria-pressed', 'true')
     expect(within(curation()).getByRole('button', { name: '바다' })).toHaveAttribute('aria-pressed', 'false')
-    expect(spotNames()).toEqual(['남양주 북한강 카페거리'])
+    expect(spotNames()).toEqual(['남양주 북한강 카페거리', '파주 헤이리 예술마을', '양평 서종 카페거리'])
+  })
+
+  it.each([
+    ['바다', ['시흥 오이도', '강릉 헌화로', '인천 을왕리 해수욕장']],
+    ['야경', ['서울 남산 순환도로', '서울 반포한강공원', '인천 송도 센트럴파크']],
+    ['근교 카페', ['남양주 북한강 카페거리', '파주 헤이리 예술마을', '양평 서종 카페거리']],
+    ['자연', ['양평 두물머리', '가평 청평호반', '포천 산정호수']],
+    ['차박', ['태안 몽산포 캠핑장', '가평 자라섬 캠핑장', '포천 백로주 캠핑장']],
+  ])('목 데이터: %s 카테고리의 장소 3곳을 사진과 함께 표시한다', async (category, expected) => {
+    const { user } = renderHome()
+
+    await user.click(within(curation()).getByRole('button', { name: category }))
+
+    expect(spotNames()).toEqual(expected)
+    for (const card of within(curation()).getAllByRole('article')) {
+      expect(card.querySelector('img[src^="/mocks/spots/"]')).not.toBeNull()
+    }
   })
 
   it('장소가 없는 카테고리는 안내 문구를 표시한다', async () => {
-    const { user } = renderHome()
+    const { user } = renderHome({ spots: MOCK_SPOTS.filter((spot) => spot.categoryId !== 5) })
 
     await user.click(within(curation()).getByRole('button', { name: '차박' }))
 
