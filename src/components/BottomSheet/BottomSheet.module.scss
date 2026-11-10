@@ -1,0 +1,63 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background-color: rgb(0 0 0 / 25%);
+  animation: fade 0.2s ease-out;
+}
+
+// Figma 기준 390 x 392. 아래쪽 홈 인디케이터 영역은 기기의 safe-area 만큼 띄운다
+.sheet {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 100%;
+  max-width: var(--app-max-width);
+  max-height: 90%;
+  padding: 39px 25px calc(26px + env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  border-radius: 30px 30px 0 0;
+  background-color: color('coral-bg');
+  box-shadow: 0 1px 10px rgb(0 0 0 / 10%);
+  outline: none;
+  transform: translateX(-50%);
+  animation: slide-up 0.25s ease-out;
+
+  // 손잡이 막대
+  &::before {
+    content: '';
+    position: absolute;
+    top: 15px;
+    left: 50%;
+    width: 49px;
+    height: 6px;
+    border-radius: 100px;
+    background-color: color('coral-2');
+    transform: translateX(-50%);
+  }
+}
+
+.close {
+  position: absolute;
+  top: 39px;
+  right: 25px;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    transform: translate(-50%, 100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .sheet {
+    animation: none;
+  }
+}
