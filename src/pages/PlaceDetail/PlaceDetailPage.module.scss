@@ -234,6 +234,17 @@ $bottom-bar-height: 19px + 50px;
   }
 }
 
+// 폭이 좁은 기기(375 · 360px)에서는 양끝 칸의 바깥 여백을 없애 라벨과 값이 한 줄에 들어가게 한다
+@media (max-width: 389px) {
+  .summary > li:first-child {
+    padding-right: 0;
+  }
+
+  .summary > li:last-child {
+    padding-left: 0;
+  }
+}
+
 .summaryIcon {
   display: flex;
   align-items: center;
@@ -248,7 +259,11 @@ $bottom-bar-height: 19px + 50px;
   white-space: nowrap;
 }
 
+// 값은 칸 폭이 아니라 시안의 글자 폭(약 4~5자)에서 줄바꿈한다.
+// 예) '공영주차장 이용 가능' → '공영주차장 / 이용 가능' (화면이 넓어져도 '가능'만 따로 떨어지지 않게)
 .summaryValue {
+  max-width: 4.6em;
+  text-wrap: balance;
   @include typo('body-s-medium');
   color: color('black');
   word-break: keep-all;
