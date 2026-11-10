@@ -271,3 +271,62 @@ describe('하단 네비바', () => {
     expect(onTabChange).toHaveBeenNthCalledWith(2, 'my')
   })
 })
+
+// 터치 기기는 브라우저가 가로 스크롤을 처리한다. 마우스(데스크톱·스토리북)는 드래그로 넘길 수 있어야 한다
+describe('가로 목록 마우스 드래그', () => {
+  const spotList = () => within(curation()).getAllByRole('list')[1]
+
+  it('장소 카드 목록을 마우스로 끌면 끈 만큼 가로로 스크롤된다', async () => {
+    const { user } = renderHome()
+    const list = spotList()
+    const card = within(list).getByRole('button', { name: '강릉 헌화로' })
+
+    await user.pointer([
+      { keys: '[MouseLeft>]', target: card, coords: { clientX: 300, clientY: 100 } },
+      { target: card, coords: { clientX: 180, clientY: 100 } },
+    ])
+
+    expect(list.scrollLeft).toBe(120)
+  })
+
+  it('끌어서 넘긴 뒤 손을 떼도 카드가 눌리지 않는다', async () => {
+    const { user, onSpotClick } = renderHome()
+    const card = within(spotList()).getByRole('button', { name: '강릉 헌화로' })
+
+    await user.pointer([
+      { keys: '[MouseLeft>]', target: card, coords: { clientX: 300, clientY: 100 } },
+      { target: card, coords: { clientX: 180, clientY: 100 } },
+      { keys: '[/MouseLeft]', target: card, coords: { clientX: 180, clientY: 100 } },
+    ])
+
+    expect(onSpotClick).not.toHaveBeenCalled()
+  })
+
+  it('끌지 않고 누르면 카드가 그대로 눌린다', async () => {
+    const { user, onSpotClick } = renderHome()
+    const card = within(spotList()).getByRole('button', { name: '강릉 헌화로' })
+
+    await user.pointer([
+      { keys: '[MouseLeft>]', target: card, coords: { clientX: 300, clientY: 100 } },
+      { target: card, coords: { clientX: 302, clientY: 100 } },
+      { keys: '[/MouseLeft]', target: card, coords: { clientX: 302, clientY: 100 } },
+    ])
+
+    expect(onSpotClick).toHaveBeenCalledWith(2)
+  })
+
+  it('카테고리 칩 목록도 마우스로 끌어서 스크롤할 수 있다', async () => {
+    const { user } = renderHome()
+    const list = within(curation()).getAllByRole('list')[0]
+    const chip = within(list).getByRole('button', { name: '야경' })
+
+    await user.pointer([
+      { keys: '[MouseLeft>]', target: chip, coords: { clientX: 200, clientY: 100 } },
+      { target: chip, coords: { clientX: 150, clientY: 100 } },
+      { keys: '[/MouseLeft]', target: chip, coords: { clientX: 150, clientY: 100 } },
+    ])
+
+    expect(list.scrollLeft).toBe(50)
+    expect(chip).toHaveAttribute('aria-pressed', 'false')
+  })
+})
