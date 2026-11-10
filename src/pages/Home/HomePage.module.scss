@@ -1,0 +1,309 @@
+// Figma 기준 390 x 844. 좌우 여백은 고정, 가운데 영역이 화면 폭에 맞춰 늘어난다
+$gutter: 25px;
+// 하단 네비바에서 화면에 보이는 높이 (155px 중 홈 인디케이터 영역 34px 제외)
+$nav-height: 121px;
+$nav-indicator: 34px;
+
+// 로고 글자에 쓰는 코랄 그라데이션 (Figma: Main/그라데이션 을 글자 영역에 맞춰 근사)
+$brand-gradient: linear-gradient(160deg, #ffaea0 0%, #ff705a 100%);
+
+.page {
+  position: relative;
+  max-width: var(--app-max-width);
+  min-height: 100vh; // dvh 미지원 웹뷰 대비
+  min-height: 100dvh;
+  margin: 0 auto;
+  // 노치·상태바 영역(PWA 전체화면)만큼 내리고, 브라우저에서는 최소 여백을 둔다
+  padding-top: max(env(safe-area-inset-top, 0px), 12px);
+  padding-bottom: calc(#{$nav-height} + env(safe-area-inset-bottom, 0px) + 24px);
+  overflow-x: hidden;
+  background-color: color('coral-bg');
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  height: 45px;
+  padding: 0 31px 0 $gutter;
+}
+
+.brand {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  line-height: 1.5;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.mascot,
+.dday {
+  color: color('coral'); // background-clip 미지원 시 대비
+  background-image: $brand-gradient;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+// Figma: Home/Car (Electrical Safety Bold). 폰트 파일 추가 전까지는 Pretendard로 대체된다
+.mascot {
+  overflow: hidden;
+  margin-top: 4px;
+  font-family: 'Electrical Safety', var(--font-family-base);
+  font-size: 22px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+}
+
+// Figma: Home/D-day (210 Mamablock Light)
+.dday {
+  flex-shrink: 0;
+  margin-top: 6px;
+  font-family: '210 Mamablock', var(--font-family-base);
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.greeting {
+  display: flex;
+  flex-direction: column;
+  margin-top: 6px;
+  padding: 0 $gutter;
+  color: color('black');
+}
+
+.hello {
+  @include typo('body-l');
+}
+
+.question {
+  @include typo('title-s-bold');
+}
+
+// 드라이브 준비 배너 (348 x 208)
+.banner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 208px;
+  margin: 14px 21px 0;
+  padding: 13px 12px 15px;
+  overflow: hidden;
+  border-radius: 18px;
+  isolation: isolate; // Safari에서 blur된 이미지가 둥근 모서리 밖으로 새지 않게 한다
+}
+
+.bannerImage {
+  position: absolute;
+  top: -27px;
+  left: -18px;
+  z-index: -1;
+  width: calc(100% + 45px);
+  max-width: none;
+  height: 235px;
+  object-fit: cover;
+  opacity: 0.8;
+  filter: blur(4px);
+}
+
+.infoList {
+  display: flex;
+  gap: 6px;
+}
+
+.info {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  height: 46px;
+  padding: 4px 8px 3px;
+  border-radius: 10px;
+  background: gradient('glass');
+
+  img {
+    flex-shrink: 0;
+  }
+}
+
+// 교통 상황·추천 테마 칩은 날씨 칩보다 덜 투명하다
+.infoStrong {
+  background: linear-gradient(
+    61deg,
+    rgb(255 255 255 / 80%) 0%,
+    rgb(255 255 255 / 48%) 19.88%,
+    rgb(255 255 255 / 80%) 77.28%
+  );
+}
+
+.traffic {
+  padding-right: 13px;
+}
+
+// 값이 가장 긴 추천 테마 칩만 줄어들고, 넘치면 말줄임한다
+.theme {
+  flex-shrink: 1;
+}
+
+// 폭이 좁은 기기(360px 등)에서는 칩 여백을 줄여 세 칩이 한 줄에 들어가게 한다
+@media (max-width: 389px) {
+  .banner {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .startButton {
+    margin-right: 3px;
+    margin-left: 3px;
+  }
+
+  .infoList {
+    gap: 4px;
+  }
+
+  .info {
+    gap: 5px;
+    padding-right: 6px;
+    padding-left: 6px;
+  }
+}
+
+.infoText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.infoLabel {
+  margin-bottom: -2px;
+  @include typo('caption');
+  color: color('gray-800');
+}
+
+.infoValue {
+  overflow: hidden;
+  @include typo('body-m-15-bold');
+  color: color('black');
+  text-overflow: ellipsis;
+}
+
+.smooth {
+  color: color('green');
+}
+
+.carStatus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin-top: auto;
+  @include typo('body-m-15-bold');
+  color: color('white');
+  text-shadow: 0 2px 4px rgb(0 0 0 / 10%);
+  filter: drop-shadow(0 0 2.5px rgb(0 0 0 / 40%));
+
+  &::before {
+    content: '';
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background-color: color('green');
+  }
+}
+
+.disconnected::before {
+  background-color: color('red');
+}
+
+.startButton {
+  flex-shrink: 0;
+  width: auto;
+  margin: 6.5px 1px 0;
+}
+
+.divider {
+  height: 10px;
+  margin-top: 24px;
+  border: 0;
+  background-color: color('divider');
+}
+
+.curation {
+  padding-top: 17px;
+}
+
+.sectionTitle {
+  padding: 0 $gutter;
+  @include typo('body-l-bold');
+  color: color('black');
+}
+
+.sectionDescription {
+  padding: 0 $gutter;
+  @include typo('body-m');
+  color: color('gray-600');
+}
+
+// 가로 스크롤 목록. 그림자가 잘리지 않도록 위아래 여백을 주고 그만큼 당긴다
+.scroller {
+  display: flex;
+  padding: 10px $gutter;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-padding-inline: $gutter;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  > li {
+    flex-shrink: 0;
+  }
+}
+
+.categories {
+  gap: 12px;
+  margin-top: 7px;
+}
+
+.spots {
+  gap: 15px;
+  margin-top: 5px;
+}
+
+.empty {
+  margin-top: 14px;
+  padding: 40px $gutter;
+  @include typo('body-m-15');
+  color: color('gray-600');
+  text-align: center;
+}
+
+// 하단 고정 네비바. 홈 인디케이터 영역(34px)은 기기의 safe-area 만큼만 보이게 한다
+.navBar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  z-index: 10;
+  width: 100%;
+  max-width: var(--app-max-width);
+  padding-top: 8px; // 네비바 위쪽 그림자 여유
+  overflow: hidden;
+  pointer-events: none; // 볼록한 부분 옆의 투명 영역은 뒤 콘텐츠를 누를 수 있게 한다
+  transform: translateX(-50%);
+
+  nav {
+    margin-bottom: min(0px, calc(env(safe-area-inset-bottom, 0px) - #{$nav-indicator}));
+  }
+
+  button {
+    pointer-events: auto;
+  }
+}
