@@ -1,0 +1,41 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 25px;
+  background-color: rgb(0 0 0 / 25%);
+  animation: fade 0.2s ease-out;
+}
+
+// Figma 기준 폭 340px
+.modal {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  max-height: 100%;
+  overflow-y: auto;
+  border-radius: 30px;
+  background-color: color('coral-bg');
+  outline: none;
+}
+
+.close {
+  position: absolute;
+  top: 15px;
+  right: 19px;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop {
+    animation: none;
+  }
+}

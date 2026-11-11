@@ -12,6 +12,7 @@ export const MOCK_HOME: HomeSummary = {
   mascotName: '붕붕이',
   daysTogether: 23,
   unreadNotificationCount: 1,
+  couple: { id: 'cpl_01', partnerNickname: '민지' },
   context: { weather: '맑음', temperature: 22, traffic: '원활', recommendedTheme: '바다 드라이브' },
 }
 

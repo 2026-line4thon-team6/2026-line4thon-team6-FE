@@ -1,0 +1,138 @@
+// Figma 기준 내용 영역 340 x 293
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.place {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding-right: 40px; // 닫기 버튼 자리
+}
+
+.thumbnail {
+  flex-shrink: 0;
+  width: 80px;
+  height: 60px;
+  overflow: hidden;
+  border-radius: 10px;
+  background-color: color('gray-100');
+  box-shadow: shadow('icon');
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.placeText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.name {
+  overflow: hidden;
+  @include typo('body-l-bold');
+  color: color('black');
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 23px;
+  @include typo('body-m-15');
+  color: color('gray-600');
+  white-space: nowrap;
+
+  img {
+    flex-shrink: 0;
+  }
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.heading {
+  @include typo('body-m-medium');
+  color: color('black');
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 30px;
+  padding-left: 12px;
+  border-radius: 5px;
+  background-color: color('divider');
+}
+
+.url {
+  min-width: 0;
+  overflow: hidden;
+  @include typo('caption');
+  color: color('gray-600');
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copy {
+  flex-shrink: 0;
+  // 아이콘(34 x 35)이 링크 상자(30px)보다 커서 위아래로 살짝 넘친다
+  margin: -3px 0 -2px;
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: -4px;
+  }
+}
+
+.channels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding: 0 9px 0 10px;
+}
+
+.channel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  min-width: 57px;
+  @include typo('body-s');
+  color: color('black');
+  white-space: nowrap;
+
+  img {
+    width: 57px;
+    height: 57px;
+    border-radius: 50%;
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}

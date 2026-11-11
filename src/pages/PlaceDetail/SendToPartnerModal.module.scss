@@ -1,0 +1,64 @@
+// 확인 팝업: Figma 기준 340 x 377
+.confirm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 34px 21px 22px;
+  text-align: center;
+}
+
+.image {
+  width: 124px;
+  height: 143px;
+  margin-bottom: 21px;
+}
+
+.title {
+  @include typo('body-l-bold');
+  color: color('black');
+}
+
+.highlight {
+  color: color('coral'); // background-clip 미지원 시 대비
+  background-image: gradient('coral-text');
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.description {
+  margin-top: 9px;
+  @include typo('body-s');
+  color: color('gray-400');
+}
+
+.error {
+  margin-top: 8px;
+  @include typo('caption');
+  color: color('red');
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  margin-top: 22px;
+}
+
+// 취소 96px, 보내기가 남는 폭을 쓴다
+.cancel {
+  flex: 0 0 96px;
+}
+
+// 전송 완료 안내: Figma 기준 340 x 215
+.sent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 43px 19px 22px 20px;
+  text-align: center;
+}
+
+.done {
+  margin-top: 24px;
+}

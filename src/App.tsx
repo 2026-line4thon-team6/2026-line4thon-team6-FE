@@ -1,11 +1,15 @@
-import { useState } from 'react'
-import { Route, Routes, useLocation, useNavigate } from 'react-router'
+import { useRef, useState } from 'react'
+import { Route, Routes, useLocation, useNavigate, useParams } from 'react-router'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
 import useNotifications from '@/hooks/useNotifications'
+import usePlaceDetail from '@/hooks/usePlaceDetail'
 import { MOCK_CATEGORIES, MOCK_HOME, MOCK_SPOTS } from '@/mocks/home'
 import HomePage from '@/pages/Home/HomePage'
 import NotificationsPage from '@/pages/Notifications/NotificationsPage'
+import PlaceDetailPage from '@/pages/PlaceDetail/PlaceDetailPage'
+import type { HomeSummary } from '@/types/home'
 import type { Notification } from '@/types/notification'
+import { copyText, createIdempotencyKey, shareTo } from '@/utils/share'
 
 // 화면 주소. 기록 지도 · 마이 화면은 아직 없어 탭을 눌러도 이동하지 않는다
 const TAB_PATHS: Partial<Record<NavTab, string>> = {
@@ -33,6 +37,7 @@ interface NotificationsRouteProps {
 
 // 알림 화면에 들어올 때마다 목록을 새로 불러온다
 function NotificationsRoute({ onRead }: NotificationsRouteProps) {
+  const navigate = useNavigate()
   const goBack = useGoBack()
   const goTab = useTabNavigate()
   const { markRead, retry, loadMore, ...list } = useNotifications()
@@ -42,7 +47,10 @@ function NotificationsRoute({ onRead }: NotificationsRouteProps) {
       markRead(notification.id)
       onRead()
     }
-    // TODO: 대상 화면이 생기면 targetType · targetId로 이동한다 (PLACE → 장소 상세)
+    // 공유받은 장소는 상세 화면으로 이동한다. 카드 · 커플 화면은 아직 없어 이동하지 않는다
+    if (notification.targetType === 'PLACE') {
+      navigate(`/places/${encodeURIComponent(notification.targetId)}`)
+    }
   }
 
   return (
@@ -57,6 +65,56 @@ function NotificationsRoute({ onRead }: NotificationsRouteProps) {
   )
 }
 
+interface PlaceDetailRouteProps {
+  placeId: string
+  couple: HomeSummary['couple']
+  onFavoriteChange: (placeId: string, favorite: boolean) => void
+}
+
+function PlaceDetailRoute({ placeId, couple, onFavoriteChange }: PlaceDetailRouteProps) {
+  const goBack = useGoBack()
+  const { status, detail, retry, toggleFavorite, getShareUrl, sendToPartner } = usePlaceDetail(placeId)
+  // 같은 전송 시도의 재시도에는 같은 멱등 키를 쓰고, 성공하면 새 키로 바꾼다
+  const idempotencyKey = useRef<string | null>(null)
+
+  const handleFavoriteToggle = async (favorite: boolean) => {
+    const saved = await toggleFavorite(favorite)
+    if (saved) onFavoriteChange(placeId, favorite)
+  }
+
+  const handleSend = async () => {
+    if (!couple) return
+    idempotencyKey.current ??= createIdempotencyKey()
+    await sendToPartner({ idempotencyKey: idempotencyKey.current, coupleId: couple.id })
+    idempotencyKey.current = null
+  }
+
+  return (
+    <PlaceDetailPage
+      status={status}
+      detail={detail}
+      partnerNickname={couple?.partnerNickname ?? null}
+      onBack={goBack}
+      onRetry={retry}
+      onFavoriteToggle={handleFavoriteToggle}
+      // TODO: 드라이브 모드 화면이 생기면 이 장소를 목적지로 이동한다
+      onStartDrive={() => {}}
+      getShareUrl={getShareUrl}
+      onCopyLink={(url) => void copyText(url)}
+      onShareChannel={(channel, url) => void shareTo(channel, { url, title: detail?.place.name ?? '' })}
+      onSendToPartner={handleSend}
+      // TODO: 커플 코드 입력 화면이 생기면 이동한다
+      onConnectRequired={() => {}}
+    />
+  )
+}
+
+// 장소가 바뀌면 상세 화면을 새로 마운트해 이전 장소의 상태가 남지 않게 한다
+function PlaceDetailRouteByParam(props: Omit<PlaceDetailRouteProps, 'placeId'>) {
+  const { placeId = '' } = useParams()
+  return <PlaceDetailRoute key={placeId} placeId={placeId} {...props} />
+}
+
 // 홈 데이터는 API 연동 전까지 목 데이터를 쓴다 (GET /home 연동 시 교체)
 function App() {
   const navigate = useNavigate()
@@ -67,6 +125,9 @@ function App() {
   // 알림을 읽으면 홈의 새 알림 표시도 맞춘다. API 연동 후에는 홈을 다시 조회해 반영한다
   const handleNotificationRead = () =>
     setHome((prev) => ({ ...prev, unreadNotificationCount: Math.max(0, prev.unreadNotificationCount - 1) }))
+
+  const setSpotLiked = (id: number, liked: boolean) =>
+    setSpots((prev) => prev.map((spot) => (spot.id === id ? { ...spot, liked } : spot)))
 
   return (
     <Routes>
@@ -79,14 +140,23 @@ function App() {
             spots={spots}
             carConnected
             onNotificationClick={() => navigate('/notifications')}
-            onLikeToggle={(id, liked) =>
-              setSpots((prev) => prev.map((spot) => (spot.id === id ? { ...spot, liked } : spot)))
-            }
+            onSpotClick={(id) => navigate(`/places/${id}`)}
+            onLikeToggle={setSpotLiked}
             onTabChange={goTab}
           />
         }
       />
       <Route path="/notifications" element={<NotificationsRoute onRead={handleNotificationRead} />} />
+      <Route
+        path="/places/:placeId"
+        element={
+          <PlaceDetailRouteByParam
+            couple={home.couple}
+            // 상세에서 바꾼 찜 상태를 홈 카드에도 반영한다 (목 장소 id는 홈 카드 id의 문자열)
+            onFavoriteChange={(placeId, favorite) => setSpotLiked(Number(placeId), favorite)}
+          />
+        }
+      />
     </Routes>
   )
 }

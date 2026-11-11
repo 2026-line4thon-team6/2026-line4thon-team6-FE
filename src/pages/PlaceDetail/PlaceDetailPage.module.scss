@@ -1,0 +1,393 @@
+// Figma 기준 390 x 953 (Home_UI > 스마트 탐색 상세 페이지)
+$gutter: 25px;
+$hero-height: 291px;
+// 하단 버튼 바에서 버튼 위 여백 + 버튼 높이
+$bottom-bar-height: 19px + 50px;
+
+.page {
+  position: relative;
+  max-width: var(--app-max-width);
+  min-height: 100vh; // dvh 미지원 웹뷰 대비
+  min-height: 100dvh;
+  margin: 0 auto;
+  overflow-x: hidden;
+  background-color: color('coral-bg');
+}
+
+// 상단 사진 (좌우로 넘긴다)
+.hero {
+  position: relative;
+  height: $hero-height;
+  background-color: color('gray-100');
+}
+
+.photos {
+  display: flex;
+  height: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  > li {
+    flex: 0 0 100%;
+    scroll-snap-align: start;
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    -webkit-user-drag: none;
+  }
+}
+
+.counter {
+  position: absolute;
+  top: 209px;
+  right: $gutter;
+  min-width: 51px;
+  padding: 3px 14px 2px 15px;
+  border-radius: 100px;
+  @include typo('caption');
+  color: color('white');
+  text-align: center;
+  white-space: nowrap;
+  background: gradient('glass-black');
+  box-shadow: shadow('icon');
+}
+
+// 사진 위에 떠 있는 뒤로가기 · 찜 · 공유 버튼. 노치 영역만큼 내린다
+.topBar {
+  position: absolute;
+  top: calc(max(env(safe-area-inset-top, 0px), 12px) + 5px);
+  right: $gutter;
+  left: $gutter;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.topActions {
+  display: flex;
+  gap: 12px;
+}
+
+// 사진 위로 36px 겹쳐 올라오는 본문 카드. 화면 아래 끝까지 이어진다
+.content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: calc(100vh - #{$hero-height - 36px});
+  min-height: calc(100dvh - #{$hero-height - 36px});
+  margin-top: -36px;
+  // 아래 여백: 하단 고정 버튼 바에 내용이 가려지지 않게 한다
+  padding: 27px $gutter calc(#{$bottom-bar-height} + max(19px, env(safe-area-inset-bottom, 0px)) + 20px);
+  border-radius: 30px 30px 0 0;
+  background-color: color('coral-bg');
+  box-shadow: 0 1px 10px rgb(0 0 0 / 10%);
+}
+
+.titleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.titleText {
+  min-width: 0;
+}
+
+.name {
+  @include typo('title-m-bold');
+  color: color('black');
+  word-break: keep-all;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  @include typo('body-m-medium');
+  color: color('gray-600');
+
+  img {
+    flex-shrink: 0;
+  }
+}
+
+// 카테고리 표시 (누를 수 없는 칩)
+.category {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 7px 11px;
+  border-radius: 10px;
+  @include typo('body-m-15');
+  color: color('black');
+  white-space: nowrap;
+  background-color: color('white');
+  box-shadow: shadow('icon');
+
+  img {
+    width: auto;
+    height: 18px;
+  }
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.tag {
+  padding: 4px 10px;
+  border-radius: 100px;
+  @include typo('body-m-15-bold');
+  color: color('coral-pressed');
+  background-color: color('coral-2');
+}
+
+.introduction {
+  max-width: 294px;
+  @include typo('body-s');
+  color: color('gray-600');
+  word-break: keep-all;
+}
+
+// 사진 썸네일 3장 (누를 수 없음). 화면 오른쪽 끝까지 이어진다
+.thumbnails {
+  position: relative;
+  display: flex;
+  gap: 10px;
+  margin-right: -$gutter;
+  overflow: hidden;
+
+  img {
+    flex-shrink: 0;
+    width: 129px;
+    height: 71px;
+    border-radius: 10px;
+    object-fit: cover;
+  }
+}
+
+.more {
+  position: absolute;
+  top: 18px;
+  right: $gutter;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  @include typo('caption');
+  color: color('white');
+  background: gradient('glass-black');
+  box-shadow: shadow('icon');
+}
+
+// 드라이브 정보 요약 4칸. 칸 사이에 세로 구분선을 둔다
+.summary {
+  display: grid;
+  grid-template-columns: 79fr 74fr 85fr 79fr;
+  min-height: 107px;
+  padding: 11px 12px 10px 11px;
+  border-radius: 10px;
+  background-color: rgb(255 214 204 / 50%);
+
+  > li {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 0;
+    text-align: center;
+
+    &:first-child {
+      padding-right: 12px;
+    }
+
+    &:last-child {
+      padding-left: 12px;
+    }
+
+    & + li::before {
+      content: '';
+      position: absolute;
+      top: 23px;
+      left: 0;
+      height: 40px;
+      border-left: 1px solid color('coral-stroke');
+    }
+  }
+}
+
+// 폭이 좁은 기기(375 · 360px)에서는 양끝 칸의 바깥 여백을 없애 라벨과 값이 한 줄에 들어가게 한다
+@media (max-width: 389px) {
+  .summary > li:first-child {
+    padding-right: 0;
+  }
+
+  .summary > li:last-child {
+    padding-left: 0;
+  }
+}
+
+.summaryIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 21px;
+  margin-bottom: 5px;
+}
+
+.summaryLabel {
+  @include typo('caption');
+  color: color('gray-600');
+  white-space: nowrap;
+}
+
+// 값은 칸 폭이 아니라 시안의 글자 폭(약 4~5자)에서 줄바꿈한다.
+// 예) '공영주차장 이용 가능' → '공영주차장 / 이용 가능' (화면이 넓어져도 '가능'만 따로 떨어지지 않게)
+.summaryValue {
+  max-width: 4.6em;
+  text-wrap: balance;
+  @include typo('body-s-medium');
+  color: color('black');
+  word-break: keep-all;
+}
+
+.summaryNote {
+  @include typo('caption');
+  color: color('gray-800');
+  white-space: nowrap;
+}
+
+.route {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.routeTitle {
+  padding-left: 9px;
+  @include typo('body-m-medium');
+  color: color('black');
+}
+
+.map {
+  position: relative;
+  height: 84px;
+  overflow: hidden;
+  border-radius: 10px;
+  background-color: color('gray-100');
+}
+
+.mapImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+// 출발지 · 도착지 말풍선. SVG(67 x 48)에 그림자 여백 10px이 포함되어 있다
+.mapLabel {
+  position: absolute;
+  width: 47px;
+  height: 28px;
+  @include typo('caption');
+  color: color('black');
+  text-align: center;
+
+  img {
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    max-width: none;
+  }
+
+  span {
+    position: relative;
+    display: block;
+    padding-top: 2px;
+  }
+}
+
+.origin {
+  top: 9px;
+  left: 20px;
+}
+
+.destination {
+  top: 7px;
+  right: 60px;
+}
+
+.mapEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 84px;
+  padding: 0 16px;
+  border-radius: 10px;
+  @include typo('body-s');
+  color: color('gray-600');
+  text-align: center;
+  background-color: color('gray-100');
+}
+
+// 하단 고정 버튼 바
+.bottomBar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  z-index: 10;
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  max-width: var(--app-max-width);
+  padding: 19px $gutter max(19px, calc(env(safe-area-inset-bottom, 0px) + 1px));
+  border-radius: 30px 30px 0 0;
+  background-color: color('white');
+  box-shadow: shadow('icon');
+  transform: translateX(-50%);
+
+  > button {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+// 불러오는 중 · 오류 안내 (시안에 없는 상태라 최소한으로 둔다)
+.message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 160px $gutter 0;
+  @include typo('body-m-15');
+  color: color('gray-600');
+  text-align: center;
+}
+
+.textButton {
+  padding: 8px 16px;
+  @include typo('body-s-medium');
+  color: color('coral-pressed');
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}
