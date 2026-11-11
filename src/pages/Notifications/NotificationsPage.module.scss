@@ -1,0 +1,131 @@
+// Figma 기준 390 x 844 (Home_UI > 알림)
+$gutter: 25px;
+
+.page {
+  @include app-page;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-top: 5px;
+  padding: 0 $gutter;
+}
+
+.title {
+  @include typo('body-l-bold');
+  color: color('black');
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  margin-top: 19px;
+  padding: 0 $gutter;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.groupLabel {
+  @include typo('body-m');
+  color: color('gray-600');
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+// 읽은 알림은 배경 없이, 읽지 않은 알림은 연한 배경으로 표시한다
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  min-height: 78px;
+  padding: 14px 14px 14px 11px;
+  border-radius: 5px;
+  text-align: left;
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}
+
+.unread {
+  background-color: color('divider');
+}
+
+.itemHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.itemTitle {
+  min-width: 0;
+  overflow: hidden;
+  @include typo('body-m-medium');
+  color: color('black');
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemTime {
+  flex-shrink: 0;
+  @include typo('caption');
+  color: color('gray-400');
+}
+
+.itemBody {
+  @include typo('body-s');
+  color: color('gray-600');
+}
+
+// 불러오는 중 · 오류 · 빈 목록 안내 (시안에 없는 상태라 최소한으로 둔다)
+.message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 60px 0;
+  @include typo('body-m-15');
+  color: color('gray-600');
+  text-align: center;
+}
+
+.textButton {
+  align-self: center;
+  padding: 8px 16px;
+  @include typo('body-s-medium');
+  color: color('coral-pressed');
+
+  &:disabled {
+    color: color('gray-400');
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}
+
+// 화면에는 보이지 않고 스크린 리더만 읽는다
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
