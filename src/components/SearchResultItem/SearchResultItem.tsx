@@ -13,12 +13,15 @@ interface SearchResultItemProps {
   className?: string
 }
 
-// 이름 안의 검색어를 찾아 강조할 부분과 나머지로 나눈다 (대소문자 무시, 처음 한 곳만)
+// 이름 안의 검색어를 찾아 강조할 부분과 나머지로 나눈다 (대소문자 · 공백 무시, 처음 한 곳만)
 function splitByKeyword(text: string, keyword: string) {
-  const index = keyword ? text.toLowerCase().indexOf(keyword.trim().toLowerCase()) : -1
-  if (index < 0) return null
-  const end = index + keyword.trim().length
-  return [text.slice(0, index), text.slice(index, end), text.slice(end)]
+  const chars = [...keyword.replace(/\s+/g, '')]
+  if (chars.length === 0) return null
+  const pattern = chars.map((char) => char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s*')
+  const match = new RegExp(pattern, 'i').exec(text)
+  if (!match) return null
+  const end = match.index + match[0].length
+  return [text.slice(0, match.index), match[0], text.slice(end)]
 }
 
 // 장소 · 휴게소 검색 결과 한 줄. 목록(ul > li) 안에서 쓴다

@@ -1,8 +1,12 @@
 import { useRef, useState } from 'react'
-import { Route, Routes, useLocation, useNavigate, useParams } from 'react-router'
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
+import DriveNameSheet from '@/components/DriveNameSheet/DriveNameSheet'
+import useDrive from '@/hooks/useDrive'
 import useNotifications from '@/hooks/useNotifications'
 import usePlaceDetail from '@/hooks/usePlaceDetail'
+import useRouteSetting from '@/hooks/useRouteSetting'
+import useStartDrive, { type DriveLocationState } from '@/hooks/useStartDrive'
 import { MOCK_CATEGORIES, MOCK_HOME, MOCK_SPOTS } from '@/mocks/home'
 import DrivePage from '@/pages/Drive/DrivePage'
 import HomePage from '@/pages/Home/HomePage'
@@ -70,12 +74,13 @@ function NotificationsRoute({ onRead }: NotificationsRouteProps) {
 interface PlaceDetailRouteProps {
   placeId: string
   couple: HomeSummary['couple']
+  mascotName: string
   onFavoriteChange: (placeId: string, favorite: boolean) => void
 }
 
-function PlaceDetailRoute({ placeId, couple, onFavoriteChange }: PlaceDetailRouteProps) {
-  const navigate = useNavigate()
+function PlaceDetailRoute({ placeId, couple, mascotName, onFavoriteChange }: PlaceDetailRouteProps) {
   const goBack = useGoBack()
+  const drive = useStartDrive(couple)
   const { status, detail, retry, toggleFavorite, getShareUrl, sendToPartner } = usePlaceDetail(placeId)
   // 같은 전송 시도의 재시도에는 같은 멱등 키를 쓰고, 성공하면 새 키로 바꾼다
   const idempotencyKey = useRef<string | null>(null)
@@ -93,20 +98,88 @@ function PlaceDetailRoute({ placeId, couple, onFavoriteChange }: PlaceDetailRout
   }
 
   return (
-    <PlaceDetailPage
+    <>
+      <PlaceDetailPage
+        status={status}
+        detail={detail}
+        partnerNickname={couple?.partnerNickname ?? null}
+        onBack={goBack}
+        onRetry={retry}
+        onFavoriteToggle={handleFavoriteToggle}
+        onStartDrive={() => void drive.start(placeId)}
+        getShareUrl={getShareUrl}
+        onCopyLink={(url) => void copyText(url)}
+        onShareChannel={(channel, url) => void shareTo(channel, { url, title: detail?.place.name ?? '' })}
+        onSendToPartner={handleSend}
+        // TODO: 커플 코드 입력 화면이 생기면 이동한다
+        onConnectRequired={() => {}}
+      />
+      <DriveNameSheet
+        open={drive.sheetOpen}
+        mode="create"
+        mascotName={mascotName}
+        onSubmit={(name) => void drive.submit(name)}
+        onClose={drive.closeSheet}
+      />
+    </>
+  )
+}
+
+// 진행 중인 드라이브가 없으면 홈으로 돌려보낸다
+function DriveRoute() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { status, drive, rename } = useDrive()
+
+  if (status === 'empty') return <Navigate to="/" replace />
+
+  return (
+    <DrivePage
       status={status}
-      detail={detail}
-      partnerNickname={couple?.partnerNickname ?? null}
-      onBack={goBack}
-      onRetry={retry}
-      onFavoriteToggle={handleFavoriteToggle}
-      onStartDrive={() => navigate('/drive', { state: { destinationPlaceId: placeId } })}
-      getShareUrl={getShareUrl}
-      onCopyLink={(url) => void copyText(url)}
-      onShareChannel={(channel, url) => void shareTo(channel, { url, title: detail?.place.name ?? '' })}
-      onSendToPartner={handleSend}
-      // TODO: 커플 코드 입력 화면이 생기면 이동한다
-      onConnectRequired={() => {}}
+      drive={drive}
+      onRename={rename}
+      onRouteSearch={() => navigate('/drive/route', { state: location.state })}
+    />
+  )
+}
+
+function RouteSettingRoute() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { status, setRoute } = useDrive()
+  const { destinationPlaceId } = (location.state ?? {}) as DriveLocationState
+  const routeSetting = useRouteSetting(destinationPlaceId)
+  const [confirming, setConfirming] = useState(false)
+
+  if (status === 'empty') return <Navigate to="/" replace />
+
+  const backToDrive = () => navigate('/drive', { replace: true })
+
+  const handleConfirm = async () => {
+    if (!routeSetting.route) return
+    setConfirming(true)
+    const saved = await setRoute(routeSetting.route.id)
+    setConfirming(false)
+    // TODO: 실패 토스트
+    if (saved) backToDrive()
+  }
+
+  return (
+    <RouteSettingPage
+      originAddress={routeSetting.origin?.address || null}
+      query={routeSetting.query}
+      history={routeSetting.history}
+      results={routeSetting.results}
+      route={routeSetting.route}
+      routeStatus={routeSetting.routeStatus}
+      confirming={confirming}
+      onQueryChange={routeSetting.changeQuery}
+      onSearch={routeSetting.submitSearch}
+      onRecentSelect={routeSetting.selectRecent}
+      onRecentDelete={routeSetting.deleteRecent}
+      onResultSelect={routeSetting.selectPlace}
+      onConfirm={() => void handleConfirm()}
+      onClose={backToDrive}
     />
   )
 }
@@ -123,6 +196,7 @@ function App() {
   const goTab = useTabNavigate()
   const [home, setHome] = useState(MOCK_HOME)
   const [spots, setSpots] = useState(MOCK_SPOTS)
+  const drive = useStartDrive(home.couple)
 
   // 알림을 읽으면 홈의 새 알림 표시도 맞춘다. API 연동 후에는 홈을 다시 조회해 반영한다
   const handleNotificationRead = () =>
@@ -136,28 +210,37 @@ function App() {
       <Route
         path="/"
         element={
-          <HomePage
-            home={home}
-            categories={MOCK_CATEGORIES}
-            spots={spots}
-            carConnected
-            onNotificationClick={() => navigate('/notifications')}
-            onSpotClick={(id) => navigate(`/places/${id}`)}
-            onLikeToggle={setSpotLiked}
-            // TODO: 홈 위에 드라이브명 시트를 먼저 띄운다
-            onStartDrive={() => navigate('/drive')}
-            onTabChange={goTab}
-          />
+          <>
+            <HomePage
+              home={home}
+              categories={MOCK_CATEGORIES}
+              spots={spots}
+              carConnected
+              onNotificationClick={() => navigate('/notifications')}
+              onSpotClick={(id) => navigate(`/places/${id}`)}
+              onLikeToggle={setSpotLiked}
+              onStartDrive={() => void drive.start()}
+              onTabChange={goTab}
+            />
+            <DriveNameSheet
+              open={drive.sheetOpen}
+              mode="create"
+              mascotName={home.mascotName}
+              onSubmit={(name) => void drive.submit(name)}
+              onClose={drive.closeSheet}
+            />
+          </>
         }
       />
       <Route path="/notifications" element={<NotificationsRoute onRead={handleNotificationRead} />} />
-      <Route path="/drive" element={<DrivePage />} />
-      <Route path="/drive/route" element={<RouteSettingPage />} />
+      <Route path="/drive" element={<DriveRoute />} />
+      <Route path="/drive/route" element={<RouteSettingRoute />} />
       <Route
         path="/places/:placeId"
         element={
           <PlaceDetailRouteByParam
             couple={home.couple}
+            mascotName={home.mascotName}
             // 상세에서 바꾼 찜 상태를 홈 카드에도 반영한다 (목 장소 id는 홈 카드 id의 문자열)
             onFavoriteChange={(placeId, favorite) => setSpotLiked(Number(placeId), favorite)}
           />

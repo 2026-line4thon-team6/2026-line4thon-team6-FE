@@ -1,0 +1,88 @@
+// Figma 기준 390 x 844
+$gutter: 25px;
+
+.page {
+  position: relative;
+  max-width: var(--app-max-width);
+  min-height: 100vh; // dvh 미지원 웹뷰 대비
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  background-color: color('coral-bg');
+}
+
+.preview {
+  height: 100vh;
+  height: 100dvh;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  padding: calc(max(env(safe-area-inset-top, 0px), 12px) + 5px) $gutter 0;
+  background-color: color('coral-bg');
+
+  .preview & {
+    padding-bottom: 22px;
+  }
+}
+
+.searchBox {
+  flex: 1;
+  min-width: 0;
+}
+
+.recent,
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 0 $gutter;
+}
+
+.recent {
+  margin-top: 20px;
+}
+
+.results {
+  margin-top: 27px;
+}
+
+.message {
+  margin: 40px $gutter 0;
+  @include typo('body-s');
+  color: color('gray-600');
+  text-align: center;
+}
+
+.map {
+  position: absolute;
+  inset: 0;
+  background-color: color('gray-100');
+}
+
+.bottom {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.stats {
+  width: auto;
+  margin: 0 $gutter 22px;
+}
