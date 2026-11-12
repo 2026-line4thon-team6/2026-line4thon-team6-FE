@@ -4,9 +4,11 @@ import type { NavTab } from '@/components/BottomNav/BottomNav'
 import useNotifications from '@/hooks/useNotifications'
 import usePlaceDetail from '@/hooks/usePlaceDetail'
 import { MOCK_CATEGORIES, MOCK_HOME, MOCK_SPOTS } from '@/mocks/home'
+import DrivePage from '@/pages/Drive/DrivePage'
 import HomePage from '@/pages/Home/HomePage'
 import NotificationsPage from '@/pages/Notifications/NotificationsPage'
 import PlaceDetailPage from '@/pages/PlaceDetail/PlaceDetailPage'
+import RouteSettingPage from '@/pages/RouteSetting/RouteSettingPage'
 import type { HomeSummary } from '@/types/home'
 import type { Notification } from '@/types/notification'
 import { copyText, createIdempotencyKey, shareTo } from '@/utils/share'
@@ -72,6 +74,7 @@ interface PlaceDetailRouteProps {
 }
 
 function PlaceDetailRoute({ placeId, couple, onFavoriteChange }: PlaceDetailRouteProps) {
+  const navigate = useNavigate()
   const goBack = useGoBack()
   const { status, detail, retry, toggleFavorite, getShareUrl, sendToPartner } = usePlaceDetail(placeId)
   // 같은 전송 시도의 재시도에는 같은 멱등 키를 쓰고, 성공하면 새 키로 바꾼다
@@ -97,8 +100,7 @@ function PlaceDetailRoute({ placeId, couple, onFavoriteChange }: PlaceDetailRout
       onBack={goBack}
       onRetry={retry}
       onFavoriteToggle={handleFavoriteToggle}
-      // TODO: 드라이브 모드 화면이 생기면 이 장소를 목적지로 이동한다
-      onStartDrive={() => {}}
+      onStartDrive={() => navigate('/drive', { state: { destinationPlaceId: placeId } })}
       getShareUrl={getShareUrl}
       onCopyLink={(url) => void copyText(url)}
       onShareChannel={(channel, url) => void shareTo(channel, { url, title: detail?.place.name ?? '' })}
@@ -142,11 +144,15 @@ function App() {
             onNotificationClick={() => navigate('/notifications')}
             onSpotClick={(id) => navigate(`/places/${id}`)}
             onLikeToggle={setSpotLiked}
+            // TODO: 홈 위에 드라이브명 시트를 먼저 띄운다
+            onStartDrive={() => navigate('/drive')}
             onTabChange={goTab}
           />
         }
       />
       <Route path="/notifications" element={<NotificationsRoute onRead={handleNotificationRead} />} />
+      <Route path="/drive" element={<DrivePage />} />
+      <Route path="/drive/route" element={<RouteSettingPage />} />
       <Route
         path="/places/:placeId"
         element={
