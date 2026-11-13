@@ -1,5 +1,6 @@
 import playlistIcon from '@/assets/icons/playlist.svg'
 import type { SavedPlaylist } from '@/types/playlist'
+import { formatDuration } from '@/utils/formatDuration'
 import ArchiveLayout from './ArchiveLayout'
 import styles from './PlaylistsPage.module.scss'
 
@@ -11,9 +12,6 @@ interface PlaylistsPageProps {
   onRetry: () => void
   onPlaylistClick: (playlistId: string) => void
 }
-
-// 시안의 '약 00분' 표기. 시간 단위로 바꾸지 않고 분으로만 보여 준다
-const formatMinutes = (seconds: number) => `약 ${Math.max(1, Math.round(seconds / 60))}분`
 
 // 마이 > 플레이리스트 보관함
 function PlaylistsPage({ status, playlists, totalCount, onBack, onRetry, onPlaylistClick }: PlaylistsPageProps) {
@@ -41,7 +39,8 @@ function PlaylistsPage({ status, playlists, totalCount, onBack, onRetry, onPlayl
                   {driveTitle && <span className={styles.badge}>{driveTitle}</span>}
                   <span className={styles.title}>{title}</span>
                   <span className={styles.meta}>
-                    총 {trackCount}곡 · {formatMinutes(durationSeconds)}
+                    {/* 기능명세서 '09 생성 완료'와 같은 표기 (예: 약 52분, 약 1시간 5분) */}
+                    총 {trackCount}곡 · {formatDuration(durationSeconds)}
                   </span>
                 </span>
                 <img className={styles.icon} src={playlistIcon} alt="" />

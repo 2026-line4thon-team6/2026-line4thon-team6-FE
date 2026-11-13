@@ -47,6 +47,12 @@ describe('플레이리스트 카드', () => {
     expect(items[0]).toHaveTextContent('총 13곡 · 약 52분')
   })
 
+  it('재생 시간이 1시간을 넘으면 시간 단위로 보여 준다 (기능명세서 09 생성 완료 표기)', () => {
+    renderPage({ playlists: [{ ...MOCK_PLAYLIST_LIBRARY.items[0], durationSeconds: 3900 }] })
+
+    expect(screen.getByRole('button', { name: /노을처럼 따뜻한 우리/ })).toHaveTextContent('총 13곡 · 약 1시간 5분')
+  })
+
   it('연결된 드라이브가 없으면 배지를 숨긴다', () => {
     renderPage({ playlists: [{ ...MOCK_PLAYLIST_LIBRARY.items[0], driveId: null, driveTitle: null }] })
 
