@@ -3,17 +3,20 @@ import { Route, Routes, useLocation, useNavigate, useParams } from 'react-router
 import type { NavTab } from '@/components/BottomNav/BottomNav'
 import useNotifications from '@/hooks/useNotifications'
 import usePlaceDetail from '@/hooks/usePlaceDetail'
+import useRecordMap from '@/hooks/useRecordMap'
 import { MOCK_CATEGORIES, MOCK_HOME, MOCK_SPOTS } from '@/mocks/home'
 import HomePage from '@/pages/Home/HomePage'
 import NotificationsPage from '@/pages/Notifications/NotificationsPage'
 import PlaceDetailPage from '@/pages/PlaceDetail/PlaceDetailPage'
+import RecordMapPage from '@/pages/RecordMap/RecordMapPage'
 import type { HomeSummary } from '@/types/home'
 import type { Notification } from '@/types/notification'
 import { copyText, createIdempotencyKey, shareTo } from '@/utils/share'
 
-// 화면 주소. 기록 지도 · 마이 화면은 아직 없어 탭을 눌러도 이동하지 않는다
+// 화면 주소. 마이 화면은 아직 없어 탭을 눌러도 이동하지 않는다
 const TAB_PATHS: Partial<Record<NavTab, string>> = {
   home: '/',
+  map: '/map',
 }
 
 function useTabNavigate() {
@@ -109,6 +112,28 @@ function PlaceDetailRoute({ placeId, couple, onFavoriteChange }: PlaceDetailRout
   )
 }
 
+// 기록 지도. 검색어가 바뀌면 그 조건으로 마커를 다시 불러온다
+function RecordMapRoute() {
+  const goTab = useTabNavigate()
+  const [query, setQuery] = useState('')
+  const { status, markers, totalCount, retry } = useRecordMap({ q: query })
+
+  return (
+    <RecordMapPage
+      status={status}
+      markers={markers}
+      totalCount={totalCount}
+      onSearch={setQuery}
+      // TODO: 날짜 검색(캘린더) · 목록형 · 기록 미리보기 카드는 다음 작업에서 연결한다
+      onCalendarClick={() => {}}
+      onViewChange={() => {}}
+      onMarkerClick={() => {}}
+      onRetry={retry}
+      onTabChange={goTab}
+    />
+  )
+}
+
 // 장소가 바뀌면 상세 화면을 새로 마운트해 이전 장소의 상태가 남지 않게 한다
 function PlaceDetailRouteByParam(props: Omit<PlaceDetailRouteProps, 'placeId'>) {
   const { placeId = '' } = useParams()
@@ -146,6 +171,7 @@ function App() {
           />
         }
       />
+      <Route path="/map" element={<RecordMapRoute />} />
       <Route path="/notifications" element={<NotificationsRoute onRead={handleNotificationRead} />} />
       <Route
         path="/places/:placeId"
