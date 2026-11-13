@@ -1,4 +1,4 @@
-import { mockCompleteOnboarding, mockLogin, mockLogout, mockRestoreSession } from '@/mocks/couples'
+import { mockCompleteOnboarding, mockHasSession, mockLogin, mockLogout, mockRestoreSession } from '@/mocks/couples'
 import type { ApiResponse } from '@/types/api'
 import type { AuthAuthorization, AuthProvider, AuthTokenResult, OnboardingRequest } from '@/types/auth'
 import type { Me } from '@/types/me'
@@ -100,6 +100,11 @@ export async function login(provider: AuthProvider): Promise<AuthTokenResult | n
 
   window.location.assign(await startSocialLogin(provider, `${window.location.origin}/oauth/callback`))
   return null
+}
+
+// 기기에 로그인 세션이 남아 있는지. 첫 화면을 로그인 화면으로 보낼지 바로 정할 때 쓴다
+export function hasStoredSession() {
+  return USE_MOCK ? mockHasSession() : read<StoredTokens>(local, TOKEN_KEY) !== null
 }
 
 // 앱을 열 때 저장된 세션으로 내 계정을 불러온다. 세션이 없거나 만료됐으면 null

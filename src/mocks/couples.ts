@@ -267,6 +267,11 @@ export async function mockLogout(): Promise<void> {
   startNewAccount()
 }
 
+// 앱을 열 때 화면을 바로 정하기 위한 동기 확인 (실서버의 '기기에 토큰이 있는지'에 해당)
+export function mockHasSession() {
+  return signedIn
+}
+
 // 앱을 다시 열었을 때 저장된 세션으로 내 계정을 불러온다 (GET /me)
 export async function mockRestoreSession(): Promise<ApiResponse<Me>> {
   if (!signedIn) throw fail(401, 'AUTHENTICATION_REQUIRED', '로그인이 필요해요.')
