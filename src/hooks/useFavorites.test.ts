@@ -44,8 +44,12 @@ describe('useFavorites', () => {
     await waitFor(() => expect(result.current.status).toBe('ready'))
     const target = result.current.places[0]
 
-    await act(() => result.current.toggleFavorite(target.id, false))
+    let saved = false
+    await act(async () => {
+      saved = await result.current.toggleFavorite(target.id, false)
+    })
 
+    expect(saved).toBe(true)
     expect(save).toHaveBeenCalledWith(target.id, false)
     expect(result.current.places.find((place) => place.id === target.id)?.isFavorite).toBe(false)
   })
@@ -56,8 +60,12 @@ describe('useFavorites', () => {
     await waitFor(() => expect(result.current.status).toBe('ready'))
     const target = result.current.places[0]
 
-    await act(() => result.current.toggleFavorite(target.id, false))
+    let saved = true
+    await act(async () => {
+      saved = await result.current.toggleFavorite(target.id, false)
+    })
 
+    expect(saved).toBe(false)
     expect(result.current.places.find((place) => place.id === target.id)?.isFavorite).toBe(true)
   })
 

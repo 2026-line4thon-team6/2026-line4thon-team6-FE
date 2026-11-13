@@ -47,13 +47,16 @@ function useFavorites() {
     }))
   }, [])
 
-  // 하트를 먼저 바꾸고, 저장에 실패하면 되돌린다. 취소한 장소도 다시 찜할 수 있게 목록에 남겨 둔다
+  // 하트를 먼저 바꾸고, 저장에 실패하면 되돌린다. 취소한 장소도 다시 찜할 수 있게 목록에 남겨 둔다.
+  // 저장에 성공했는지 돌려준다
   const toggleFavorite = async (placeId: string, favorite: boolean) => {
     setFavorite(placeId, favorite)
     try {
       await setPlaceFavorite(placeId, favorite)
+      return true
     } catch {
       setFavorite(placeId, !favorite)
+      return false
     }
   }
 
