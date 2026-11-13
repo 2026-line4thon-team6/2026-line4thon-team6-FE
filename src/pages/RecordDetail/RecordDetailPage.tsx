@@ -121,16 +121,20 @@ function RecordDetailPage({ status, card, onBack, onRetry, onDelete, onPlaylistC
                 </span>
               )}
             </div>
-            {card.playlist && onPlaylistClick && (
-              <button
-                className={styles.playlistButton}
-                type="button"
-                aria-label="플레이리스트 보기"
-                onClick={() => card.playlist && onPlaylistClick(card.playlist)}
-              >
-                <img src={playlistButtonIcon} alt="" width={40} height={40} />
-              </button>
-            )}
+            {/* 플레이리스트 화면이 아직 없으면 누를 수 없는 아이콘으로만 보여준다 */}
+            {card.playlist &&
+              (onPlaylistClick ? (
+                <button
+                  className={styles.playlistButton}
+                  type="button"
+                  aria-label="플레이리스트 보기"
+                  onClick={() => card.playlist && onPlaylistClick(card.playlist)}
+                >
+                  <img src={playlistButtonIcon} alt="" width={40} height={40} />
+                </button>
+              ) : (
+                <img className={styles.playlistButton} src={playlistButtonIcon} alt="" width={40} height={40} />
+              ))}
           </section>
 
           {photos.length > 0 && (
