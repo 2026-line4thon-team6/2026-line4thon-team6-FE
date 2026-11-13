@@ -1,5 +1,8 @@
 export type ShareChannel = 'kakaotalk' | 'instagram' | 'x' | 'facebook'
 
+// 공유 링크 상태: 받아오는 중 / 받아옴 / 실패
+export type ShareLink = { status: 'loading' } | { status: 'ready'; url: string } | { status: 'error' }
+
 interface ShareContent {
   url: string
   title: string
