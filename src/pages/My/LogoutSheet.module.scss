@@ -1,0 +1,26 @@
+// Figma 기준 내용 340 x 229
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.title {
+  @include typo('title-m-bold');
+  color: color('black');
+}
+
+.description {
+  margin-top: 8px;
+  @include typo('body-m');
+  color: color('gray-600');
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  margin-top: 33px;
+}
