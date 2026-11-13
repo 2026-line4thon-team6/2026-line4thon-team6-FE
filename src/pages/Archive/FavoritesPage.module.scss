@@ -1,0 +1,26 @@
+// 칩 줄은 화면 밖으로 넘치면 가로로 넘긴다. 그림자가 잘리지 않게 위아래 여백을 둔다
+.categories {
+  display: flex;
+  gap: 12px;
+  margin-top: -10px; // 위 여백(10px)은 그림자 자리라 헤더와의 간격에서 뺀다
+  padding: 10px var(--archive-gutter);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-padding-inline: var(--archive-gutter);
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  // 마우스로 끌어 넘길 때 글자가 선택되지 않게 한다 (useDragScroll)
+  -webkit-user-select: none;
+  user-select: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  padding: 15px var(--archive-gutter) 0;
+}
