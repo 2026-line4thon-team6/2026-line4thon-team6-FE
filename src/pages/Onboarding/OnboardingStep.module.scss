@@ -40,6 +40,15 @@ $gutter: 25px;
   white-space: pre-line;
 }
 
+// 두 줄(67px)이면 17px 올리고 입력칸까지 47px → 입력칸 위치는 한 줄 질문과 같다
+.twoLine {
+  margin-top: -17px;
+}
+
+.twoLine + .field {
+  margin-top: 47px;
+}
+
 // 다음 버튼: 키보드가 없으면 홈 인디케이터 위, 있으면 키보드 바로 위 17px (Figma 484:13697)
 .footer {
   display: flex;

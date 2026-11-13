@@ -41,7 +41,10 @@ function OnboardingStep({ title, question, onBack, children, footer }: Onboardin
       </header>
 
       <main className={styles.content}>
-        <h2 className={styles.question}>{question}</h2>
+        {/* 두 줄 질문은 위로 올려 입력칸 높이를 다른 단계와 맞춘다 (Figma 484:14207) */}
+        <h2 className={[styles.question, question.includes('\n') && styles.twoLine].filter(Boolean).join(' ')}>
+          {question}
+        </h2>
         {children}
       </main>
 
