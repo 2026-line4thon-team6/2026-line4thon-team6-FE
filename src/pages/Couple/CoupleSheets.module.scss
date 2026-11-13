@@ -1,0 +1,45 @@
+// 시작일 변경 바텀시트: 날짜 휠(325 x 186) + 저장하기
+.dateContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 8px 0;
+}
+
+.dateSave {
+  margin-top: 28px;
+}
+
+// 연결 해제 확인 바텀시트 (Figma 340 x 229)
+.confirm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.confirmTitle {
+  @include typo('title-m-bold');
+  color: color('black');
+  word-break: keep-all;
+}
+
+.confirmDescription {
+  margin-top: 8px;
+  @include typo('body-m');
+  color: color('gray-600');
+}
+
+.confirmActions {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  margin-top: 33px;
+}
+
+.error {
+  margin-top: 12px;
+  @include typo('caption');
+  color: color('red');
+}

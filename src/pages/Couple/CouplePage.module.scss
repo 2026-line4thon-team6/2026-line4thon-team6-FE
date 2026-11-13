@@ -1,0 +1,206 @@
+// Figma 기준 390 x 844 (My_UI > 커플 페이지)
+$gutter: 25px;
+
+.page {
+  max-width: var(--app-max-width);
+  min-height: 100vh; // dvh 미지원 웹뷰 대비
+  min-height: 100dvh;
+  margin: 0 auto;
+  background-color: color('coral-bg');
+}
+
+// 뒤로가기(36px) + 왼쪽 정렬 제목
+.header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: calc(max(env(safe-area-inset-top, 0px), 12px) + 5px) $gutter 0;
+}
+
+.title {
+  @include typo('body-l-bold');
+  color: color('black');
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 33px;
+  padding: 26px $gutter calc(34px + env(safe-area-inset-bottom, 0px));
+}
+
+.sectionTitle {
+  margin-bottom: 8px;
+  @include typo('body-m-medium');
+  color: color('gray-800');
+}
+
+// 흰 카드. 행 사이는 12px 간격 + 0.7px 구분선
+.card {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 15px 7px 16px;
+  border: 1px solid color('gray-100');
+  border-radius: 20px;
+  background-color: color('white');
+
+  // 두 사람 정보 목록은 display: contents라 목록 대신 각 행에 선을 긋는다
+  > * + *,
+  .member {
+    border-top: 0.7px solid color('gray-100');
+  }
+}
+
+.connectionCard {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+%row-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 0;
+  text-align: left;
+
+  &:active:not(:disabled) {
+    background-color: color('divider');
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: -2px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+// ♥ 우리의 시작 · ♥ 붕붕이명
+.heartRow {
+  @extend %row-button;
+  min-height: 57px;
+}
+
+.heartLabel {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  @include typo('card-myungjo-l');
+  color: color('black');
+  white-space: nowrap;
+}
+
+.heart {
+  flex-shrink: 0;
+  font-size: 22px;
+  color: color('coral'); // background-clip 미지원 시 대비
+  background-image: gradient('gradient-2');
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.mascot {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rowValue {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 18px;
+  @include typo('body-m-15');
+  font-weight: 700;
+  color: color('gray-800');
+}
+
+// 시안의 화살표는 왼쪽을 향해 있어 뒤집어 쓴다
+.chevron {
+  flex-shrink: 0;
+  transform: scaleX(-1);
+}
+
+.members {
+  display: contents;
+}
+
+.member {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+}
+
+.memberText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.memberName {
+  @include typo('card-myungjo-l');
+  color: color('black');
+  overflow-wrap: anywhere;
+}
+
+.birthDate {
+  @include typo('caption');
+  font-weight: 700;
+  color: color('gray-600');
+}
+
+.provider {
+  @include typo('caption');
+  font-weight: 700;
+  color: color('gray-400');
+}
+
+.editButton {
+  flex-shrink: 0;
+  padding: 8px 0 8px 12px;
+  @include typo('body-m-15');
+  font-weight: 700;
+  color: color('gray-800');
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+  }
+}
+
+// 커플 코드 복사하기 · 커플 연결 끊기
+.row {
+  @extend %row-button;
+  @include typo('body-m-medium');
+  color: color('black');
+}
+
+.code {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 18px;
+  @include typo('body-m-15');
+  color: color('gray-800');
+}
+
+// 불러오는 중 · 오류 안내 (시안에 없는 상태라 최소한으로 둔다)
+.message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 160px $gutter 0;
+  @include typo('body-m-15');
+  color: color('gray-600');
+  text-align: center;
+}
+
+.retry {
+  width: 140px;
+}
