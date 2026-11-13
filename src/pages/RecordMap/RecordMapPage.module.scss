@@ -3,6 +3,8 @@ $gutter: 25px;
 
 .page {
   position: relative;
+  display: flex;
+  flex-direction: column;
   max-width: var(--app-max-width);
   height: 100vh; // dvh 미지원 웹뷰 대비
   height: 100dvh;
@@ -28,6 +30,41 @@ $gutter: 25px;
   > * {
     pointer-events: auto;
   }
+}
+
+// 목록형: 상단 영역은 제자리에 두고, 그 아래 목록만 스크롤한다 (Figma 284:14758)
+.listPage {
+  background-color: color('divider');
+
+  .top {
+    position: relative;
+    flex-shrink: 0;
+  }
+}
+
+.list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  // 하단 네비바 + 보기 전환 버튼에 마지막 기록이 가려지지 않게 한다
+  padding: 21px $gutter calc(min(#{$nav-height}, #{$nav-visible-height} + env(safe-area-inset-bottom, 0px)) + 34px + 33px + 16px);
+}
+
+.records {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.loadMore {
+  height: 1px;
+}
+
+.empty {
+  padding-top: 80px;
+  color: color('gray-600');
+  text-align: center;
+  @include typo('body-s');
 }
 
 .header {
