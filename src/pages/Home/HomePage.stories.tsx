@@ -63,3 +63,10 @@ export const LongNames: Story = {
     home: { ...MOCK_HOME, nickname: '드라이브좋아', mascotName: '우리집귀염둥이붕붕이', daysTogether: 1234 },
   },
 }
+
+// Figma: 카드 미작성 배너 (24시간 안에 저장하지 않은 드라이브 카드가 있을 때)
+export const PendingCard: Story = {
+  args: {
+    pendingCard: { count: 1, driveId: 'drv_01', remainingSeconds: 18 * 3600 },
+  },
+}

@@ -68,6 +68,16 @@ $gutter: 25px;
   @include typo('title-s-bold');
 }
 
+// 미작성 드라이브 카드 배너 (348 x 55). 드라이브 준비 배너와 같은 폭
+.pendingBanner {
+  width: calc(100% - 42px);
+  margin: 15px 21px 0;
+}
+
+.pendingBanner + .banner {
+  margin-top: 20px;
+}
+
 // 드라이브 준비 배너 (348 x 208)
 .banner {
   position: relative;
