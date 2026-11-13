@@ -167,7 +167,7 @@ function MyRoute() {
 
   // TODO: 로그인 화면이 생기면 로그인 화면으로 보낸다. 지금은 세션이 없어 홈으로 이동한다
   const handleLogout = async () => {
-    await logout(null, createIdempotencyKey()).catch(() => undefined)
+    await logout(createIdempotencyKey()).catch(() => undefined)
     navigate('/', { replace: true })
   }
 
