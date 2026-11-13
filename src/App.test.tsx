@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { resetMockCouple } from '@/mocks/couples'
+import { MOCK_PARTNER_INVITE_CODE, resetMockCouple } from '@/mocks/couples'
 import { resetMockPlaces } from '@/mocks/places'
 import App from './App'
 
@@ -241,5 +241,33 @@ describe('보관함', () => {
       expect(within(screen.getByRole('list', { name: '보낸 사연' })).getAllByRole('button')).toHaveLength(1),
     )
     expect(screen.getByRole('button', { name: /^배가 너무 고파서/ })).toBeInTheDocument()
+  })
+})
+
+describe('연인 초대', () => {
+  it('연결을 끊은 뒤 마이 화면의 프로필 카드를 누르면 연인 초대 화면으로 가고, 연인 코드로 연결하면 홈으로 간다', async () => {
+    const user = renderApp('/my/couple')
+    await user.click(await screen.findByRole('button', { name: /커플 연결 끊기/ }))
+    await user.click(screen.getByRole('button', { name: '연결 해제' }))
+
+    await user.click(await screen.findByRole('button', { name: /연인과 연결해 보세요/ }))
+    expect(screen.getByRole('heading', { level: 1, name: '연인 초대' })).toBeInTheDocument()
+    const myCode = within(screen.getByRole('region', { name: '나의 코드' }))
+    await waitFor(() => expect(myCode.getByRole('button', { name: '내 코드 복사' })).toBeEnabled())
+
+    await user.type(screen.getByRole('textbox', { name: '연인의 코드를 알고 있다면?' }), MOCK_PARTNER_INVITE_CODE)
+    await user.click(screen.getByRole('button', { name: '완료' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: /오늘은 어디로 떠나볼까요/ })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '마이' }))
+    expect(await screen.findByRole('button', { name: /누적 0km · D\+1/ })).toBeInTheDocument()
+  })
+
+  it('코드를 비워 두고 완료를 누르면 연결하지 않고 홈으로 간다', async () => {
+    const user = renderApp('/couple/invite')
+
+    await user.click(await screen.findByRole('button', { name: '완료' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: /오늘은 어디로 떠나볼까요/ })).toBeInTheDocument()
   })
 })

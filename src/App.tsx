@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { Route, Routes, useLocation, useNavigate, useParams } from 'react-router'
 import { logout } from '@/api/auth'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
+import useCoupleInvite from '@/hooks/useCoupleInvite'
 import useCouplePage from '@/hooks/useCouplePage'
 import useFavorites from '@/hooks/useFavorites'
 import useLegalDocument from '@/hooks/useLegalDocument'
@@ -15,6 +16,7 @@ import FavoritesPage from '@/pages/Archive/FavoritesPage'
 import PlaylistsPage from '@/pages/Archive/PlaylistsPage'
 import RadioStoriesPage from '@/pages/Archive/RadioStoriesPage'
 import CouplePage from '@/pages/Couple/CouplePage'
+import CoupleInvitePage from '@/pages/CoupleInvite/CoupleInvitePage'
 import HomePage from '@/pages/Home/HomePage'
 import LegalDocumentPage from '@/pages/LegalDocument/LegalDocumentPage'
 import MyPage, { type MyMenu } from '@/pages/My/MyPage'
@@ -23,7 +25,7 @@ import PlaceDetailPage from '@/pages/PlaceDetail/PlaceDetailPage'
 import type { HomeSummary } from '@/types/home'
 import type { LegalDocumentType } from '@/types/legal'
 import type { Notification } from '@/types/notification'
-import { copyText, createIdempotencyKey, shareTo } from '@/utils/share'
+import { copyText, createIdempotencyKey, shareInviteCode, shareTo } from '@/utils/share'
 
 // 화면 주소. 기록 지도 화면은 아직 없어 탭을 눌러도 이동하지 않는다
 const TAB_PATHS: Partial<Record<NavTab, string>> = {
@@ -107,6 +109,7 @@ interface PlaceDetailRouteProps {
 }
 
 function PlaceDetailRoute({ placeId, couple, onFavoriteChange }: PlaceDetailRouteProps) {
+  const navigate = useNavigate()
   const goBack = useGoBack()
   const { status, detail, retry, toggleFavorite, getShareUrl, sendToPartner } = usePlaceDetail(placeId)
   // 같은 전송 시도의 재시도에는 같은 멱등 키를 쓰고, 성공하면 새 키로 바꾼다
@@ -138,8 +141,7 @@ function PlaceDetailRoute({ placeId, couple, onFavoriteChange }: PlaceDetailRout
       onCopyLink={(url) => void copyText(url)}
       onShareChannel={(channel, url) => void shareTo(channel, { url, title: detail?.place.name ?? '' })}
       onSendToPartner={handleSend}
-      // TODO: 커플 코드 입력 화면이 생기면 이동한다
-      onConnectRequired={() => {}}
+      onConnectRequired={() => navigate('/couple/invite')}
     />
   )
 }
@@ -173,7 +175,8 @@ function MyRoute() {
     <MyPage
       status={status}
       couple={couple}
-      onProfileClick={() => navigate('/my/couple')}
+      // 연결 전이면 커플 페이지 대신 연인 초대 화면으로 보낸다
+      onProfileClick={() => navigate(status === 'ready' && !couple ? '/couple/invite' : '/my/couple')}
       onMenuClick={handleMenuClick}
       onLogout={() => void handleLogout()}
       onTabChange={goTab}
@@ -248,6 +251,27 @@ function RadioStoriesRoute() {
   )
 }
 
+// 연인 초대 · 코드 연결. 연결하거나 건너뛰면 메인 홈으로 간다 (기능명세서 L9)
+function CoupleInviteRoute() {
+  const navigate = useNavigate()
+  const goBack = useGoBack('/')
+  const { retry, connect, ...state } = useCoupleInvite()
+  const goHome = () => navigate('/', { replace: true })
+
+  return (
+    <CoupleInvitePage
+      {...state}
+      onBack={goBack}
+      onRetry={retry}
+      onCopy={(code) => copyText(code).catch(() => undefined)}
+      onShare={shareInviteCode}
+      onConnect={connect}
+      onConnected={goHome}
+      onSkip={goHome}
+    />
+  )
+}
+
 function LegalDocumentRoute({ type }: { type: LegalDocumentType }) {
   const goBack = useGoBack('/my')
   const { status, document, retry } = useLegalDocument(type)
@@ -289,6 +313,7 @@ function App() {
       <Route path="/notifications" element={<NotificationsRoute onRead={handleNotificationRead} />} />
       <Route path="/my" element={<MyRoute />} />
       <Route path="/my/couple" element={<CoupleRoute />} />
+      <Route path="/couple/invite" element={<CoupleInviteRoute />} />
       <Route
         path="/my/favorites"
         element={<FavoritesRoute onFavoriteChange={(placeId, favorite) => setSpotLiked(Number(placeId), favorite)} />}
