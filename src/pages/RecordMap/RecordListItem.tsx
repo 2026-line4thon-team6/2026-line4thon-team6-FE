@@ -30,16 +30,16 @@ function RecordListItem({ record, onClick }: RecordListItemProps) {
         <span className={styles.title}>{record.title}</span>
         <span className={styles.meta}>
           <img src={pinIcon} alt="" width={12} height={15} />
-          {record.destination?.name ?? '목적지 미설정'}
+          <span className={styles.metaText}>{record.destination?.name ?? '목적지 미설정'}</span>
         </span>
         <span className={styles.stats}>
           <span className={styles.meta}>
             <img src={carIcon} alt="" width={16} height={14} />
-            {formatDistance(record.distanceMeters)}
+            <span className={styles.metaText}>{formatDistance(record.distanceMeters)}</span>
           </span>
           <span className={styles.meta}>
             <img src={clockIcon} alt="" width={13} height={13} />
-            {formatDriveTime(record.activeDurationSeconds)}
+            <span className={styles.metaText}>{formatDriveTime(record.activeDurationSeconds)}</span>
           </span>
         </span>
       </span>
