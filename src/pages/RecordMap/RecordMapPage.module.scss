@@ -86,6 +86,7 @@ $gutter: 25px;
   gap: 4px;
   min-width: 0;
   padding-bottom: 20px;
+  word-break: keep-all; // 줄이 바뀌어도 단어 중간에서 끊지 않는다
 }
 
 .count {
@@ -101,11 +102,24 @@ $gutter: 25px;
   color: color('brown');
 }
 
-// 마스코트는 헤더 아래로 9px 걸쳐 내려온다
+// 360px 미만(iPhone SE 1세대 등)에서는 글자를 조금 줄여 한 줄을 지킨다
+@media (max-width: 359px) {
+  .count {
+    font-size: 15px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+}
+
+// 마스코트는 헤더 아래로 9px 걸쳐 내려온다.
+// 갤럭시(360px) 등 좁은 화면에서는 제목 자리(205px)가 남도록 줄어든다
 .mascot {
   flex-shrink: 0;
-  width: 117px;
-  height: 78px;
+  width: clamp(76px, calc(100vw - 255px), 117px);
+  height: auto;
+  aspect-ratio: 117 / 78;
   margin-bottom: -9px;
   object-fit: cover;
 }
