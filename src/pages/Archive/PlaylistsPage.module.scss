@@ -1,0 +1,105 @@
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 2px var(--archive-gutter) 0;
+}
+
+.count {
+  @include typo('title-s-bold');
+  color: color('black');
+}
+
+.number {
+  color: color('coral'); // background-clip 미지원 시 대비
+  background-image: gradient('gradient');
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+// Figma 340 x 94
+.card {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 94px;
+  padding: 12px 14px;
+  border-radius: 15px;
+  text-align: left;
+  background-color: color('coral-3');
+
+  &:active {
+    background-color: color('coral-2');
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}
+
+// 대표 이미지가 없으면 코랄 배경만 보인다
+.cover {
+  flex-shrink: 0;
+  width: 69px;
+  height: 69px;
+  overflow: hidden;
+  border-radius: 10px;
+  background-color: color('coral-2');
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.badge {
+  max-width: 100%;
+  margin-bottom: 6px;
+  padding: 1px 10px 2px;
+  overflow: hidden;
+  border-radius: 100px;
+  @include typo('caption-small-bold');
+  color: color('coral-bg');
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background-color: color('coral-stroke');
+}
+
+.title {
+  max-width: 100%;
+  overflow: hidden;
+  @include typo('body-m-bold');
+  color: color('black');
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.meta {
+  @include typo('caption');
+  color: color('gray-600');
+  white-space: nowrap;
+  word-spacing: 2px; // 시안의 '총 13곡  ·  약 00분' 넓은 간격
+}
+
+.icon {
+  flex-shrink: 0;
+  margin-left: auto;
+}
