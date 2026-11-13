@@ -1,4 +1,4 @@
-import type { ApiMeta, ApiResponse } from '@/types/api'
+import type { ApiMeta, ApiResponse, CursorPage } from '@/types/api'
 import type { PlaceCategory, PlaceDetail, PlaceShare, PlaceSummary, SendToPartnerResult } from '@/types/place'
 import { MOCK_SPOTS } from './home'
 
@@ -69,6 +69,11 @@ let requestCount = 0
 
 const meta = (): ApiMeta => ({ requestId: `req_mock_place_${++requestCount}`, serverTime: new Date().toISOString() })
 
+// 테스트 · 스토리에서 처음 상태(홈 목 데이터의 찜 여부)로 되돌린다
+export function resetMockPlaces() {
+  store = null
+}
+
 function getDetail(placeId: string) {
   const detail = (store ??= createStore()).get(placeId)
   if (!detail) throw new Error(`장소를 찾을 수 없어요: ${placeId}`)
@@ -90,6 +95,14 @@ export async function mockFetchPlaceShare(placeId: string): Promise<ApiResponse<
 export async function mockSetPlaceFavorite(placeId: string, favorite: boolean): Promise<void> {
   const detail = getDetail(placeId)
   store!.set(placeId, { ...detail, place: { ...detail.place, isFavorite: favorite } })
+}
+
+// 찜한 장소만, 홈 목 데이터 순서대로. category를 생략하면 전체
+export async function mockFetchFavorites(category?: PlaceCategory): Promise<ApiResponse<CursorPage<PlaceSummary>>> {
+  const items = [...(store ??= createStore()).values()]
+    .map(({ place }) => place)
+    .filter((place) => place.isFavorite && (!category || place.category === category))
+  return { data: { items, nextCursor: null, hasMore: false }, meta: meta() }
 }
 
 export async function mockSendPlaceToPartner(placeId: string): Promise<ApiResponse<SendToPartnerResult>> {
