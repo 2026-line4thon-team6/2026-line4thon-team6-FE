@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
+  MOCK_PARTNER_INVITE_CODE,
+  mockCreateInvite,
   mockDisconnectCouple,
   mockFetchMe,
   mockFetchMyCouple,
   mockFetchMyInvite,
+  mockJoinCouple,
   mockRenameMascot,
   mockUpdateMe,
   mockUpdateStartDate,
@@ -100,5 +103,54 @@ describe('커플 코드 · 연결 해제', () => {
 
     const { data } = await mockFetchMyCouple()
     expect(data).toEqual({ couple: null, connectionStatus: 'DISCONNECTED' })
+  })
+})
+
+describe('연인 초대 코드 발급 · 코드로 연결', () => {
+  // 연결을 끊어 미연결 상태로 만든다
+  async function unlink() {
+    await mockDisconnectCouple()
+  }
+
+  it('미연결이면 내 코드가 없어 404, 발급하면 24시간 유효한 코드가 생기고 다시 발급해도 같은 코드', async () => {
+    await unlink()
+    await expect(mockFetchMyInvite()).rejects.toMatchObject({ status: 404, code: 'INVITE_NOT_FOUND' })
+
+    const { data: created } = await mockCreateInvite()
+    expect(created.status).toBe('ACTIVE')
+    expect(Date.parse(created.expiresAt) - Date.now()).toBeGreaterThan(23 * 3600_000)
+
+    const { data: again } = await mockCreateInvite()
+    const { data: fetched } = await mockFetchMyInvite()
+    expect(again.code).toBe(created.code)
+    expect(fetched.code).toBe(created.code)
+  })
+
+  it('이미 연결돼 있으면 발급 · 연결 모두 409 ALREADY_COUPLED', async () => {
+    await expect(mockCreateInvite()).rejects.toMatchObject({ status: 409, code: 'ALREADY_COUPLED' })
+    await expect(mockJoinCouple({ code: MOCK_PARTNER_INVITE_CODE })).rejects.toMatchObject({
+      status: 409,
+      code: 'ALREADY_COUPLED',
+    })
+  })
+
+  it('연인 코드로 연결하면 시작일은 오늘(D+1), 이름은 붕붕이로 연결된다 (앞뒤 공백 · 대소문자 무시)', async () => {
+    await unlink()
+
+    const { data } = await mockJoinCouple({ code: `  ${MOCK_PARTNER_INVITE_CODE.toUpperCase()} ` })
+
+    expect(data).toMatchObject({ status: 'CONNECTED', daysTogether: 1, mascotName: '붕붕이' })
+    const { data: connection } = await mockFetchMyCouple()
+    expect(connection.connectionStatus).toBe('CONNECTED')
+    expect(connection.couple?.members.map((member) => member.nickname)).toEqual(['민준', '민지'])
+  })
+
+  it('없는 코드는 422 INVALID_INVITE, 내 코드는 422 SELF_INVITE, 빈 코드는 422 VALIDATION_FAILED', async () => {
+    await unlink()
+    const { data: mine } = await mockCreateInvite()
+
+    await expect(mockJoinCouple({ code: 'nope1234' })).rejects.toMatchObject({ status: 422, code: 'INVALID_INVITE' })
+    await expect(mockJoinCouple({ code: mine.code })).rejects.toMatchObject({ status: 422, code: 'SELF_INVITE' })
+    await expect(mockJoinCouple({ code: '   ' })).rejects.toMatchObject({ status: 422, code: 'VALIDATION_FAILED' })
   })
 })
