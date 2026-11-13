@@ -95,8 +95,10 @@ $gutter: 25px;
   white-space: nowrap;
 }
 
+// ♥는 김정철명조에 없는 글자라 기기마다 다른 기본 폰트로 그려진다. ♥가 있는 Pretendard로 고정한다
 .heart {
   flex-shrink: 0;
+  font-family: var(--font-family-base);
   font-size: 22px;
   color: color('coral'); // background-clip 미지원 시 대비
   background-image: gradient('gradient-2');
