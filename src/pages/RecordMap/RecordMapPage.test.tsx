@@ -1,6 +1,6 @@
 import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import type { ComponentProps } from 'react'
+import { type ComponentProps, useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createMockRecordMarkers, createMockRecords } from '@/mocks/records'
 import type { RecordMapMarker } from '@/types/record'
@@ -23,10 +23,30 @@ type Props = ComponentProps<typeof RecordMapPage>
 const MARKERS = createMockRecordMarkers()
 const RECORDS = createMockRecords()
 
+const PAGE_PROPS: Props = {
+  view: 'map',
+  totalCount: 12,
+  date: null,
+  mapStatus: 'ready',
+  markers: MARKERS,
+  listStatus: 'ready',
+  records: RECORDS,
+  hasMoreRecords: false,
+  onSearch: () => {},
+  onCalendarClick: () => {},
+  onDateClear: () => {},
+  onViewChange: () => {},
+  onLoadMore: () => {},
+  onCardClick: () => {},
+  onShare: () => {},
+  onRetry: () => {},
+}
+
 function renderPage(props: Partial<Props> = {}) {
   const handlers = {
     onSearch: vi.fn(),
     onCalendarClick: vi.fn(),
+    onDateClear: vi.fn(),
     onViewChange: vi.fn(),
     onLoadMore: vi.fn(),
     onCardClick: vi.fn(),
@@ -38,6 +58,7 @@ function renderPage(props: Partial<Props> = {}) {
     <RecordMapPage
       view="map"
       totalCount={12}
+      date={null}
       mapStatus="ready"
       markers={MARKERS}
       listStatus="ready"
@@ -95,6 +116,48 @@ describe('RecordMapPage', () => {
       await user.click(screen.getByRole('button', { name: '날짜로 검색' }))
 
       expect(onCalendarClick).toHaveBeenCalled()
+    })
+
+    it('날짜로 검색 중이면 검색창에 그 날짜를 보여준다 (Figma 284:14543)', () => {
+      renderPage({ date: '2026-10-24' })
+
+      expect(screen.getByRole('searchbox', { name: '기록 검색' })).toHaveValue('2026년 10월 24일')
+    })
+
+    it('날짜로 검색 중에 글자를 입력하면 날짜 검색을 풀고 검색어 입력으로 바뀐다', async () => {
+      const onDateClear = vi.fn()
+      const onSearch = vi.fn()
+      // 날짜 검색을 풀면 부모가 date를 null로 바꿔 다시 그린다
+      function Wrapper() {
+        const [date, setDate] = useState<string | null>('2026-10-24')
+        return (
+          <RecordMapPage
+            {...PAGE_PROPS}
+            date={date}
+            onSearch={onSearch}
+            onDateClear={() => {
+              onDateClear()
+              setDate(null)
+            }}
+          />
+        )
+      }
+      render(<Wrapper />)
+      const user = userEvent.setup()
+
+      const input = screen.getByRole('searchbox', { name: '기록 검색' })
+      await user.click(input)
+      await user.keyboard('바다{Enter}')
+
+      expect(onDateClear).toHaveBeenCalledTimes(1)
+      expect(onSearch).toHaveBeenCalledWith('바다')
+    })
+
+    it('날짜 검색을 풀면 빈 검색창으로 돌아온다', () => {
+      const { rerender } = render(<RecordMapPage {...PAGE_PROPS} date="2026-10-24" />)
+      rerender(<RecordMapPage {...PAGE_PROPS} date={null} />)
+
+      expect(screen.getByRole('searchbox', { name: '기록 검색' })).toHaveValue('')
     })
   })
 

@@ -133,4 +133,29 @@ describe('홈 ↔ 기록 지도 이동', () => {
     )
     expect(screen.getByText('총 12번의 드라이브를 함께했어요')).toBeInTheDocument()
   })
+
+  it('캘린더에서 날짜를 고르면 그날의 기록만 남고, 검색창에 날짜가 보인다', async () => {
+    // 달력은 서울 기준 오늘이 있는 달(2026년 11월)부터 띄운다
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-11-13T03:00:00Z'))
+    const user = renderApp('/map')
+    await screen.findByText('총 12번의 드라이브를 함께했어요')
+    await user.click(screen.getByRole('button', { name: '목록형' }))
+    await screen.findByRole('list', { name: '드라이브 기록 목록' })
+
+    await user.click(screen.getByRole('button', { name: '날짜로 검색' }))
+    const calendar = screen.getByRole('dialog', { name: '날짜로 기록 검색' })
+    expect(within(calendar).getByRole('heading', { name: '2026년 11월' })).toBeInTheDocument()
+    await user.click(within(calendar).getByRole('button', { name: '이전 달' }))
+    await user.click(await within(calendar).findByRole('button', { name: '2026년 10월 24일' }))
+
+    expect(screen.queryByRole('dialog', { name: '날짜로 기록 검색' })).not.toBeInTheDocument()
+    expect(screen.getByRole('searchbox', { name: '기록 검색' })).toHaveValue('2026년 10월 24일')
+    await waitFor(() => {
+      const items = within(screen.getByRole('list', { name: '드라이브 기록 목록' })).getAllByRole('listitem')
+      expect(items).toHaveLength(1)
+      expect(items[0]).toHaveTextContent('몽산포 해변 산책')
+    })
+    vi.useRealTimers()
+  })
 })
