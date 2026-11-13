@@ -29,16 +29,18 @@
   text-align: center;
 }
 
-// Figma는 '여기어때 잘난체 2'(33px). 웹폰트가 없어 Pretendard 굵은 글씨로 대신한다
+// Figma 글자 이미지(537:10086, 잘난체 그라데이션). 줄 높이는 Figma 글자 상자(33px x 1.5)에 맞춘다
 .logo {
-  font-size: 33px;
-  font-weight: 800;
-  line-height: 1.5;
-  letter-spacing: -0.02em;
-  color: transparent;
-  background: linear-gradient(163.6deg, #ffaa95 0.5%, #ff1d46 113.8%);
-  background-clip: text;
-  -webkit-background-clip: text;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 50px;
+
+  img {
+    display: block;
+    width: 128px;
+    height: auto;
+  }
 }
 
 .description {

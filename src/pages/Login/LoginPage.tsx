@@ -1,4 +1,5 @@
 import kakaoIcon from '@/assets/icons/kakao.svg'
+import logoText from '@/assets/images/onboarding/logo-text.webp'
 import loginPhoto from '@/assets/images/onboarding/login-photo.webp'
 import styles from './LoginPage.module.scss'
 
@@ -16,7 +17,9 @@ function LoginPage({ status, error, onKakaoLogin }: LoginPageProps) {
     <main className={styles.page}>
       <div className={styles.content}>
         <div className={styles.intro}>
-          <h1 className={styles.logo}>붕붕어스</h1>
+          <h1 className={styles.logo}>
+            <img src={logoText} alt="붕붕어스" width={128} height={31} />
+          </h1>
           <p className={styles.description}>
             둘만의 드라이브를 더욱
             <br />

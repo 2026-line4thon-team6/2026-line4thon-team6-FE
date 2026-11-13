@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, it, vi } from 'vitest'
 import LoginPage from './LoginPage'
@@ -8,7 +8,9 @@ it('로고 · 소개 문구를 보여 주고, 카카오 버튼을 누르면 로�
   const onKakaoLogin = vi.fn()
   render(<LoginPage status="idle" error={null} onKakaoLogin={onKakaoLogin} />)
 
-  expect(screen.getByRole('heading', { level: 1, name: '붕붕어스' })).toBeInTheDocument()
+  // 로고는 Figma의 글자 이미지(537:10086)를 쓴다. 제목 이름은 이미지 대체 문구로 읽힌다
+  const heading = screen.getByRole('heading', { level: 1, name: '붕붕어스' })
+  expect(within(heading).getByRole('img', { name: '붕붕어스' })).toBeInTheDocument()
   expect(screen.getByText(/둘만의 드라이브를 더욱/)).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Google/ })).not.toBeInTheDocument()
 
