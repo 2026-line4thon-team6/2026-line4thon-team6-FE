@@ -1,0 +1,72 @@
+// Figma 484:14512: 질문 아래 49px, 두 칸 간격 28px, 얼굴 151px · 이름표 89 x 40
+.options {
+  display: flex;
+  gap: 28px;
+  justify-content: center;
+  max-width: 100%;
+  margin-top: 49px;
+}
+
+.option {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 1;
+  align-items: center;
+  gap: 23px;
+  min-width: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+// 화면에는 안 보이지만 키보드 · 스크린리더로 고를 수 있다
+.radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.image {
+  width: 100%;
+  height: auto;
+  opacity: 0.55;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 89px;
+  height: 40px;
+  border: 1px solid color('gray-100');
+  border-radius: 100px;
+  @include typo('body-l-bold');
+  color: color('gray-800');
+  background-color: color('white');
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+// 아무것도 고르지 않았을 때는 Figma 그대로 둘 다 선명하게 보여 준다
+.options:not(:has(:checked)) .image {
+  opacity: 1;
+}
+
+// 고른 칸: 얼굴은 선명하게, 이름표는 코랄 (Figma에 선택 상태가 없어 확인 요청)
+.radio:checked ~ .image {
+  opacity: 1;
+  transform: scale(1.04);
+}
+
+.radio:checked ~ .chip {
+  border-color: color('coral');
+  color: color('white');
+  background-color: color('coral');
+}
+
+.radio:focus-visible ~ .chip {
+  outline: 2px solid color('coral-pressed');
+  outline-offset: 2px;
+}
