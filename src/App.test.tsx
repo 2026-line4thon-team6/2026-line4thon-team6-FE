@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { resetMockCouple } from '@/mocks/couples'
 import App from './App'
 
 // 백엔드 주소가 없는 테스트 환경에서는 API 함수가 목 데이터로 응답한다
@@ -13,6 +14,10 @@ function renderApp(path = '/') {
   )
   return userEvent.setup()
 }
+
+beforeEach(() => {
+  resetMockCouple()
+})
 
 describe('홈 ↔ 알림 화면 이동', () => {
   it('홈의 알림 버튼 → 알림 목록 → 알림을 탭하면 읽음 처리되고, 홈으로 돌아오면 새 알림 표시가 사라진다', async () => {
@@ -138,5 +143,41 @@ describe('마이 화면', () => {
     await user.click(screen.getAllByRole('button', { name: '로그아웃' }).at(-1)!)
 
     expect(await screen.findByRole('heading', { level: 1, name: /오늘은 어디로 떠나볼까요/ })).toBeInTheDocument()
+  })
+})
+
+describe('커플 페이지', () => {
+  it('마이 화면의 프로필 카드를 누르면 커플 페이지로 이동하고, 뒤로가면 돌아온다', async () => {
+    const user = renderApp('/my')
+
+    await user.click(await screen.findByRole('button', { name: /누적 330km/ }))
+
+    expect(screen.getByRole('heading', { level: 1, name: '커플 페이지' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /우리의 시작/ })).toHaveTextContent('2026.10.20')
+
+    await user.click(screen.getByRole('button', { name: '뒤로가기' }))
+    expect(await screen.findByRole('button', { name: /누적 330km/ })).toBeInTheDocument()
+  })
+
+  it('붕붕이명을 바꾸면 마이 화면에도 반영된다', async () => {
+    const user = renderApp('/my/couple')
+
+    await user.click(await screen.findByRole('button', { name: /이름 변경하기/ }))
+    const input = screen.getByRole('textbox', { name: '붕붕이명' })
+    await user.clear(input)
+    await user.type(input, '씽씽이')
+    await user.click(screen.getByRole('button', { name: '저장하기' }))
+    await user.click(screen.getByRole('button', { name: '뒤로가기' }))
+
+    expect(await screen.findByRole('button', { name: /씽씽이/ })).toBeInTheDocument()
+  })
+
+  it('커플 연결을 해제하면 마이 화면으로 돌아가 연결 안내를 표시한다', async () => {
+    const user = renderApp('/my/couple')
+
+    await user.click(await screen.findByRole('button', { name: /커플 연결 끊기/ }))
+    await user.click(screen.getByRole('button', { name: '연결 해제' }))
+
+    expect(await screen.findByRole('button', { name: /연인과 연결해 보세요/ })).toBeInTheDocument()
   })
 })
