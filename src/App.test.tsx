@@ -1,11 +1,15 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { resetMockRecordDeletions } from './mocks/records'
 import App from './App'
 
 // 카카오 지도 SDK는 jsdom에서 동작하지 않으므로 지도 자리만 그린다
 vi.mock('./pages/RecordMap/RecordMapView', () => ({ default: () => <div data-testid="map" /> }))
+
+// 목 서버에서 지운 기록이 다른 테스트에 남지 않게 한다
+afterEach(() => resetMockRecordDeletions())
 
 // 백엔드 주소가 없는 테스트 환경에서는 API 함수가 목 데이터로 응답한다
 function renderApp(path = '/') {
@@ -157,5 +161,30 @@ describe('홈 ↔ 기록 지도 이동', () => {
       expect(items[0]).toHaveTextContent('몽산포 해변 산책')
     })
     vi.useRealTimers()
+  })
+})
+
+describe('기록 지도 → 기록 상세', () => {
+  it('목록의 기록을 누르면 상세로 이동하고, 삭제하면 목록으로 돌아와 그 기록이 사라진다', async () => {
+    const user = renderApp('/map')
+    await screen.findByText('총 12번의 드라이브를 함께했어요')
+    await user.click(screen.getByRole('button', { name: '목록형' }))
+    const list = await screen.findByRole('list', { name: '드라이브 기록 목록' })
+
+    await user.click(within(list).getByRole('button', { name: /자라섬 캠핑 드라이브/ }))
+    expect(await screen.findByRole('heading', { name: '2026년 11월 8일' })).toBeInTheDocument()
+    expect(screen.getByText('가평 자라섬')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '카드 삭제' }))
+    await user.click(screen.getByRole('button', { name: '삭제하기' }))
+
+    expect(await screen.findByText('총 11번의 드라이브를 함께했어요')).toBeInTheDocument()
+    expect(screen.queryByText('자라섬 캠핑 드라이브')).not.toBeInTheDocument()
+  })
+
+  it('없는 기록 주소로 들어오면 볼 수 없는 기록이라고 안내한다', async () => {
+    renderApp('/cards/crd_none')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('삭제되었거나 볼 수 없는 기록이에요')
   })
 })

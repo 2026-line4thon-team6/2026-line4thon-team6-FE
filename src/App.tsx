@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { Route, Routes, useLocation, useNavigate, useParams } from 'react-router'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
+import useCardDetail from '@/hooks/useCardDetail'
 import useNotifications from '@/hooks/useNotifications'
 import usePlaceDetail from '@/hooks/usePlaceDetail'
 import useRecordMap from '@/hooks/useRecordMap'
@@ -9,6 +10,7 @@ import { MOCK_CATEGORIES, MOCK_HOME, MOCK_SPOTS } from '@/mocks/home'
 import HomePage from '@/pages/Home/HomePage'
 import NotificationsPage from '@/pages/Notifications/NotificationsPage'
 import PlaceDetailPage from '@/pages/PlaceDetail/PlaceDetailPage'
+import RecordDetailPage from '@/pages/RecordDetail/RecordDetailPage'
 import RecordCalendarSheet from '@/pages/RecordMap/RecordCalendarSheet'
 import RecordMapPage, { type RecordView } from '@/pages/RecordMap/RecordMapPage'
 import type { HomeSummary } from '@/types/home'
@@ -118,6 +120,7 @@ function PlaceDetailRoute({ placeId, couple, onFavoriteChange }: PlaceDetailRout
 // 기록 지도. 검색어나 날짜가 바뀌면 지도 마커와 기록 목록을 그 조건으로 다시 불러온다.
 // 검색어와 날짜는 함께 쓰지 않는다. 상단의 '총 N번'은 조건과 관계없는 목록 API의 totalCount를 쓴다
 function RecordMapRoute() {
+  const navigate = useNavigate()
   const goTab = useTabNavigate()
   const [view, setView] = useState<RecordView>('map')
   const [query, setQuery] = useState('')
@@ -161,8 +164,8 @@ function RecordMapRoute() {
         onTabChange={goTab}
         onCalendarClick={() => setCalendarOpen(true)}
         onDateClear={() => setDate(null)}
-        // TODO: 기록 상세 · 기록 지도 공유 화면이 생기면 연결한다
-        onCardClick={() => {}}
+        onCardClick={(card) => navigate(`/cards/${encodeURIComponent(card.cardId)}`)}
+        // TODO: 기록 지도 공유 화면이 생기면 연결한다
         onShare={() => {}}
       />
       {calendarOpen && (
@@ -175,6 +178,39 @@ function RecordMapRoute() {
       )}
     </>
   )
+}
+
+// 기록 상세. 삭제하면 이전 화면(기록 지도)으로 돌아가고, 기록 지도는 다시 불러와 지운 기록이 빠진다
+function RecordDetailRoute({ cardId }: { cardId: string }) {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const goBack = useGoBack()
+  const { status, card, retry, remove } = useCardDetail(cardId)
+
+  const handleDelete = async () => {
+    const outcome = await remove()
+    if (outcome === 'deleted') {
+      if (location.key === 'default') navigate('/map', { replace: true })
+      else navigate(-1)
+    }
+    return outcome
+  }
+
+  return (
+    <RecordDetailPage
+      status={status}
+      card={card}
+      onBack={goBack}
+      onRetry={retry}
+      onDelete={handleDelete}
+      // TODO: 플레이리스트 화면이 생기면 연결한다
+    />
+  )
+}
+
+function RecordDetailRouteByParam() {
+  const { cardId = '' } = useParams()
+  return <RecordDetailRoute key={cardId} cardId={cardId} />
 }
 
 // 장소가 바뀌면 상세 화면을 새로 마운트해 이전 장소의 상태가 남지 않게 한다
@@ -215,6 +251,7 @@ function App() {
         }
       />
       <Route path="/map" element={<RecordMapRoute />} />
+      <Route path="/cards/:cardId" element={<RecordDetailRouteByParam />} />
       <Route path="/notifications" element={<NotificationsRoute onRead={handleNotificationRead} />} />
       <Route
         path="/places/:placeId"
