@@ -1,0 +1,96 @@
+// Figma 기준 390 x 844 (Onboarding_UI > 이름 입력 등). 상태 표시줄 47px은 기기 safe-area로 대신한다
+$gutter: 25px;
+
+.page {
+  display: flex;
+  flex-direction: column;
+  max-width: var(--app-max-width);
+  min-height: 100vh; // dvh 미지원 웹뷰 대비
+  min-height: 100dvh;
+  margin: 0 auto;
+  background-color: color('coral-bg');
+}
+
+// 뒤로가기(36px) 왼쪽 + 가운데 정렬 제목
+.header {
+  display: grid;
+  grid-template-columns: 36px 1fr 36px;
+  align-items: center;
+  padding: calc(max(env(safe-area-inset-top, 0px), 12px) + 5px) $gutter 0;
+}
+
+.title {
+  @include typo('body-l-bold');
+  color: color('black');
+  text-align: center;
+}
+
+// 질문은 Figma에서 헤더 아래 116px. 키보드가 떠 있는 작은 화면에서는 줄인다
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: clamp(32px, 13.7dvh, 116px) $gutter 24px;
+}
+
+.question {
+  @include typo('title-s-bold');
+  color: color('brown');
+  text-align: center;
+  white-space: pre-line;
+}
+
+// 다음 버튼: 키보드가 없으면 홈 인디케이터 위, 있으면 키보드 바로 위 17px (Figma 484:13697)
+.footer {
+  display: flex;
+  gap: 9px;
+  margin-top: auto;
+  padding: 0 $gutter max(env(safe-area-inset-bottom, 0px), 34px);
+}
+
+// ── 입력칸 (Figma '입력란' 182 x 29, 아래 밑줄) ──
+.field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 182px;
+  margin-top: 64px;
+}
+
+.input {
+  width: 100%;
+  padding: 0 0 5px;
+  border: 0;
+  border-bottom: 1.5px solid color('gray-200');
+  border-radius: 0;
+  outline: none;
+  @include typo('body-m'); // 16px: iOS에서 눌러도 화면이 확대되지 않는다
+  color: color('black');
+  text-align: center;
+  caret-color: color('coral');
+  background: transparent;
+
+  &::placeholder {
+    color: color('gray-400');
+  }
+
+  &:focus {
+    border-bottom-color: color('coral-stroke');
+  }
+
+  &[aria-invalid='true'] {
+    border-bottom-color: color('coral-2');
+  }
+}
+
+.error {
+  @include typo('caption');
+  color: color('coral-pressed');
+  text-align: center;
+}
+
+// 건너뛰기 109px + 다음 나머지 (Figma 484:14206)
+.skip {
+  flex: 0 0 109px;
+}
