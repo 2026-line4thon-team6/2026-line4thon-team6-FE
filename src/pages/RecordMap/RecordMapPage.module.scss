@@ -144,7 +144,9 @@ $gutter: 25px;
   min-width: 0;
   height: 100%;
   border: 0;
+  border-radius: 0;
   background: none;
+  appearance: none; // 사파리의 기본 검색창 모양(둥근 테두리 · 안쪽 여백)을 없앤다
   color: color('black');
   @include typo('body-s');
 
@@ -152,7 +154,8 @@ $gutter: 25px;
     color: color('gray-600');
   }
 
-  &::-webkit-search-cancel-button {
+  &::-webkit-search-cancel-button,
+  &::-webkit-search-decoration {
     display: none;
   }
 
