@@ -1,0 +1,70 @@
+// Figma 284:14412 — 말풍선 54×61 + 사진 46×46 + 좌표 점 10×10
+.marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 54px;
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+    border-radius: 11px;
+  }
+}
+
+.bubble {
+  position: relative;
+  width: 54px;
+  height: 61px;
+}
+
+// SVG에 그림자 여백 20px이 포함되어 있어 바깥으로 넓혀 놓는다
+.frame {
+  position: absolute;
+  top: -20px;
+  left: -20px;
+  max-width: none;
+  pointer-events: none;
+}
+
+.photo {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+// 같은 목적지의 나머지 기록 수. Figma에 없는 요소라 마커 색으로 맞췄다
+.more {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border: 1.5px solid color('coral-bg');
+  border-radius: 100px;
+  background: color('coral');
+  color: color('white');
+  @include typo('caption-bold');
+  line-height: 17px;
+  text-align: center;
+}
+
+// 점 10×10 자리. SVG에 그림자 여백 20px이 포함되어 있어 바깥으로 넓혀 놓는다
+.dot {
+  position: relative;
+  width: 10px;
+  height: 10px;
+
+  img {
+    position: absolute;
+    top: -20px;
+    left: -20px;
+    max-width: none;
+    pointer-events: none;
+  }
+}
