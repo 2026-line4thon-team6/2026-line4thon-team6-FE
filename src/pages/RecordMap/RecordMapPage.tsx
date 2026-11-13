@@ -4,8 +4,9 @@ import searchIcon from '@/assets/icons/search.svg'
 import mascotImage from '@/assets/images/record-map-mascot.webp'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
 import BottomNavBar from '@/components/BottomNavBar/BottomNavBar'
-import type { RecordMapMarker } from '@/types/record'
+import type { RecordMapCard, RecordMapMarker } from '@/types/record'
 import RecordMapView from './RecordMapView'
+import RecordPreview from './RecordPreview'
 import styles from './RecordMapPage.module.scss'
 
 export type RecordView = 'map' | 'list'
@@ -17,7 +18,9 @@ interface RecordMapPageProps {
   onSearch: (query: string) => void
   onCalendarClick: () => void
   onViewChange: (view: RecordView) => void
-  onMarkerClick: (marker: RecordMapMarker) => void
+  // 미리보기 카드를 누르면 기록 상세로, 공유 버튼을 누르면 공유로 이동한다
+  onCardClick: (card: RecordMapCard) => void
+  onShare: (card: RecordMapCard) => void
   onRetry: () => void
   onTabChange?: (tab: NavTab) => void
 }
@@ -35,11 +38,14 @@ function RecordMapPage({
   onSearch,
   onCalendarClick,
   onViewChange,
-  onMarkerClick,
+  onCardClick,
+  onShare,
   onRetry,
   onTabChange,
 }: RecordMapPageProps) {
   const [query, setQuery] = useState('')
+  // 사진 마커를 누르면 그 목적지의 최신 기록을 미리보기로 띄운다
+  const [preview, setPreview] = useState<RecordMapCard | null>(null)
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
@@ -49,7 +55,7 @@ function RecordMapPage({
   return (
     <div className={styles.page}>
       <div className={styles.map}>
-        <RecordMapView markers={markers} onMarkerClick={onMarkerClick} />
+        <RecordMapView markers={markers} onMarkerClick={(marker) => setPreview(marker.latestCard)} />
       </div>
 
       <div className={styles.top}>
@@ -109,6 +115,10 @@ function RecordMapPage({
           )
         })}
       </div>
+
+      {preview && (
+        <RecordPreview card={preview} onOpen={onCardClick} onShare={onShare} onClose={() => setPreview(null)} />
+      )}
 
       <BottomNavBar active="map" onChange={onTabChange} />
     </div>

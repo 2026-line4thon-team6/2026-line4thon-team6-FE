@@ -16,13 +16,13 @@ $gutter: 25px;
   inset: 0;
 }
 
-// 지도 위에 뜨는 상단 영역. 빈 곳은 지도를 그대로 만질 수 있게 한다
+// 지도 위에 뜨는 상단 영역. 빈 곳은 지도를 그대로 만질 수 있게 한다.
+// z-index를 두지 않아, 미리보기(z-index 3)가 검색창은 덮고 헤더는 덮지 않게 한다
 .top {
   position: absolute;
   top: 0;
   right: 0;
   left: 0;
-  z-index: 2;
   pointer-events: none;
 
   > * {
@@ -32,6 +32,7 @@ $gutter: 25px;
 
 .header {
   position: relative;
+  z-index: 4;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -73,6 +74,8 @@ $gutter: 25px;
 }
 
 .search {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 4px;

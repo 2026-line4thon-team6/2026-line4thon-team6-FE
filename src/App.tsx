@@ -124,10 +124,11 @@ function RecordMapRoute() {
       markers={markers}
       totalCount={totalCount}
       onSearch={setQuery}
-      // TODO: 날짜 검색(캘린더) · 목록형 · 기록 미리보기 카드는 다음 작업에서 연결한다
+      // TODO: 날짜 검색(캘린더) · 목록형 · 기록 상세 · 기록 지도 공유 화면이 생기면 연결한다
       onCalendarClick={() => {}}
       onViewChange={() => {}}
-      onMarkerClick={() => {}}
+      onCardClick={() => {}}
+      onShare={() => {}}
       onRetry={retry}
       onTabChange={goTab}
     />
