@@ -25,11 +25,12 @@
   line-height: 1.5;
 }
 
-// 연도 · 요일은 코랄 그라데이션 글자
+// 연도 · 요일은 코랄 그라데이션 글자.
+// Main/그라데이션은 80% 지점까지 거의 흰색이라 짧은 글자에 그대로 쓰면 안 보인다 → 글자용 근사 토큰을 쓴다
 .year,
 .weekday {
   color: color('coral'); // background-clip 미지원 시 대비
-  background-image: gradient('gradient');
+  background-image: gradient('coral-text');
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
