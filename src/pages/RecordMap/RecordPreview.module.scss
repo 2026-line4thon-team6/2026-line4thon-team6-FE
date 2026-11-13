@@ -1,0 +1,79 @@
+// Figma 기록 지도 - 폴라로이드 (284:15043). 헤더와 하단 네비바는 흐리지 않고 그 사이만 덮는다
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background-color: rgb(255 255 255 / 1%);
+  backdrop-filter: blur(4px);
+}
+
+// 카드 오른쪽 위, 화면 오른쪽에서 25px
+.share {
+  position: absolute;
+  top: calc(50% - 232px);
+  right: 25px;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 269px;
+  padding: 14px 13px 14px 14px;
+  border-radius: 10px;
+  background-color: color('coral-bg');
+  filter: drop-shadow(0 0 5px rgb(0 0 0 / 20%));
+  text-align: left;
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}
+
+.photo {
+  width: 242px;
+  height: 251px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  padding: 0 5px;
+}
+
+.title {
+  overflow: hidden;
+  color: color('black');
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  @include typo('body-l-bold');
+}
+
+.date {
+  color: color('coral-stroke');
+  @include typo('caption');
+}
+
+.hint {
+  position: relative;
+  margin-top: 32px;
+  color: color('gray-600');
+  @include typo('body-s');
+}
