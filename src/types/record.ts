@@ -45,3 +45,14 @@ export interface MapBounds {
   east: number
   north: number
 }
+
+// GET /records 의 한 줄. 마커의 latestCard와 같은 형식이다
+export type RecordSummary = RecordMapCard
+
+export interface RecordPage {
+  totalCount: number // 조건과 관계없는 전체 완료 기록 수 (상단 '총 N번')
+  filteredCount: number // 검색어 · 날짜 조건을 적용한 수
+  items: RecordSummary[] // 최신 driveDate 순
+  nextCursor: string | null
+  hasMore: boolean
+}
