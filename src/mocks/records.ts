@@ -1,6 +1,6 @@
 import type { FetchRecordMapParams, FetchRecordsParams } from '@/api/records'
 import type { ApiMeta, ApiResponse } from '@/types/api'
-import type { RecordMap, RecordMapMarker, RecordPage, RecordSummary } from '@/types/record'
+import type { RecordCalendar, RecordMap, RecordMapMarker, RecordPage, RecordSummary } from '@/types/record'
 
 // 백엔드 연동 전(VITE_API_BASE_URL 미설정)에 쓰는 기록 목 응답.
 // Figma 기록 지도처럼 전국 10곳에 12번의 드라이브 기록을 만든다. 사진은 public/mocks/spots 를 쓴다
@@ -128,4 +128,14 @@ export async function mockFetchRecordMap(params: FetchRecordMapParams = {}): Pro
     data: { totalCount: markers.reduce((sum, marker) => sum + marker.recordCount, 0), markers: page, nextCursor, hasMore },
     meta: meta(),
   }
+}
+
+export async function mockFetchRecordCalendar(month: string): Promise<ApiResponse<RecordCalendar>> {
+  const counts = new Map<string, number>()
+  for (const { driveDate } of createMockRecords()) {
+    if (driveDate.startsWith(`${month}-`)) counts.set(driveDate, (counts.get(driveDate) ?? 0) + 1)
+  }
+  const days = [...counts].map(([date, count]) => ({ date, count })).sort((a, b) => a.date.localeCompare(b.date))
+
+  return { data: { month, days }, meta: meta() }
 }

@@ -56,3 +56,14 @@ export interface RecordPage {
   nextCursor: string | null
   hasMore: boolean
 }
+
+// GET /records/calendar — 그 달에 기록이 있는 날짜만 담긴다. 없는 날짜는 달력에서 고를 수 없다
+export interface RecordCalendarDay {
+  date: string // YYYY-MM-DD (Asia/Seoul)
+  count: number
+}
+
+export interface RecordCalendar {
+  month: string // YYYY-MM
+  days: RecordCalendarDay[]
+}
