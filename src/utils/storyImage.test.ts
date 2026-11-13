@@ -69,6 +69,41 @@ describe('createStoryImage', () => {
     expect(context.calls.some((call) => call.name === 'drawImage')).toBe(true)
   })
 
+  it('배경에 기록 지도와 사진 마커를 흐리게 그린 뒤, 그 위에 카드를 그린다 (Figma 284:15555)', async () => {
+    await createStoryImage({
+      photoUrl: '/photo.webp',
+      title: '우리의 첫 바다 드라이브',
+      date: '2026년 11월 3일',
+      markers: [
+        { latitude: 37.5665, longitude: 126.978, photoUrl: '/seoul.webp' },
+        { latitude: 35.1796, longitude: 129.0756, photoUrl: '/busan.webp' },
+      ],
+    })
+
+    const draws = context.calls.filter((call) => call.name === 'drawImage')
+    // 지도 1 + 마커마다 말풍선 · 사진 · 점 3 + 카드 사진 1
+    expect(draws).toHaveLength(1 + 2 * 3 + 1)
+    expect(context.ctx.filter).toBe('none') // 흐림은 배경에만 쓰고 되돌린다
+  })
+
+  it('지도에서 서울은 부산보다 왼쪽 위에 마커를 놓는다', async () => {
+    await createStoryImage({
+      photoUrl: '/photo.webp',
+      title: '',
+      date: '',
+      markers: [
+        { latitude: 37.5665, longitude: 126.978, photoUrl: '/seoul.webp' },
+        { latitude: 35.1796, longitude: 129.0756, photoUrl: '/busan.webp' },
+      ],
+    })
+
+    // 마커 사진은 9개 인자 drawImage(이미지, sx, sy, sw, sh, dx, dy, dw, dh) 중 dx, dy로 위치를 본다
+    const photos = context.calls.filter((call) => call.name === 'drawImage' && call.args.length === 9).slice(0, 2)
+    const [seoul, busan] = photos.map((call) => ({ x: call.args[5] as number, y: call.args[6] as number }))
+    expect(seoul!.x).toBeLessThan(busan!.x)
+    expect(seoul!.y).toBeLessThan(busan!.y)
+  })
+
   it('제목이 카드보다 길면 말줄임표로 줄인다', async () => {
     await createStoryImage({ photoUrl: '/photo.webp', title: '아주아주 길고 긴 드라이브 제목입니다 정말로 길어요', date: '2026년 11월 3일' })
 

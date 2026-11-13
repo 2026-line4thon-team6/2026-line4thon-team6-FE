@@ -151,10 +151,16 @@ function RecordMapRoute() {
       .catch(() => update({ status: 'error' }))
   }
 
-  // 인스타그램은 카드를 스토리 이미지로 만들어 넘기고, 이미지 공유를 지원하지 않는 기기에서는 링크로 공유한다
+  // 인스타그램은 카드를 스토리 이미지(기록 지도 배경 + 카드)로 만들어 넘기고, 이미지 공유를 지원하지 않는 기기에서는 링크로 공유한다
   const handleShareChannel = async (card: RecordSummary, channel: ShareChannel, url: string) => {
     if (channel === 'instagram') {
-      const result = await shareStory({ photoUrl: card.thumbnailUrl, title: card.title, date: formatDate(card.driveDate) })
+      const result = await shareStory({
+        photoUrl: card.thumbnailUrl,
+        title: card.title,
+        date: formatDate(card.driveDate),
+        // 스토리 배경에 지금 기록 지도의 사진 마커를 함께 그린다
+        markers: map.markers.map(({ coordinate, latestCard }) => ({ ...coordinate, photoUrl: latestCard.thumbnailUrl })),
+      })
       if (result !== 'unsupported') return
     }
     await shareTo(channel, { url, title: card.title })
