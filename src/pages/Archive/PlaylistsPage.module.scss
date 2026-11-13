@@ -12,7 +12,9 @@
 
 .number {
   color: color('coral'); // background-clip 미지원 시 대비
-  background-image: gradient('gradient');
+  // Figma는 Main/그라데이션(80% 지점까지 거의 흰색)을 문장 전체에 입혀서 '4개'만 코랄로 보인다.
+  // 짧은 글자 상자에 그대로 쓰면 거의 흰색이 되므로, 시안에 보이는 색(위 #ff9a8a → 아래 #ff705a)으로 맞춘다
+  background-image: linear-gradient(180deg, #ff9a8a 0%, #ff705a 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
