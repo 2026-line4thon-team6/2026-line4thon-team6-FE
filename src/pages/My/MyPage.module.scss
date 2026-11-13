@@ -78,9 +78,11 @@ $top-inset: max(env(safe-area-inset-top, 0px), 12px);
   min-width: 0;
 }
 
+// ♥는 김정철명조에 없는 글자라 기기 기본 폰트로 대체되면 아이폰 · 갤럭시 모양이 달라진다.
+// ♥가 들어 있는 Pretendard(웹폰트)로 고정해 어느 기기에서나 같게 보이게 한다
 .heart {
   flex-shrink: 0;
-  font-family: 'Kim jung chul Myungjo', serif;
+  font-family: var(--font-family-base);
   font-size: 22px;
   font-weight: 300;
   line-height: 1.5;
