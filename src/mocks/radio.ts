@@ -20,7 +20,7 @@ const STORIES: [story: string, broadcastText: string][] = [
 ]
 
 // 최신 사연부터 하루씩 앞선 날짜
-const EPISODES: RadioEpisode[] = STORIES.map(([story, broadcastText], index) => ({
+export const MOCK_RADIO_EPISODES: RadioEpisode[] = STORIES.map(([story, broadcastText], index) => ({
   id: `rad_${String(index + 1).padStart(2, '0')}`,
   driveId: `drv_${String(index + 1).padStart(2, '0')}`,
   mode: 'USER_STORY',
@@ -35,7 +35,7 @@ const EPISODES: RadioEpisode[] = STORIES.map(([story, broadcastText], index) => 
 
 export async function mockFetchRadioHistory(q?: string): Promise<ApiResponse<CursorPage<RadioEpisode>>> {
   const keyword = q?.trim() ?? ''
-  const items = EPISODES.filter(
+  const items = MOCK_RADIO_EPISODES.filter(
     (episode) => !keyword || `${episode.story ?? ''} ${episode.broadcastText ?? ''}`.includes(keyword),
   )
   return { data: { items: structuredClone(items), nextCursor: null, hasMore: false }, meta: meta() }
