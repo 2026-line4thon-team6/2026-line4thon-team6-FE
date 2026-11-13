@@ -1,6 +1,6 @@
 import { ApiError } from '@/api/client'
 import type { ApiMeta, ApiResponse } from '@/types/api'
-import type { Card, CardReflection } from '@/types/card'
+import type { Card, CardReflection, CardShare } from '@/types/card'
 import { createMockRecords, markMockRecordDeleted } from './records'
 
 let requestCount = 0
@@ -73,4 +73,9 @@ export async function mockFetchCard(cardId: string): Promise<ApiResponse<Card>> 
 export async function mockDeleteCard(cardId: string): Promise<void> {
   if (!createMockRecords().some((record) => record.cardId === cardId)) throw notFound()
   markMockRecordDeleted(cardId)
+}
+
+export async function mockFetchCardShare(cardId: string): Promise<ApiResponse<CardShare>> {
+  if (!createMockRecords().some((record) => record.cardId === cardId)) throw notFound()
+  return { data: { url: `https://bunbungus.app/cards/${cardId}`, access: 'COUPLE_ONLY', expiresAt: null }, meta: meta() }
 }

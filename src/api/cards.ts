@@ -1,6 +1,6 @@
-import { mockDeleteCard, mockFetchCard } from '@/mocks/cards'
+import { mockDeleteCard, mockFetchCard, mockFetchCardShare } from '@/mocks/cards'
 import type { ApiResponse } from '@/types/api'
-import type { Card } from '@/types/card'
+import type { Card, CardShare } from '@/types/card'
 import { apiFetch, USE_MOCK } from './client'
 
 const path = (cardId: string) => `/cards/${encodeURIComponent(cardId)}`
@@ -21,4 +21,11 @@ export async function deleteCard(card: Pick<Card, 'id' | 'coupleId' | 'version'>
     method: 'DELETE',
     headers: { 'X-Couple-Id': card.coupleId, 'X-Expected-Version': String(card.version) },
   })
+}
+
+// GET /cards/{cardId}/share — 완료 카드의 커플 전용 공유 링크
+export function fetchCardShare(cardId: string): Promise<ApiResponse<CardShare>> {
+  if (USE_MOCK) return mockFetchCardShare(cardId)
+
+  return apiFetch<CardShare>(`${path(cardId)}/share`)
 }
