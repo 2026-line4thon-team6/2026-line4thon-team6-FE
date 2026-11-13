@@ -4,9 +4,21 @@ import { MemoryRouter } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { resetMockRecordDeletions } from './mocks/records'
 import App from './App'
+import type { RecordMapMarker } from './types/record'
 
-// 카카오 지도 SDK는 jsdom에서 동작하지 않으므로 지도 자리만 그린다
-vi.mock('./pages/RecordMap/RecordMapView', () => ({ default: () => <div data-testid="map" /> }))
+// 카카오 지도 SDK는 jsdom에서 동작하지 않으므로 마커 버튼만 그리는 가짜 지도로 바꾼다
+vi.mock('./pages/RecordMap/RecordMapView', async () => {
+  const { default: RecordMarker } = await import('./pages/RecordMap/RecordMarker')
+  return {
+    default: ({ markers, onMarkerClick }: { markers: RecordMapMarker[]; onMarkerClick: (marker: RecordMapMarker) => void }) => (
+      <div data-testid="map">
+        {markers.map((marker) => (
+          <RecordMarker key={marker.groupKey} marker={marker} onClick={onMarkerClick} />
+        ))}
+      </div>
+    ),
+  }
+})
 
 // 목 서버에서 지운 기록이 다른 테스트에 남지 않게 한다
 afterEach(() => resetMockRecordDeletions())
@@ -186,5 +198,21 @@ describe('기록 지도 → 기록 상세', () => {
     renderApp('/cards/crd_none')
 
     expect(await screen.findByRole('alert')).toHaveTextContent('삭제되었거나 볼 수 없는 기록이에요')
+  })
+})
+
+describe('기록 지도 → 기록 공유', () => {
+  it('미리보기 카드의 공유 버튼을 누르면 커플 전용 링크가 담긴 공유 시트가 뜨고, 링크를 복사할 수 있다', async () => {
+    const user = renderApp('/map')
+
+    await user.click(await screen.findByRole('button', { name: '자라섬 캠핑 드라이브 기록 보기' }))
+    await user.click(screen.getByRole('button', { name: '공유하기' }))
+
+    const sheet = screen.getByRole('dialog', { name: '드라이브 기록 카드 공유하기' })
+    expect(await within(sheet).findByText('https://bunbungus.app/cards/crd_01')).toBeInTheDocument()
+
+    await user.click(within(sheet).getByRole('button', { name: '링크 복사' }))
+    // userEvent가 클립보드를 대신하므로 복사된 내용을 읽어 확인한다
+    expect(await navigator.clipboard.readText()).toBe('https://bunbungus.app/cards/crd_01')
   })
 })
