@@ -13,8 +13,8 @@ const ICONS = {
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary'
-  // lg: 홈 카드 CTA (pill + 그림자) / md: 상세 하단 버튼 / sm: 모달 버튼
-  size?: 'lg' | 'md' | 'sm'
+  // lg: 홈 카드 CTA (pill + 그림자) / md: 상세 하단 버튼 / sm: 모달 버튼 / cta: 카드 저장하기 (pill, 48px)
+  size?: 'lg' | 'md' | 'sm' | 'cta'
   icon?: keyof typeof ICONS
 }
 
