@@ -1,0 +1,54 @@
+// Figma 기준 390 x 844 (My_UI > 개인정보 처리방침 · 이용 약관 · 오픈소스)
+$gutter: 25px;
+
+.page {
+  display: flex;
+  flex-direction: column;
+  max-width: var(--app-max-width);
+  min-height: 100vh; // dvh 미지원 웹뷰 대비
+  min-height: 100dvh;
+  margin: 0 auto;
+  background-color: color('coral-bg');
+}
+
+// 뒤로가기(36px) + 왼쪽 정렬 제목. 상태바 아래 64px 높이
+.header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 20px;
+  padding: calc(max(env(safe-area-inset-top, 0px), 12px) + 5px) $gutter 23px;
+}
+
+.title {
+  @include typo('body-l-bold');
+  color: color('black');
+}
+
+.body {
+  flex: 1 1 auto;
+  padding: 17px $gutter calc(34px + env(safe-area-inset-bottom, 0px));
+  background-color: color('white');
+}
+
+.content {
+  @include typo('caption-small');
+  color: color('black');
+  overflow-wrap: anywhere;
+}
+
+// 불러오는 중 · 오류 안내 (시안에 없는 상태라 최소한으로 둔다)
+.message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding-top: 120px;
+  @include typo('body-m-15');
+  color: color('gray-600');
+  text-align: center;
+}
+
+.retry {
+  width: 140px;
+}
