@@ -267,6 +267,11 @@ export async function mockLogout(): Promise<void> {
   startNewAccount()
 }
 
+// 계정은 그대로 두고 세션만 끊는다 (앱 데이터를 지운 기기에서 기존 가입자가 다시 로그인하는 경우를 흉내 낸다)
+export function mockEndSession() {
+  signedIn = false
+}
+
 // 앱을 열 때 화면을 바로 정하기 위한 동기 확인 (실서버의 '기기에 토큰이 있는지'에 해당)
 export function mockHasSession() {
   return signedIn
