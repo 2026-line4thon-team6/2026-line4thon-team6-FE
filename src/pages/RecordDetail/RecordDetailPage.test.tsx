@@ -86,6 +86,15 @@ describe('RecordDetailPage', () => {
     expect(onPlaylistClick).toHaveBeenCalledWith(CARD.playlist)
   })
 
+  it('플레이리스트 화면이 연결되지 않아도 플레이리스트 아이콘은 보여준다 (Figma 284:15440)', () => {
+    renderPage({ onPlaylistClick: undefined })
+
+    expect(screen.queryByRole('button', { name: '플레이리스트 보기' })).not.toBeInTheDocument()
+    const section = screen.getByRole('region', { name: '함께 들었던 플레이리스트' })
+    // 작은 SVG는 data URI로 들어와서 파일명 대신 아이콘 크기(40px)로 찾는다
+    expect(section.querySelector('img[width="40"]')).toBeInTheDocument()
+  })
+
   it('플레이리스트를 쓰지 않은 드라이브는 제목 자리에 - - 를 표시하고 버튼을 숨긴다', () => {
     renderPage({ card: { ...CARD, playlist: null } })
 
