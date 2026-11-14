@@ -2,13 +2,13 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ComponentProps } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import type { Card, CardReflection } from '@/types/card'
+import type { Card, Reflection } from '@/types/card'
 import RecordDetailPage from './RecordDetailPage'
 
 // Figma 기록 지도 - 카드 상세 (284:15397) / 삭제 확인 (284:15470)
 type Props = ComponentProps<typeof RecordDetailPage>
 
-const reflection = (nickname: string, text: string, submitted = true): CardReflection => ({
+const reflection = (nickname: string, text: string, submitted = true): Reflection => ({
   author: { id: `usr_${nickname}`, nickname, birthDate: null, profileImageUrl: null, provider: 'KAKAO' },
   text,
   submitted,
@@ -45,6 +45,7 @@ const CARD: Card = {
   canEdit: false,
   canDelete: true,
   version: 1,
+  driverUserId: null,
 }
 
 function renderPage(props: Partial<Props> = {}) {
