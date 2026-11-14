@@ -199,8 +199,8 @@ const recordAuthor = (id: string, nickname: string): CardAuthor => ({
   provider: 'KAKAO',
 })
 
-const RECORD_ME = recordAuthor('usr_mock_me', '동민')
-const RECORD_PARTNER = recordAuthor('usr_mock_partner', '서연')
+const RECORD_ME = recordAuthor('usr_mock_me', '민준')
+const RECORD_PARTNER = recordAuthor('usr_mock_partner', '민지')
 
 const submittedReflection = (who: CardAuthor, text: string, submittedAt: string): Reflection => ({
   author: who,

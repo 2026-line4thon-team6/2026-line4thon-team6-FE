@@ -39,7 +39,7 @@ const CARD: Card = {
     { mediaId: 'med_2', url: '/second.webp', urlExpiresAt: '', order: 1 },
     { mediaId: 'med_1', url: '/first.webp', urlExpiresAt: '', order: 0 },
   ],
-  reflections: [reflection('동민', '노을은 진짜 예뻤다 ㅎㅎ'), reflection('서연', '다음에 또 가자!')],
+  reflections: [reflection('민준', '노을은 진짜 예뻤다 ㅎㅎ'), reflection('민지', '다음에 또 가자!')],
   editableUntil: '2026-11-04T09:00:00Z',
   completedAt: '2026-11-03T09:00:00Z',
   canEdit: false,
@@ -117,9 +117,9 @@ describe('RecordDetailPage', () => {
   })
 
   it('제출된 소감만 작성자와 함께 보여준다', () => {
-    renderPage({ card: { ...CARD, reflections: [reflection('동민', '노을은 진짜 예뻤다 ㅎㅎ'), reflection('서연', '쓰는 중', false)] } })
+    renderPage({ card: { ...CARD, reflections: [reflection('민준', '노을은 진짜 예뻤다 ㅎㅎ'), reflection('민지', '쓰는 중', false)] } })
 
-    expect(screen.getByText('동민')).toBeInTheDocument()
+    expect(screen.getByText('민준')).toBeInTheDocument()
     expect(screen.getByText('노을은 진짜 예뻤다 ㅎㅎ')).toBeInTheDocument()
     expect(screen.queryByText('쓰는 중')).not.toBeInTheDocument()
   })
