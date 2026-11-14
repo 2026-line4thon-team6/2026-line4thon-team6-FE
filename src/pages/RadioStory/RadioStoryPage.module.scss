@@ -7,8 +7,7 @@ $gutter: 25px;
   display: flex;
   flex-direction: column;
   max-width: var(--app-max-width);
-  min-height: 100vh; // dvh 미지원 웹뷰 대비
-  min-height: 100dvh;
+  min-height: var(--app-height);
   margin: 0 auto;
   background:
     linear-gradient(180deg, rgb(255 251 251 / 0%) 104px, rgb(255 177 157 / 40%) 244px) no-repeat,
@@ -21,7 +20,7 @@ $gutter: 25px;
   display: flex;
   align-items: center;
   gap: 20px;
-  padding: calc(max(env(safe-area-inset-top, 0px), 12px) + 5px) $gutter 0;
+  padding: calc(max(var(--safe-top), 12px) + 5px) $gutter 0;
 }
 
 .title {
@@ -44,7 +43,7 @@ $gutter: 25px;
   position: relative;
   flex: 1;
   margin-top: -34px;
-  padding: 21px $gutter calc(34px + env(safe-area-inset-bottom, 0px));
+  padding: 21px $gutter calc(34px + var(--safe-bottom));
   border-radius: 30px 30px 0 0;
   background-color: color('coral-bg');
   box-shadow: 0 1px 10px rgb(0 0 0 / 10%); // 하단바 그림자

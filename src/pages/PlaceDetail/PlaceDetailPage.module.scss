@@ -7,8 +7,7 @@ $bottom-bar-height: 19px + 50px;
 .page {
   position: relative;
   max-width: var(--app-max-width);
-  min-height: 100vh; // dvh 미지원 웹뷰 대비
-  min-height: 100dvh;
+  min-height: var(--app-height);
   margin: 0 auto;
   overflow-x: hidden;
   background-color: color('coral-bg');
@@ -31,7 +30,7 @@ $bottom-bar-height: 19px + 50px;
 // 사진 위에 떠 있는 뒤로가기 · 찜 · 공유 버튼. 노치 영역만큼 내린다
 .topBar {
   position: absolute;
-  top: calc(max(env(safe-area-inset-top, 0px), 12px) + 5px);
+  top: calc(max(var(--safe-top), 12px) + 5px);
   right: $gutter;
   left: $gutter;
   z-index: 1;
@@ -51,11 +50,10 @@ $bottom-bar-height: 19px + 50px;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  min-height: calc(100vh - #{$hero-height - 36px});
-  min-height: calc(100dvh - #{$hero-height - 36px});
+  min-height: calc(var(--app-height) - #{$hero-height - 36px});
   margin-top: -36px;
   // 아래 여백: 하단 고정 버튼 바에 내용이 가려지지 않게 한다
-  padding: 27px $gutter calc(#{$bottom-bar-height} + max(19px, env(safe-area-inset-bottom, 0px)) + 20px);
+  padding: 27px $gutter calc(#{$bottom-bar-height} + max(19px, var(--safe-bottom)) + 20px);
   border-radius: 30px 30px 0 0;
   background-color: color('coral-bg');
   box-shadow: 0 1px 10px rgb(0 0 0 / 10%);
@@ -290,7 +288,7 @@ $bottom-bar-height: 19px + 50px;
   gap: 10px;
   width: 100%;
   max-width: var(--app-max-width);
-  padding: 19px $gutter max(19px, calc(env(safe-area-inset-bottom, 0px) + 1px));
+  padding: 19px $gutter max(19px, calc(var(--safe-bottom) + 1px));
   border-radius: 30px 30px 0 0;
   background-color: color('white');
   box-shadow: shadow('icon');

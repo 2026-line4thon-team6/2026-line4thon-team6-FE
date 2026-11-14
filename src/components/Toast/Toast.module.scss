@@ -1,7 +1,7 @@
 // Figma 기준 화면 아래에서 76px 위 (390 x 844 중 y=735)
 .toast {
   position: fixed;
-  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(76px + var(--safe-bottom));
   left: 50%;
   z-index: 200;
   max-width: calc(100% - 50px);

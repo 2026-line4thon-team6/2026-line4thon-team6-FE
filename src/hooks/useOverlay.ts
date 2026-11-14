@@ -11,8 +11,12 @@ function useOverlay<T extends HTMLElement>(onClose: () => void) {
 
   useEffect(() => {
     const previousFocus = document.activeElement
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    // 모바일은 문서가, 데스크톱 기기 프레임은 프레임 화면이 스크롤되므로 둘 다 잠근다
+    const scrollers = [document.body, document.querySelector<HTMLElement>('[data-scroll-root]')].filter(
+      (element): element is HTMLElement => element !== null,
+    )
+    const previousOverflows = scrollers.map((element) => element.style.overflow)
+    scrollers.forEach((element) => (element.style.overflow = 'hidden'))
     // 시트 안 입력창에 autoFocus가 있으면 그 포커스를 유지하고, 없을 때만 시트로 옮긴다
     if (!ref.current?.contains(document.activeElement)) ref.current?.focus()
 
@@ -23,7 +27,7 @@ function useOverlay<T extends HTMLElement>(onClose: () => void) {
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
-      document.body.style.overflow = previousOverflow
+      scrollers.forEach((element, index) => (element.style.overflow = previousOverflows[index] ?? ''))
       if (previousFocus instanceof HTMLElement) previousFocus.focus()
     }
   }, [])

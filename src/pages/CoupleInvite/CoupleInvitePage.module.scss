@@ -5,8 +5,7 @@ $gutter: 25px;
   display: flex;
   flex-direction: column;
   max-width: var(--app-max-width);
-  min-height: 100vh; // dvh 미지원 웹뷰 대비
-  min-height: 100dvh;
+  min-height: var(--app-height);
   margin: 0 auto;
   background-color: color('coral-bg');
 }
@@ -16,7 +15,7 @@ $gutter: 25px;
   display: grid;
   grid-template-columns: 36px 1fr 36px;
   align-items: center;
-  padding: calc(max(env(safe-area-inset-top, 0px), 12px) + 5px) $gutter 0;
+  padding: calc(max(var(--safe-top), 12px) + 5px) $gutter 0;
 }
 
 .title {
@@ -171,5 +170,5 @@ input.box {
 // 완료 버튼은 화면 맨 아래 (Figma 340 x 48, 홈 인디케이터 위)
 .footer {
   margin-top: auto;
-  padding: 0 $gutter max(env(safe-area-inset-bottom, 0px), 24px);
+  padding: 0 $gutter max(var(--safe-bottom), 24px);
 }

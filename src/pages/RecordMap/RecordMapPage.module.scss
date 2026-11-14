@@ -6,8 +6,7 @@ $gutter: 25px;
   display: flex;
   flex-direction: column;
   max-width: var(--app-max-width);
-  height: 100vh; // dvh 미지원 웹뷰 대비
-  height: 100dvh;
+  height: var(--app-height);
   margin: 0 auto;
   overflow: hidden;
   background-color: color('coral-bg');
@@ -47,7 +46,7 @@ $gutter: 25px;
   min-height: 0;
   overflow-y: auto;
   // 하단 네비바 + 보기 전환 버튼에 마지막 기록이 가려지지 않게 한다
-  padding: 21px $gutter calc(min(#{$nav-height}, #{$nav-visible-height} + env(safe-area-inset-bottom, 0px)) + 34px + 33px + 16px);
+  padding: 21px $gutter calc(min(#{$nav-height}, #{$nav-visible-height} + var(--safe-bottom)) + 34px + 33px + 16px);
 }
 
 .records {
@@ -74,7 +73,7 @@ $gutter: 25px;
   align-items: flex-end;
   justify-content: space-between;
   // 노치·상태바 영역(PWA 전체화면)만큼 내리고, 브라우저에서는 최소 여백을 둔다
-  padding: max(env(safe-area-inset-top, 0px), 12px) 17px 0 $gutter;
+  padding: max(var(--safe-top), 12px) 17px 0 $gutter;
   border-radius: 0 0 30px 30px;
   background-color: color('coral-bg');
   box-shadow: 0 1px 10px rgb(0 0 0 / 10%); // 하단바 그림자
@@ -117,7 +116,7 @@ $gutter: 25px;
 // 갤럭시(360px) 등 좁은 화면에서는 제목 자리(205px)가 남도록 줄어든다
 .mascot {
   flex-shrink: 0;
-  width: clamp(76px, calc(100vw - 255px), 117px);
+  width: clamp(76px, calc(var(--app-width) - 255px), 117px);
   height: auto;
   aspect-ratio: 117 / 78;
   margin-bottom: -9px;
@@ -205,7 +204,7 @@ $gutter: 25px;
 // 하단 네비바에서 34px 위 (Figma: 화면 아래에서 167px)
 .viewToggle {
   position: absolute;
-  bottom: calc(min(#{$nav-height}, #{$nav-visible-height} + env(safe-area-inset-bottom, 0px)) + 34px);
+  bottom: calc(min(#{$nav-height}, #{$nav-visible-height} + var(--safe-bottom)) + 34px);
   left: 50%;
   z-index: 2;
   display: flex;

@@ -5,8 +5,7 @@ $gutter: 25px;
   display: flex;
   flex-direction: column;
   max-width: var(--app-max-width);
-  min-height: 100vh; // dvh 미지원 웹뷰 대비
-  min-height: 100dvh;
+  min-height: var(--app-height);
   margin: 0 auto;
   background-color: color('coral-bg');
 }
@@ -17,7 +16,7 @@ $gutter: 25px;
   flex-shrink: 0;
   align-items: center;
   gap: 20px;
-  padding: calc(max(env(safe-area-inset-top, 0px), 12px) + 5px) $gutter 23px;
+  padding: calc(max(var(--safe-top), 12px) + 5px) $gutter 23px;
 }
 
 .title {
@@ -27,7 +26,7 @@ $gutter: 25px;
 
 .body {
   flex: 1 1 auto;
-  padding: 17px $gutter calc(34px + env(safe-area-inset-bottom, 0px));
+  padding: 17px $gutter calc(34px + var(--safe-bottom));
   background-color: color('white');
 }
 

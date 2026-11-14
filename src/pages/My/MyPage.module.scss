@@ -1,7 +1,7 @@
 // Figma 기준 390 x 844 (My_UI > 마이). 좌우 여백은 고정, 가운데 영역이 화면 폭에 맞춰 늘어난다
 $gutter: 25px;
 // 상태바(노치) 영역. PWA 전체화면에서는 safe-area, 브라우저에서는 최소 여백
-$top-inset: max(env(safe-area-inset-top, 0px), 12px);
+$top-inset: max(var(--safe-top), 12px);
 
 .page {
   @include app-page;
