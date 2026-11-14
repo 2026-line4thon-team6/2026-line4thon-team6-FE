@@ -14,52 +14,18 @@ $bottom-bar-height: 19px + 50px;
   background-color: color('coral-bg');
 }
 
-// 상단 사진 (좌우로 넘긴다)
+// 상단 대표 사진 1장
 .hero {
   position: relative;
   height: $hero-height;
   background-color: color('gray-100');
 }
 
-.photos {
-  display: flex;
+.heroPhoto {
+  display: block;
+  width: 100%;
   height: 100%;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-
-  > li {
-    flex: 0 0 100%;
-    scroll-snap-align: start;
-  }
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    -webkit-user-drag: none;
-  }
-}
-
-.counter {
-  position: absolute;
-  top: 209px;
-  right: $gutter;
-  min-width: 51px;
-  padding: 3px 14px 2px 15px;
-  border-radius: 100px;
-  @include typo('caption');
-  color: color('white');
-  text-align: center;
-  white-space: nowrap;
-  background: gradient('glass-black');
-  box-shadow: shadow('icon');
+  object-fit: cover;
 }
 
 // 사진 위에 떠 있는 뒤로가기 · 찜 · 공유 버튼. 노치 영역만큼 내린다
@@ -163,39 +129,6 @@ $bottom-bar-height: 19px + 50px;
   @include typo('body-s');
   color: color('gray-600');
   word-break: keep-all;
-}
-
-// 사진 썸네일 3장 (누를 수 없음). 화면 오른쪽 끝까지 이어진다
-.thumbnails {
-  position: relative;
-  display: flex;
-  gap: 10px;
-  margin-right: -$gutter;
-  overflow: hidden;
-
-  img {
-    flex-shrink: 0;
-    width: 129px;
-    height: 71px;
-    border-radius: 10px;
-    object-fit: cover;
-  }
-}
-
-.more {
-  position: absolute;
-  top: 18px;
-  right: $gutter;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  @include typo('caption');
-  color: color('white');
-  background: gradient('glass-black');
-  box-shadow: shadow('icon');
 }
 
 // 드라이브 정보 요약 4칸. 칸 사이에 세로 구분선을 둔다

@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import type { UIEvent } from 'react'
 import mapLabel from '@/assets/icons/map-label.svg'
 import pinIcon from '@/assets/icons/pin-lg.svg'
 import durationIcon from '@/assets/images/info/info-car.svg'
@@ -10,7 +9,6 @@ import Button from '@/components/Button/Button'
 import GlassIconButton from '@/components/GlassIconButton/GlassIconButton'
 import LikeButton from '@/components/LikeButton/LikeButton'
 import { PLACE_CATEGORIES } from '@/constants/placeCategories'
-import useDragScroll from '@/hooks/useDragScroll'
 import type { PlaceDetail } from '@/types/place'
 import { formatDuration } from '@/utils/formatDuration'
 import type { ShareChannel } from '@/utils/share'
@@ -20,8 +18,6 @@ import ShareSheet, { type ShareLink } from './ShareSheet'
 
 // 값을 불러오지 못했을 때의 표시
 const EMPTY = '--'
-// 본문에 나열하는 사진 썸네일 수. 나머지는 '+N'으로 표시한다
-const THUMBNAIL_COUNT = 3
 // 경로 미리보기 지도. 지도 SDK 연동 전까지 쓰는 고정 이미지
 const ROUTE_PREVIEW_IMAGE = '/mocks/places/route-preview.webp'
 
@@ -64,8 +60,6 @@ function PlaceDetailPage({
   onSendToPartner,
   onConnectRequired,
 }: PlaceDetailPageProps) {
-  const photoDrag = useDragScroll<HTMLUListElement>()
-  const [photoIndex, setPhotoIndex] = useState(0)
   const [shareLink, setShareLink] = useState<ShareLink | null>(null)
   const [sendStep, setSendStep] = useState<SendStep | null>(null)
 
@@ -95,13 +89,8 @@ function PlaceDetailPage({
   const category = PLACE_CATEGORIES[place.category]
   const duration = formatDuration(place.estimatedDurationSeconds)
   const [visitTime, visitNote] = splitNote(recommendedVisitTime ?? EMPTY)
-  const slides = photos.length > 0 ? photos : place.thumbnailUrl ? [place.thumbnailUrl] : []
-  const extraPhotos = slides.length - THUMBNAIL_COUNT
-
-  const handlePhotoScroll = (event: UIEvent<HTMLUListElement>) => {
-    const { scrollLeft, clientWidth } = event.currentTarget
-    if (clientWidth > 0) setPhotoIndex(Math.round(scrollLeft / clientWidth))
-  }
+  // 맨 위에는 대표 사진 1장만 보여 준다 (Figma 70:1744). 사진이 없으면 장소 썸네일
+  const heroPhoto = photos[0] ?? place.thumbnailUrl
 
   const openShare = () => {
     setShareLink({ status: 'loading' })
@@ -128,18 +117,7 @@ function PlaceDetailPage({
   return (
     <div className={styles.page}>
       <div className={styles.hero}>
-        <ul className={styles.photos} aria-label="장소 사진" onScroll={handlePhotoScroll} {...photoDrag}>
-          {slides.map((photo, index) => (
-            <li key={index}>
-              <img src={photo} alt={`${place.name} 사진 ${index + 1}`} loading={index === 0 ? 'eager' : 'lazy'} />
-            </li>
-          ))}
-        </ul>
-        {slides.length > 0 && (
-          <p className={styles.counter}>
-            {Math.min(photoIndex, slides.length - 1) + 1} / {slides.length}
-          </p>
-        )}
+        {heroPhoto && <img className={styles.heroPhoto} src={heroPhoto} alt={`${place.name} 사진`} />}
       </div>
 
       <div className={styles.topBar}>
@@ -176,15 +154,6 @@ function PlaceDetailPage({
         )}
 
         {introduction && <p className={styles.introduction}>{introduction}</p>}
-
-        {slides.length > 0 && (
-          <div className={styles.thumbnails}>
-            {slides.slice(0, THUMBNAIL_COUNT).map((photo, index) => (
-              <img key={index} src={photo} alt="" loading="lazy" />
-            ))}
-            {extraPhotos > 0 && <span className={styles.more}>+{extraPhotos}</span>}
-          </div>
-        )}
 
         <ul className={styles.summary} aria-label="드라이브 정보">
           <li>
