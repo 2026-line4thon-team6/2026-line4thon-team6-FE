@@ -133,13 +133,20 @@ describe('홈 ↔ 기록 지도 이동', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('오늘은 어디로 떠나볼까요?')
   })
 
-  it('기록 지도에서 검색하면 검색어에 맞는 기록만 다시 불러온다', async () => {
+  it('목록형으로 바꾸면 최신순 기록 목록을 보여주고, 검색하면 맞는 기록만 남는다 (전체 횟수는 그대로)', async () => {
     const user = renderApp('/map')
     await screen.findByText('총 12번의 드라이브를 함께했어요')
 
+    await user.click(screen.getByRole('button', { name: '목록형' }))
+    const list = await screen.findByRole('list', { name: '드라이브 기록 목록' })
+    expect(within(list).getAllByRole('listitem')[0]).toHaveTextContent('자라섬 캠핑 드라이브')
+
     await user.type(screen.getByRole('searchbox', { name: '기록 검색' }), '오이도{Enter}')
 
-    expect(await screen.findByText('총 2번의 드라이브를 함께했어요')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(within(screen.getByRole('list', { name: '드라이브 기록 목록' })).getAllByRole('listitem')).toHaveLength(2),
+    )
+    expect(screen.getByText('총 12번의 드라이브를 함께했어요')).toBeInTheDocument()
   })
 })
 

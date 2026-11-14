@@ -9,6 +9,7 @@ import useNotifications from '@/hooks/useNotifications'
 import usePendingCards from '@/hooks/usePendingCards'
 import usePlaceDetail from '@/hooks/usePlaceDetail'
 import useRecordMap from '@/hooks/useRecordMap'
+import useRecords from '@/hooks/useRecords'
 import useRouteSetting from '@/hooks/useRouteSetting'
 import useStartDrive, { type DriveLocationState } from '@/hooks/useStartDrive'
 import { MOCK_CATEGORIES, MOCK_HOME, MOCK_SPOTS } from '@/mocks/home'
@@ -17,7 +18,7 @@ import DriveCardPage from '@/pages/DriveCard/DriveCardPage'
 import HomePage from '@/pages/Home/HomePage'
 import NotificationsPage from '@/pages/Notifications/NotificationsPage'
 import PlaceDetailPage from '@/pages/PlaceDetail/PlaceDetailPage'
-import RecordMapPage from '@/pages/RecordMap/RecordMapPage'
+import RecordMapPage, { type RecordView } from '@/pages/RecordMap/RecordMapPage'
 import RouteSettingPage from '@/pages/RouteSetting/RouteSettingPage'
 import type { HomeSummary } from '@/types/home'
 import type { Notification } from '@/types/notification'
@@ -195,25 +196,38 @@ function RouteSettingRoute() {
   )
 }
 
-// 기록 지도. 검색어가 바뀌면 그 조건으로 마커를 다시 불러온다
+// 기록 지도. 검색어가 바뀌면 지도 마커와 기록 목록을 그 조건으로 다시 불러온다.
+// 상단의 '총 N번'은 조건과 관계없는 목록 API의 totalCount를 쓴다
 function RecordMapRoute() {
   const goTab = useTabNavigate()
+  const [view, setView] = useState<RecordView>('map')
   const [query, setQuery] = useState('')
-  const { status, markers, totalCount, retry } = useRecordMap({ q: query })
+  const map = useRecordMap({ q: query })
+  const list = useRecords({ q: query })
+
+  const retry = () => {
+    if (map.status === 'error') map.retry()
+    if (list.status === 'error') list.retry()
+  }
 
   return (
     <RecordMapPage
-      status={status}
-      markers={markers}
-      totalCount={totalCount}
+      view={view}
+      totalCount={list.totalCount}
+      mapStatus={map.status}
+      markers={map.markers}
+      listStatus={list.status}
+      records={list.records}
+      hasMoreRecords={list.hasMore}
       onSearch={setQuery}
-      // TODO: 날짜 검색(캘린더) · 목록형 · 기록 상세 · 기록 지도 공유 화면이 생기면 연결한다
-      onCalendarClick={() => {}}
-      onViewChange={() => {}}
-      onCardClick={() => {}}
-      onShare={() => {}}
+      onViewChange={setView}
+      onLoadMore={() => void list.loadMore()}
       onRetry={retry}
       onTabChange={goTab}
+      // TODO: 날짜 검색(캘린더) · 기록 상세 · 기록 지도 공유 화면이 생기면 연결한다
+      onCalendarClick={() => {}}
+      onCardClick={() => {}}
+      onShare={() => {}}
     />
   )
 }

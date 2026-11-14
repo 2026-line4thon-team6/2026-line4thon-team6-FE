@@ -63,3 +63,30 @@ describe('fetchRecordMap', () => {
     expect(data.markers.length).toBeGreaterThan(0)
   })
 })
+
+describe('fetchRecords', () => {
+  it('검색어 · 날짜 · 커서를 쿼리로 보내 GET /records 를 요청한다', async () => {
+    const { fetchRecords } = await loadWithBackend()
+
+    await fetchRecords({ q: '바다', date: '2026-11-03', cursor: 'cursor_2', limit: 20 })
+
+    expect(requestedUrl().pathname).toBe('/api/v1/records')
+    const params = requestedUrl().searchParams
+    expect(params.get('q')).toBe('바다')
+    expect(params.get('date')).toBe('2026-11-03')
+    expect(params.get('cursor')).toBe('cursor_2')
+    expect(params.get('limit')).toBe('20')
+  })
+
+  it('백엔드 주소가 없으면 최신순 목 기록과 전체 · 조건 개수를 돌려준다', async () => {
+    vi.resetModules()
+    const { fetchRecords } = await import('./records')
+
+    const { data } = await fetchRecords({ q: '오이도' })
+
+    expect(data.totalCount).toBe(12)
+    expect(data.filteredCount).toBe(2)
+    expect(data.items.every((item) => item.destination?.name === '시흥 오이도')).toBe(true)
+    expect(data.items[0].driveDate >= data.items[1].driveDate).toBe(true)
+  })
+})

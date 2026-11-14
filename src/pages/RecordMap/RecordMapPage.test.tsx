@@ -1,8 +1,8 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ComponentProps } from 'react'
-import { describe, expect, it, vi } from 'vitest'
-import { createMockRecordMarkers } from '@/mocks/records'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createMockRecordMarkers, createMockRecords } from '@/mocks/records'
 import type { RecordMapMarker } from '@/types/record'
 import RecordMapPage from './RecordMapPage'
 import RecordMarker from './RecordMarker'
@@ -18,23 +18,41 @@ vi.mock('./RecordMapView', () => ({
   ),
 }))
 
-// Figma 기록 지도(284:14400) Description 1~4 기준
+// Figma 기록 지도(284:14400 지도형, 284:14758 목록형) Description 1~4, 7 기준
 type Props = ComponentProps<typeof RecordMapPage>
 const MARKERS = createMockRecordMarkers()
+const RECORDS = createMockRecords()
 
 function renderPage(props: Partial<Props> = {}) {
   const handlers = {
     onSearch: vi.fn(),
     onCalendarClick: vi.fn(),
     onViewChange: vi.fn(),
+    onLoadMore: vi.fn(),
     onCardClick: vi.fn(),
     onShare: vi.fn(),
     onRetry: vi.fn(),
     onTabChange: vi.fn(),
   }
-  render(<RecordMapPage status="ready" markers={MARKERS} totalCount={12} {...handlers} {...props} />)
+  render(
+    <RecordMapPage
+      view="map"
+      totalCount={12}
+      mapStatus="ready"
+      markers={MARKERS}
+      listStatus="ready"
+      records={RECORDS}
+      hasMoreRecords={false}
+      {...handlers}
+      {...props}
+    />,
+  )
   return { user: userEvent.setup(), ...handlers }
 }
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 describe('RecordMapPage', () => {
   describe('1. 드라이브 기록 현황', () => {
@@ -45,8 +63,8 @@ describe('RecordMapPage', () => {
       expect(screen.getByRole('heading', { level: 1, name: '우리 어디까지 가봤지?' })).toBeInTheDocument()
     })
 
-    it('불러오는 중에는 횟수를 표시하지 않는다', () => {
-      renderPage({ status: 'loading', markers: [], totalCount: 0 })
+    it('전체 기록 수를 모르는 동안에는 횟수를 표시하지 않는다', () => {
+      renderPage({ mapStatus: 'loading', markers: [], totalCount: null })
 
       expect(screen.queryByText(/번의 드라이브를 함께했어요/)).not.toBeInTheDocument()
       expect(screen.getByRole('status')).toHaveTextContent('기록을 불러오는 중이에요')
@@ -91,6 +109,18 @@ describe('RecordMapPage', () => {
 
       expect(onViewChange).toHaveBeenCalledWith('list')
     })
+
+    it('목록형에서는 지도 대신 기록 목록을 보여주고, 지도형을 누르면 전환을 요청한다', async () => {
+      const { user, onViewChange } = renderPage({ view: 'list' })
+
+      expect(screen.queryByTestId('map')).not.toBeInTheDocument()
+      expect(screen.getByRole('list', { name: '드라이브 기록 목록' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: '목록형' })).toHaveAttribute('aria-pressed', 'true')
+
+      await user.click(screen.getByRole('button', { name: '지도형' }))
+
+      expect(onViewChange).toHaveBeenCalledWith('map')
+    })
   })
 
   describe('4. 드라이브 기록 미리보기', () => {
@@ -131,14 +161,59 @@ describe('RecordMapPage', () => {
     })
   })
 
+  describe('7. 드라이브 기록 목록', () => {
+    it('기록을 받은 순서(최신순)대로 보여주고, 누르면 상세로 이동을 요청한다', async () => {
+      const { user, onCardClick } = renderPage({ view: 'list' })
+
+      const items = within(screen.getByRole('list', { name: '드라이브 기록 목록' })).getAllByRole('listitem')
+      expect(items).toHaveLength(RECORDS.length)
+      expect(items[0]).toHaveTextContent(RECORDS[0].title)
+
+      await user.click(screen.getByRole('button', { name: new RegExp(RECORDS[1].title) }))
+
+      expect(onCardClick).toHaveBeenCalledWith(RECORDS[1])
+    })
+
+    it('조건에 맞는 기록이 없으면 안내 문구를 보여준다', () => {
+      renderPage({ view: 'list', records: [] })
+
+      expect(screen.getByText('조건에 맞는 드라이브 기록이 없어요.')).toBeInTheDocument()
+    })
+
+    it('목록 끝에 닿으면 다음 기록을 불러온다', () => {
+      const observers: { callback: IntersectionObserverCallback }[] = []
+      vi.stubGlobal(
+        'IntersectionObserver',
+        class {
+          constructor(callback: IntersectionObserverCallback) {
+            observers.push({ callback })
+          }
+          observe() {}
+          disconnect() {}
+        },
+      )
+      const { onLoadMore } = renderPage({ view: 'list', hasMoreRecords: true })
+
+      act(() => observers[0].callback([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver))
+
+      expect(onLoadMore).toHaveBeenCalled()
+    })
+  })
+
   describe('불러오기 실패', () => {
-    it('오류 안내와 다시 시도 버튼을 보여준다', async () => {
-      const { user, onRetry } = renderPage({ status: 'error', markers: [], totalCount: 0 })
+    it('지도형: 오류 안내와 다시 시도 버튼을 보여준다', async () => {
+      const { user, onRetry } = renderPage({ mapStatus: 'error', markers: [] })
 
       expect(screen.getByRole('alert')).toHaveTextContent('기록을 불러오지 못했어요')
       await user.click(screen.getByRole('button', { name: '다시 시도' }))
 
       expect(onRetry).toHaveBeenCalled()
+    })
+
+    it('목록형: 목록을 불러오지 못하면 오류 안내를 보여준다', () => {
+      renderPage({ view: 'list', listStatus: 'error', records: [] })
+
+      expect(screen.getByRole('alert')).toHaveTextContent('기록을 불러오지 못했어요')
     })
   })
 

@@ -3,6 +3,8 @@ $gutter: 25px;
 
 .page {
   position: relative;
+  display: flex;
+  flex-direction: column;
   max-width: var(--app-max-width);
   height: 100vh; // dvh 미지원 웹뷰 대비
   height: 100dvh;
@@ -30,6 +32,41 @@ $gutter: 25px;
   }
 }
 
+// 목록형: 상단 영역은 제자리에 두고, 그 아래 목록만 스크롤한다 (Figma 284:14758)
+.listPage {
+  background-color: color('divider');
+
+  .top {
+    position: relative;
+    flex-shrink: 0;
+  }
+}
+
+.list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  // 하단 네비바 + 보기 전환 버튼에 마지막 기록이 가려지지 않게 한다
+  padding: 21px $gutter calc(min(#{$nav-height}, #{$nav-visible-height} + env(safe-area-inset-bottom, 0px)) + 34px + 33px + 16px);
+}
+
+.records {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.loadMore {
+  height: 1px;
+}
+
+.empty {
+  padding-top: 80px;
+  color: color('gray-600');
+  text-align: center;
+  @include typo('body-s');
+}
+
 .header {
   position: relative;
   z-index: 4;
@@ -49,6 +86,7 @@ $gutter: 25px;
   gap: 4px;
   min-width: 0;
   padding-bottom: 20px;
+  word-break: keep-all; // 줄이 바뀌어도 단어 중간에서 끊지 않는다
 }
 
 .count {
@@ -64,11 +102,24 @@ $gutter: 25px;
   color: color('brown');
 }
 
-// 마스코트는 헤더 아래로 9px 걸쳐 내려온다
+// 360px 미만(iPhone SE 1세대 등)에서는 글자를 조금 줄여 한 줄을 지킨다
+@media (max-width: 359px) {
+  .count {
+    font-size: 15px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+}
+
+// 마스코트는 헤더 아래로 9px 걸쳐 내려온다.
+// 갤럭시(360px) 등 좁은 화면에서는 제목 자리(205px)가 남도록 줄어든다
 .mascot {
   flex-shrink: 0;
-  width: 117px;
-  height: 78px;
+  width: clamp(76px, calc(100vw - 255px), 117px);
+  height: auto;
+  aspect-ratio: 117 / 78;
   margin-bottom: -9px;
   object-fit: cover;
 }
@@ -93,7 +144,9 @@ $gutter: 25px;
   min-width: 0;
   height: 100%;
   border: 0;
+  border-radius: 0;
   background: none;
+  appearance: none; // 사파리의 기본 검색창 모양(둥근 테두리 · 안쪽 여백)을 없앤다
   color: color('black');
   @include typo('body-s');
 
@@ -101,7 +154,8 @@ $gutter: 25px;
     color: color('gray-600');
   }
 
-  &::-webkit-search-cancel-button {
+  &::-webkit-search-cancel-button,
+  &::-webkit-search-decoration {
     display: none;
   }
 
