@@ -271,3 +271,8 @@ $gutter: 25px;
   word-break: keep-all;
   @include typo('card-myungjo');
 }
+
+// 비어 있는 소감 칸 안내 (카드 작성 화면의 비어 있는 칸과 같은 회색)
+.emptyReflection {
+  color: color('gray-400');
+}

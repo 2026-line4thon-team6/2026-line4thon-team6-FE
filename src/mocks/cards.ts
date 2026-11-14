@@ -199,8 +199,9 @@ const recordAuthor = (id: string, nickname: string): CardAuthor => ({
   provider: 'KAKAO',
 })
 
-const RECORD_ME = recordAuthor('usr_mock_me', '민준')
-const RECORD_PARTNER = recordAuthor('usr_mock_partner', '민지')
+// 홈 목 데이터의 나(usr_minjun) · 연인(usr_minji)과 같은 사람
+const RECORD_ME = recordAuthor(MOCK_ME_ID, '민준')
+const RECORD_PARTNER = recordAuthor(PARTNER_ID, '민지')
 
 const submittedReflection = (who: CardAuthor, text: string, submittedAt: string): Reflection => ({
   author: who,
@@ -226,9 +227,11 @@ export async function mockFetchCard(cardId: string): Promise<ApiResponse<Card>> 
   const photos = [record.thumbnailUrl, ...(index % 3 === 2 ? [] : [records[(index + 1) % records.length]!.thumbnailUrl])].map(
     (url, order) => ({ mediaId: `med_${cardId}_${order}`, url, urlExpiresAt: '2099-01-01T00:00:00Z', order }),
   )
+  // 기록마다 소감 상태를 섞는다: 둘 다 씀 · 나만 씀(상대방 미작성) · 둘 다 씀 · 상대방만 씀(나 미작성)
+  const wrote = { me: index % 4 !== 3, partner: index % 2 === 0 || index % 4 === 3 }
   const reflections = [
-    submittedReflection(RECORD_ME, '운전하느라 조금 힘들었지만 노을은 진짜 예뻤다 ㅎㅎ', submittedAt),
-    ...(index % 2 === 0
+    ...(wrote.me ? [submittedReflection(RECORD_ME, '운전하느라 조금 힘들었지만 노을은 진짜 예뻤다 ㅎㅎ', submittedAt)] : []),
+    ...(wrote.partner
       ? [submittedReflection(RECORD_PARTNER, '바다도 예쁘고 사진도 잘 나와서 만족 💗 다음에 또 가자!', submittedAt)]
       : []),
   ]

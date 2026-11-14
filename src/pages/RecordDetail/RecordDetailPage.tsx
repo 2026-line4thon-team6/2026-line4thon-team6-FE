@@ -20,6 +20,16 @@ interface RecordDetailPageProps {
   // 삭제에 성공하면 부모가 화면을 옮긴다. 실패하면 팝업에 안내를 띄운다
   onDelete: () => Promise<DeleteOutcome>
   onPlaylistClick?: (playlist: CardPlaylist) => void
+  // 소감 칸을 나 · 상대방으로 나눌 때 쓴다. 비어 있는 칸에도 닉네임을 보여 준다
+  myUserId: string
+  myNickname: string
+  partnerNickname: string | null
+}
+
+// 수정 기간이 끝났는데 비어 있는 소감 칸의 안내
+const EMPTY_REFLECTION = {
+  mine: '기록을 작성하지 않았어요 :)',
+  partner: '상대방이 기록을 남기지 않았어요 :)',
 }
 
 const DELETE_ERRORS: Record<Exclude<DeleteOutcome, 'deleted'>, string> = {
@@ -31,7 +41,17 @@ const DELETE_ERRORS: Record<Exclude<DeleteOutcome, 'deleted'>, string> = {
 const AUTHOR_IMAGES = [driverImage, passengerImage]
 
 // 기록 지도 - 카드 상세 (Figma 284:15397)
-function RecordDetailPage({ status, card, onBack, onRetry, onDelete, onPlaylistClick }: RecordDetailPageProps) {
+function RecordDetailPage({
+  status,
+  card,
+  onBack,
+  onRetry,
+  onDelete,
+  onPlaylistClick,
+  myUserId,
+  myNickname,
+  partnerNickname,
+}: RecordDetailPageProps) {
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -50,7 +70,17 @@ function RecordDetailPage({ status, card, onBack, onRetry, onDelete, onPlaylistC
   }
 
   const photos = card ? [...card.photos].sort((a, b) => a.order - b.order) : []
-  const reflections = card ? card.reflections.filter((reflection) => reflection.submitted) : []
+  // 소감은 나 · 상대방 두 칸을 항상 보여 준다. 제출하지 않은 초안은 쓰지 않은 것으로 본다.
+  // 운전자를 알면 운전자 칸이 먼저(Figma 284:15397), 모르면 나 → 상대방 순서
+  const submitted = card ? card.reflections.filter((reflection) => reflection.submitted) : []
+  const mine = submitted.find((reflection) => reflection.author.id === myUserId) ?? null
+  const partner = submitted.find((reflection) => reflection.author.id !== myUserId) ?? null
+  const partnerIsDriver = !!card?.driverUserId && card.driverUserId !== myUserId
+  const reflectionSlots = [
+    { key: 'mine', reflection: mine, nickname: myNickname, empty: EMPTY_REFLECTION.mine },
+    { key: 'partner', reflection: partner, nickname: partnerNickname ?? '연인', empty: EMPTY_REFLECTION.partner },
+  ]
+  if (partnerIsDriver) reflectionSlots.reverse()
 
   return (
     <div className={styles.page}>
@@ -147,25 +177,25 @@ function RecordDetailPage({ status, card, onBack, onRetry, onDelete, onPlaylistC
             </ul>
           )}
 
-          {reflections.length > 0 && (
-            <ul className={styles.reflections} aria-label="소감">
-              {reflections.map((reflection, index) => (
-                <li key={reflection.author.id} className={styles.reflection}>
-                  <div className={styles.author}>
-                    <img
-                      className={styles.avatar}
-                      src={reflection.author.profileImageUrl ?? AUTHOR_IMAGES[index % AUTHOR_IMAGES.length]}
-                      alt=""
-                      width={51}
-                      height={51}
-                    />
-                    <span className={styles.nickname}>{reflection.author.nickname}</span>
-                  </div>
-                  <p className={styles.reflectionText}>{reflection.text}</p>
-                </li>
-              ))}
-            </ul>
-          )}
+          <ul className={styles.reflections} aria-label="소감">
+            {reflectionSlots.map(({ key, reflection, nickname, empty }, index) => (
+              <li key={key} className={styles.reflection}>
+                <div className={styles.author}>
+                  <img
+                    className={styles.avatar}
+                    src={reflection?.author.profileImageUrl ?? AUTHOR_IMAGES[index % AUTHOR_IMAGES.length]}
+                    alt=""
+                    width={51}
+                    height={51}
+                  />
+                  <span className={styles.nickname}>{reflection?.author.nickname ?? nickname}</span>
+                </div>
+                <p className={[styles.reflectionText, !reflection && styles.emptyReflection].filter(Boolean).join(' ')}>
+                  {reflection?.text ?? empty}
+                </p>
+              </li>
+            ))}
+          </ul>
         </main>
       )}
 

@@ -357,7 +357,15 @@ function RecordMapRoute() {
 }
 
 // 기록 상세. 삭제하면 이전 화면(기록 지도)으로 돌아가고, 기록 지도는 다시 불러와 지운 기록이 빠진다
-function RecordDetailRoute({ cardId }: { cardId: string }) {
+interface RecordDetailRouteProps {
+  cardId: string
+  // 소감 칸을 나 · 상대방으로 나눌 때 쓴다
+  myUserId: string
+  myNickname: string
+  partnerNickname: string | null
+}
+
+function RecordDetailRoute({ cardId, myUserId, myNickname, partnerNickname }: RecordDetailRouteProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const goBack = useGoBack()
@@ -383,14 +391,17 @@ function RecordDetailRoute({ cardId }: { cardId: string }) {
       onBack={goBack}
       onRetry={retry}
       onDelete={handleDelete}
+      myUserId={myUserId}
+      myNickname={myNickname}
+      partnerNickname={partnerNickname}
       // TODO: 플레이리스트 화면이 생기면 연결한다
     />
   )
 }
 
-function RecordDetailRouteByParam() {
+function RecordDetailRouteByParam(props: Omit<RecordDetailRouteProps, 'cardId'>) {
   const { cardId = '' } = useParams()
-  return <RecordDetailRoute key={cardId} cardId={cardId} />
+  return <RecordDetailRoute key={cardId} cardId={cardId} {...props} />
 }
 
 // 장소가 바뀌면 상세 화면을 새로 마운트해 이전 장소의 상태가 남지 않게 한다
@@ -708,7 +719,11 @@ function App() {
           }
         />
         <Route path="/map" element={<RecordMapRoute />} />
-        <Route path="/cards/:cardId" element={<RecordDetailRouteByParam />} />
+        <Route path="/cards/:cardId" element={<RecordDetailRouteByParam
+                myUserId={home.userId}
+                myNickname={home.nickname}
+                partnerNickname={home.couple?.partnerNickname ?? null}
+              />} />
         <Route path="/notifications" element={<NotificationsRoute onRead={handleNotificationRead} />} />
         <Route path="/drive" element={<DriveRoute />} />
         <Route path="/drive/route" element={<RouteSettingRoute />} />
