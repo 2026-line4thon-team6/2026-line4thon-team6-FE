@@ -8,10 +8,10 @@
   border-radius: 50%;
   background: gradient('coral-text');
   box-shadow: shadow('icon');
-  transition: transform 0.1s;
 
+  // Figma pressed: 배경만 코랄 pressed 단색
   &:active {
-    transform: scale(0.95);
+    background: color('coral-pressed');
   }
 
   &:focus-visible {
