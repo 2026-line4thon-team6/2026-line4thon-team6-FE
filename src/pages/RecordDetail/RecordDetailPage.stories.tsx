@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
-import { mockFetchCard } from '@/mocks/cards'
+import { MOCK_ME_ID, mockFetchCard } from '@/mocks/cards'
 import RecordDetailPage from './RecordDetailPage'
 
 // 목 기록: 자라섬(사진 2장), 몽산포(사진 1장)
@@ -21,6 +21,9 @@ const meta = {
     onRetry: fn(),
     onDelete: fn(async () => 'deleted' as const),
     onPlaylistClick: fn(),
+    myUserId: MOCK_ME_ID,
+    myNickname: '민준',
+    partnerNickname: '민지',
   },
 } satisfies Meta<typeof RecordDetailPage>
 
@@ -36,6 +39,11 @@ export const OnePhoto: Story = {
 
 export const NoPhotos: Story = {
   args: { card: { ...TWO_PHOTOS, photos: [] } },
+}
+
+// 수정 기간이 끝났는데 비어 있는 소감 칸: 내 칸 '기록을 작성하지 않았어요 :)', 상대방 칸 '상대방이 기록을 남기지 않았어요 :)'
+export const EmptyReflections: Story = {
+  args: { card: { ...TWO_PHOTOS, reflections: [] } },
 }
 
 export const NotFound: Story = {

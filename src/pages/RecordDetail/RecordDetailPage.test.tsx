@@ -55,7 +55,17 @@ function renderPage(props: Partial<Props> = {}) {
     onDelete: vi.fn().mockResolvedValue('deleted'),
     onPlaylistClick: vi.fn(),
   }
-  render(<RecordDetailPage status="ready" card={CARD} {...handlers} {...props} />)
+  render(
+    <RecordDetailPage
+      status="ready"
+      card={CARD}
+      myUserId="usr_민준"
+      myNickname="민준"
+      partnerNickname="민지"
+      {...handlers}
+      {...props}
+    />,
+  )
   return { user: userEvent.setup(), ...handlers }
 }
 
@@ -116,12 +126,41 @@ describe('RecordDetailPage', () => {
     expect(screen.queryByRole('list', { name: '드라이브 사진' })).not.toBeInTheDocument()
   })
 
-  it('제출된 소감만 작성자와 함께 보여준다', () => {
+  // 소감 칸은 나 · 상대방 두 칸을 항상 보여 준다. 비어 있으면 안내 문구 (수정 기간이 끝난 기록)
+  const reflectionRows = () =>
+    within(screen.getByRole('list', { name: '소감' }))
+      .getAllByRole('listitem')
+      .map((item) => item.textContent)
+
+  it('두 사람 모두 쓴 소감을 닉네임과 함께 보여 준다', () => {
+    renderPage()
+
+    expect(reflectionRows()).toEqual(['민준노을은 진짜 예뻤다 ㅎㅎ', '민지다음에 또 가자!'])
+  })
+
+  it('상대방이 쓰지 않은 채 끝났으면 상대방 칸에 남기지 않았다고 안내한다 (제출 전 초안도 쓰지 않은 것)', () => {
     renderPage({ card: { ...CARD, reflections: [reflection('민준', '노을은 진짜 예뻤다 ㅎㅎ'), reflection('민지', '쓰는 중', false)] } })
 
-    expect(screen.getByText('민준')).toBeInTheDocument()
-    expect(screen.getByText('노을은 진짜 예뻤다 ㅎㅎ')).toBeInTheDocument()
+    expect(reflectionRows()).toEqual(['민준노을은 진짜 예뻤다 ㅎㅎ', '민지상대방이 기록을 남기지 않았어요 :)'])
     expect(screen.queryByText('쓰는 중')).not.toBeInTheDocument()
+  })
+
+  it('내가 쓰지 않았으면 내 칸에 작성하지 않았다고 안내한다', () => {
+    renderPage({ card: { ...CARD, reflections: [reflection('민지', '다음에 또 가자!')] } })
+
+    expect(reflectionRows()).toEqual(['민준기록을 작성하지 않았어요 :)', '민지다음에 또 가자!'])
+  })
+
+  it('둘 다 쓰지 않았어도 두 칸을 보여 준다', () => {
+    renderPage({ card: { ...CARD, reflections: [] } })
+
+    expect(reflectionRows()).toEqual(['민준기록을 작성하지 않았어요 :)', '민지상대방이 기록을 남기지 않았어요 :)'])
+  })
+
+  it('운전자를 알면 운전자 칸을 먼저 보여 준다 (Figma 284:15397)', () => {
+    renderPage({ card: { ...CARD, driverUserId: 'usr_민지' } })
+
+    expect(reflectionRows()).toEqual(['민지다음에 또 가자!', '민준노을은 진짜 예뻤다 ㅎㅎ'])
   })
 
   it('뒤로가기 버튼을 누르면 이전 화면으로 돌아간다', async () => {
@@ -174,17 +213,19 @@ describe('RecordDetailPage', () => {
   })
 
   describe('불러오기 상태', () => {
+    const ME = { myUserId: 'usr_민준', myNickname: '민준', partnerNickname: '민지' }
+
     it('불러오는 중 · 없는 카드 · 오류를 안내한다', async () => {
-      const { unmount } = render(<RecordDetailPage status="loading" card={null} onBack={vi.fn()} onRetry={vi.fn()} onDelete={vi.fn()} />)
+      const { unmount } = render(<RecordDetailPage status="loading" card={null} onBack={vi.fn()} onRetry={vi.fn()} onDelete={vi.fn()} {...ME} />)
       expect(screen.getByRole('status')).toHaveTextContent('기록을 불러오는 중이에요')
       unmount()
 
-      const notFound = render(<RecordDetailPage status="notFound" card={null} onBack={vi.fn()} onRetry={vi.fn()} onDelete={vi.fn()} />)
+      const notFound = render(<RecordDetailPage status="notFound" card={null} onBack={vi.fn()} onRetry={vi.fn()} onDelete={vi.fn()} {...ME} />)
       expect(screen.getByRole('alert')).toHaveTextContent('삭제되었거나 볼 수 없는 기록이에요')
       notFound.unmount()
 
       const onRetry = vi.fn()
-      render(<RecordDetailPage status="error" card={null} onBack={vi.fn()} onRetry={onRetry} onDelete={vi.fn()} />)
+      render(<RecordDetailPage status="error" card={null} onBack={vi.fn()} onRetry={onRetry} onDelete={vi.fn()} {...ME} />)
       await userEvent.setup().click(screen.getByRole('button', { name: '다시 시도' }))
       expect(onRetry).toHaveBeenCalled()
     })
