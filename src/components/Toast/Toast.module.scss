@@ -1,0 +1,29 @@
+// Figma 기준 화면 아래에서 76px 위 (390 x 844 중 y=735)
+.toast {
+  position: fixed;
+  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  z-index: 200;
+  max-width: calc(100% - 50px);
+  padding: 6px 19px 6px 18px;
+  border-radius: 100px;
+  @include typo('body-s-medium');
+  color: color('white');
+  text-align: center;
+  background-color: rgb(123 117 120 / 60%);
+  transform: translateX(-50%);
+  animation: toast-in 0.2s ease-out;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}

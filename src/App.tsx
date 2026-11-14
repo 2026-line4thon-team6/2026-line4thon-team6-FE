@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 're
 import { logout } from '@/api/auth'
 import { fetchCardShare } from '@/api/cards'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
+import useCouplePage from '@/hooks/useCouplePage'
 import useLegalDocument from '@/hooks/useLegalDocument'
 import useMyCouple from '@/hooks/useMyCouple'
 import CardPromptModal from '@/components/CardPromptModal/CardPromptModal'
@@ -18,6 +19,7 @@ import useRecords from '@/hooks/useRecords'
 import useRouteSetting from '@/hooks/useRouteSetting'
 import useStartDrive, { type DriveLocationState } from '@/hooks/useStartDrive'
 import { MOCK_CATEGORIES, MOCK_HOME, MOCK_SPOTS } from '@/mocks/home'
+import CouplePage from '@/pages/Couple/CouplePage'
 import DrivePage from '@/pages/Drive/DrivePage'
 import DriveCardPage from '@/pages/DriveCard/DriveCardPage'
 import HomePage from '@/pages/Home/HomePage'
@@ -68,11 +70,11 @@ function useTabNavigate() {
   }
 }
 
-// 앱 안에서 들어왔으면 이전 화면으로, 주소로 바로 들어왔으면 홈으로 돌아간다
-function useGoBack() {
+// 앱 안에서 들어왔으면 이전 화면으로, 주소로 바로 들어왔으면 fallback(기본 홈)으로 돌아간다
+function useGoBack(fallback = '/') {
   const navigate = useNavigate()
   const location = useLocation()
-  return () => (location.key === 'default' ? navigate('/') : navigate(-1))
+  return () => (location.key === 'default' ? navigate(fallback) : navigate(-1))
 }
 
 interface NotificationsRouteProps {
@@ -387,8 +389,7 @@ function MyRoute() {
     <MyPage
       status={status}
       couple={couple}
-      // TODO: 커플 페이지가 생기면 이동한다
-      onProfileClick={() => {}}
+      onProfileClick={() => navigate('/my/couple')}
       onMenuClick={handleMenuClick}
       onLogout={() => void handleLogout()}
       onTabChange={goTab}
@@ -396,8 +397,29 @@ function MyRoute() {
   )
 }
 
+// 커플 페이지. 연결을 해제하면 마이 화면으로 돌아간다 (기능명세서: 해제 후 이동 화면 확인 필요)
+function CoupleRoute() {
+  const navigate = useNavigate()
+  const goBack = useGoBack('/my')
+  const { retry, changeStartDate, renameMascot, updateProfile, disconnect, ...state } = useCouplePage()
+
+  return (
+    <CouplePage
+      {...state}
+      onBack={goBack}
+      onRetry={retry}
+      onChangeStartDate={changeStartDate}
+      onRenameMascot={renameMascot}
+      onUpdateProfile={updateProfile}
+      onCopyInviteCode={(code) => copyText(code).catch(() => undefined)}
+      onDisconnect={disconnect}
+      onDisconnected={() => navigate('/my', { replace: true })}
+    />
+  )
+}
+
 function LegalDocumentRoute({ type }: { type: LegalDocumentType }) {
-  const goBack = useGoBack()
+  const goBack = useGoBack('/my')
   const { status, document, retry } = useLegalDocument(type)
 
   return <LegalDocumentPage type={type} status={status} document={document} onBack={goBack} onRetry={retry} />
@@ -540,6 +562,7 @@ function App() {
       <Route path="/drive" element={<DriveRoute />} />
       <Route path="/drive/route" element={<RouteSettingRoute />} />
       <Route path="/my" element={<MyRoute />} />
+      <Route path="/my/couple" element={<CoupleRoute />} />
       {Object.entries(LEGAL_PATHS).map(([type, path]) => (
         <Route
           key={type}

@@ -1,0 +1,61 @@
+// 붕붕이명 · 내 정보 편집 팝업 (Figma 340 x 232 / 340 x 325). 닫기 버튼(28px) 아래로 입력칸이 온다
+.content {
+  display: flex;
+  flex-direction: column;
+  padding: 54px 25px 25px 26px;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 27px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  @include typo('body-m-15-bold');
+  color: color('gray-600');
+}
+
+.input {
+  width: 100%;
+  height: 40px;
+  padding: 0 15px;
+  border: 1px solid color('gray-100');
+  border-radius: 10px;
+  @include typo('body-m-medium');
+  color: color('black');
+  background-color: color('white');
+  caret-color: color('coral');
+  outline: none;
+
+  &::placeholder {
+    color: color('gray-400');
+  }
+
+  &:focus-visible {
+    border-color: color('coral-stroke');
+  }
+}
+
+.error {
+  margin-top: 10px;
+  @include typo('caption');
+  color: color('red');
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin: 36px -6px 0 -5px;
+}
+
+// 취소 96px, 저장하기가 남는 폭을 쓴다
+.cancel {
+  flex: 0 0 96px;
+}

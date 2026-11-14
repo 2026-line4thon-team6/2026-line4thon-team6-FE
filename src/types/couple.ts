@@ -25,3 +25,11 @@ export interface CoupleConnection {
   couple: Couple | null
   connectionStatus: 'UNLINKED' | 'CONNECTED' | 'DISCONNECTED'
 }
+
+// GET /couple-invites/me — 내 커플 코드. 연결 후에도 표시용으로 남는다
+export interface CoupleInvite {
+  inviteId: string
+  code: string // 불투명 문자열. 길이 · 형식을 검증하지 않는다
+  expiresAt: string
+  status: 'ACTIVE' | 'CONSUMED' | 'REVOKED' | 'EXPIRED'
+}

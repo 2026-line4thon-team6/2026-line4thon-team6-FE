@@ -1,0 +1,75 @@
+// Figma 기준 325 x 186. 칸 높이 38px x 5칸, 가운데 칸 위아래에 구분선
+$item-height: 38px;
+
+.picker {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  width: 100%;
+  height: $item-height * 5;
+}
+
+// 선택된 칸을 표시하는 위아래 선
+.band {
+  position: absolute;
+  top: $item-height * 2;
+  right: 0;
+  left: 0;
+  height: $item-height;
+  border-top: 1px solid color('divider');
+  border-bottom: 1px solid color('divider');
+  pointer-events: none;
+}
+
+.column {
+  height: 100%;
+  padding: $item-height * 2 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  outline: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  &:focus-visible {
+    border-radius: 8px;
+    box-shadow: inset 0 0 0 2px color('coral-pressed');
+  }
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: $item-height;
+  white-space: nowrap;
+  cursor: pointer;
+  scroll-snap-align: center;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+// 선택된 칸: 검정 24px / 바로 옆 칸: 회색 24px / 그 밖: 연회색 20px
+.selected {
+  @include typo('title-s');
+  color: color('black');
+}
+
+.near {
+  @include typo('title-s');
+  color: color('gray-400');
+}
+
+.far {
+  @include typo('body-l');
+  font-weight: 400;
+  color: color('gray-200');
+}
+
+.disabled {
+  color: color('gray-200');
+  cursor: not-allowed;
+}
