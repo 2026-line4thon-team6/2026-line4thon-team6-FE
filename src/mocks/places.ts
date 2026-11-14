@@ -19,9 +19,9 @@ function toSeconds(travelTime: string) {
   return (hours * 60 + minutes) * 60
 }
 
-// Figma 상세 화면(시흥 오이도)의 내용. 사진은 3장뿐이라 8장이 되도록 반복한다
+// Figma 상세 화면(시흥 오이도)의 내용. 사진은 Figma의 대표 사진 1장 (70:1744)
 const OIDO: Omit<PlaceDetail, 'place'> = {
-  photos: Array.from({ length: 8 }, (_, index) => `/mocks/places/oido-${(index % 3) + 1}.webp`),
+  photos: ['/mocks/places/oido-1.webp'],
   introduction:
     '연인과 함께 서해 바다를 따라 달리며 낭만적인 시간을 보내보세요. 붉은 등대와 아름다운 노을이 어우러진 오이도에서 둘만의 특별한 추억을 만들 수 있어요.',
   parkingInfo: '공영주차장 이용 가능',

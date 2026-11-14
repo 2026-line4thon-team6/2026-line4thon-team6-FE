@@ -72,18 +72,22 @@ describe('장소 정보', () => {
     expect(screen.getByText('도착지')).toBeInTheDocument()
   })
 
-  it('사진 번호와 전체 장수, 썸네일 3장과 나머지 장수를 표시한다', () => {
-    renderPage()
+  it('맨 위에는 대표 사진 1장만 보여 주고, 넘기기 · 장수 표시 · 본문 썸네일은 없다', () => {
+    renderPage({
+      detail: { ...OIDO, photos: ['/a.webp', '/b.webp', '/c.webp', '/d.webp'] },
+    })
 
-    expect(screen.getByText('1 / 8')).toBeInTheDocument()
-    expect(screen.getByText('+5')).toBeInTheDocument()
+    const photos = screen.getAllByRole('img', { name: /시흥 오이도/ })
+    expect(photos).toHaveLength(1)
+    expect(photos[0]).toHaveAttribute('src', '/a.webp')
+    expect(screen.queryByText(/^\d+ \/ \d+$/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/^\+\d+$/)).not.toBeInTheDocument()
   })
 
-  it('사진이 3장 이하면 나머지 장수를 표시하지 않는다', () => {
-    renderPage({ detail: HEONHWARO })
+  it('사진이 없으면 장소 썸네일을 대신 보여 준다', () => {
+    renderPage({ detail: { ...HEONHWARO, photos: [] } })
 
-    expect(screen.getByText('1 / 1')).toBeInTheDocument()
-    expect(screen.queryByText(/^\+\d+$/)).not.toBeInTheDocument()
+    expect(screen.getByRole('img', { name: '강릉 헌화로 사진' })).toHaveAttribute('src', HEONHWARO.place.thumbnailUrl)
   })
 })
 
