@@ -673,6 +673,9 @@ function App() {
   const [home, setHome] = useState(MOCK_HOME)
   const [spots, setSpots] = useState(MOCK_SPOTS)
   const [pendingPromptSeen, setPendingPromptSeen] = useState(false)
+  // 로그인한 사용자(GET /me). 홈 데이터는 아직 목이라 실서버에선 id가 맞지 않으므로 로그인 정보를 먼저 쓴다
+  const me = { id: auth.user?.id ?? home.userId, nickname: auth.user?.nickname ?? home.nickname }
+  const partnerNickname = home.couple?.partnerNickname ?? null
 
   // 알림을 읽으면 홈의 새 알림 표시도 맞춘다. API 연동 후에는 홈을 다시 조회해 반영한다
   const handleNotificationRead = () =>
@@ -719,11 +722,12 @@ function App() {
           }
         />
         <Route path="/map" element={<RecordMapRoute />} />
-        <Route path="/cards/:cardId" element={<RecordDetailRouteByParam
-                myUserId={home.userId}
-                myNickname={home.nickname}
-                partnerNickname={home.couple?.partnerNickname ?? null}
-              />} />
+        <Route
+          path="/cards/:cardId"
+          element={
+            <RecordDetailRouteByParam myUserId={me.id} myNickname={me.nickname} partnerNickname={partnerNickname} />
+          }
+        />
         <Route path="/notifications" element={<NotificationsRoute onRead={handleNotificationRead} />} />
         <Route path="/drive" element={<DriveRoute />} />
         <Route path="/drive/route" element={<RouteSettingRoute />} />
@@ -737,11 +741,10 @@ function App() {
         <Route path="/my/playlists" element={<PlaylistsRoute />} />
         <Route path="/my/stories" element={<RadioStoriesRoute />} />
         <Route path="/my/stories/:episodeId" element={<RadioStoryRouteByParam />} />
-        <Route path="/drives/:driveId/card" element={<DriveCardRouteByParam
-                userId={home.userId}
-                myNickname={home.nickname}
-                partnerNickname={home.couple?.partnerNickname ?? null}
-              />} />
+        <Route
+          path="/drives/:driveId/card"
+          element={<DriveCardRouteByParam userId={me.id} myNickname={me.nickname} partnerNickname={partnerNickname} />}
+        />
         <Route
           path="/places/:placeId"
           element={
