@@ -52,6 +52,16 @@ describe('사진', () => {
     expect(result.current.error).toBe('사진은 2장까지 넣을 수 있어요.')
   })
 
+  it('1장이 있을 때 2장을 고르면 남은 1칸만 채우고 안내한다', async () => {
+    const { result } = await renderReady()
+    await act(() => result.current.addPhotos([jpg('a.jpg')]))
+
+    await act(() => result.current.addPhotos([jpg('b.jpg'), jpg('c.jpg')]))
+
+    expect(result.current.card?.photos).toHaveLength(2)
+    expect(result.current.error).toBe('사진은 2장까지 넣을 수 있어요.')
+  })
+
   it('지원하지 않는 형식이나 10MB를 넘는 사진은 올리지 않고 안내한다', async () => {
     const { result } = await renderReady()
     const gif = new File(['g'], 'a.gif', { type: 'image/gif' })
