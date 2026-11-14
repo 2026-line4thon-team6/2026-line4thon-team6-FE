@@ -44,10 +44,12 @@ const meta = {
     onRename: async () => true,
     onRouteSearch: fn(),
     onLocate: fn(),
+    onEnd: async () => true,
   },
-  // 드라이브명 수정이 실제로 반영되도록 상태로 관리
+  // 드라이브명 수정 · 일시정지 · 재개가 실제로 반영되도록 상태로 관리
   render: function Render(args) {
     const [drive, setDrive] = useState(args.drive)
+    const setStatus = (status: Drive['status']) => setDrive((prev) => (prev ? { ...prev, status } : prev))
     return (
       <DrivePage
         {...args}
@@ -56,6 +58,8 @@ const meta = {
           setDrive((prev) => (prev ? { ...prev, title } : prev))
           return true
         }}
+        onPause={() => setStatus('PAUSED')}
+        onResume={() => setStatus('ACTIVE')}
       />
     )
   },
@@ -67,19 +71,24 @@ type Story = StoryObj<typeof meta>
 // 목적지 설정 전
 export const FirstEntry: Story = {}
 
-export const Driving: Story = {
-  args: {
-    drive: {
-      ...PREPARING,
-      status: 'ACTIVE',
-      metrics: {
-        ...PREPARING.metrics,
-        distanceMeters: 24600,
-        activeDurationSeconds: 1938,
-        estimatedArrivalAt: '2026-11-15T10:47:00Z',
-      },
-    },
+const DRIVING: Drive = {
+  ...PREPARING,
+  status: 'ACTIVE',
+  metrics: {
+    ...PREPARING.metrics,
+    distanceMeters: 24600,
+    activeDurationSeconds: 1938,
+    estimatedArrivalAt: '2026-11-15T10:47:00Z',
   },
+}
+
+// 나가기 → 드라이브 마치기 팝업, 일시정지 → 주행 중단 화면
+export const Driving: Story = {
+  args: { drive: DRIVING },
+}
+
+export const Paused: Story = {
+  args: { drive: { ...DRIVING, status: 'PAUSED' } },
 }
 
 export const LoadError: Story = {

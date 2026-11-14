@@ -1,0 +1,30 @@
+// Figma 기준 340 x 202. 닫기 버튼(28px) 아래로 제목이 온다
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 19px 27px 21px;
+  text-align: center;
+}
+
+.title {
+  @include typo('body-l-bold');
+  color: color('black');
+}
+
+.description {
+  margin-top: 9px;
+  @include typo('body-s');
+  color: color('gray-400');
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  margin-top: 22px;
+}
+
+.editRoute {
+  flex: 0 0 117px;
+}

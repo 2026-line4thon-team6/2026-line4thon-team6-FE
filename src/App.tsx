@@ -12,6 +12,7 @@ import CardPromptModal from '@/components/CardPromptModal/CardPromptModal'
 import DriveNameSheet from '@/components/DriveNameSheet/DriveNameSheet'
 import useCardDetail from '@/hooks/useCardDetail'
 import useDrive from '@/hooks/useDrive'
+import useDriveMap from '@/hooks/useDriveMap'
 import useDriveCard from '@/hooks/useDriveCard'
 import useNotifications from '@/hooks/useNotifications'
 import usePendingCards from '@/hooks/usePendingCards'
@@ -201,25 +202,50 @@ function PlaceDetailRoute({ placeId, couple, mascotName, onFavoriteChange }: Pla
 function DriveRoute() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { status, drive, rename } = useDrive()
+  const { status, drive, rename, pause, resume, end } = useDrive()
+  const map = useDriveMap(drive?.routeId ?? null)
+  const [endedDriveId, setEndedDriveId] = useState<string | null>(null)
 
   if (status === 'empty') return <Navigate to="/" replace />
 
+  // TODO: 실패 토스트
+  const handleEnd = async () => {
+    const ended = await end()
+    if (ended) setEndedDriveId(ended.id)
+    return ended !== null
+  }
+
   return (
-    <DrivePage
-      status={status}
-      drive={drive}
-      onRename={rename}
-      // 경로를 이미 정했으면 장소 상세에서 넘어온 목적지는 다시 쓰지 않는다
-      onRouteSearch={() => navigate('/drive/route', { state: drive?.routeId ? null : location.state })}
-    />
+    <>
+      <DrivePage
+        status={status}
+        drive={drive}
+        currentCoordinate={map.current}
+        routePath={map.path}
+        destination={map.destination}
+        onLocate={() => void map.locate()}
+        onRename={rename}
+        // 경로를 이미 정했으면 장소 상세에서 넘어온 목적지는 다시 쓰지 않는다
+        onRouteSearch={() => navigate('/drive/route', { state: drive?.routeId ? null : location.state })}
+        onPause={() => void pause()}
+        onResume={() => void resume()}
+        onEnd={handleEnd}
+      />
+      {endedDriveId && (
+        <CardPromptModal
+          variant="arrived"
+          onConfirm={() => navigate(cardPath(endedDriveId), { replace: true })}
+          onClose={() => navigate('/', { replace: true })}
+        />
+      )}
+    </>
   )
 }
 
 function RouteSettingRoute() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { status, setRoute } = useDrive()
+  const { status, drive, setRoute, start } = useDrive()
   const { destinationPlaceId } = (location.state ?? {}) as DriveLocationState
   const routeSetting = useRouteSetting(destinationPlaceId)
   const [confirming, setConfirming] = useState(false)
@@ -233,6 +259,8 @@ function RouteSettingRoute() {
     if (!routeSetting.route) return
     setConfirming(true)
     const saved = await setRoute(routeSetting.route.id)
+    // 처음 경로를 정하면 바로 주행을 시작한다. 주행 중 경로 수정은 경로만 바꾼다
+    if (saved && drive?.status === 'PREPARING') await start()
     setConfirming(false)
     // TODO: 실패 토스트
     if (saved) backToDrive()

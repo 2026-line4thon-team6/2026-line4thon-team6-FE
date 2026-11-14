@@ -5,6 +5,8 @@ import type {
   Drive,
   DriveRequestOptions,
   DriveStatus,
+  DriveVersionRequest,
+  EndDriveRequest,
   PrepareDriveRequest,
   StartDriveRequest,
   UpdateDriveRequest,
@@ -21,8 +23,21 @@ const EDITABLE: DriveStatus[] = ['PREPARING', 'ACTIVE', 'PAUSED']
 const store = new Map<string, Drive>()
 let driveCount = 0
 
+const elapsedSeconds = (since: string | null) =>
+  since ? Math.max(0, Math.floor((Date.now() - Date.parse(since)) / 1000)) : 0
+
+// GPS가 없는 목에서는 마지막 시작 · 재개 이후 흐른 시간을 주행 시간에 더한다
+const activeSince = new Map<string, string>()
+
+function withActiveTime(drive: Drive): Drive {
+  if (drive.status !== 'ACTIVE') return drive
+  const seconds = elapsedSeconds(activeSince.get(drive.id) ?? null)
+  return { ...drive, metrics: { ...drive.metrics, activeDurationSeconds: drive.metrics.activeDurationSeconds + seconds } }
+}
+
 export function resetMockDrives() {
   store.clear()
+  activeSince.clear()
   driveCount = 0
 }
 
@@ -61,7 +76,7 @@ function applyRoute(drive: Drive, routeId: string): Drive {
 
 function save(drive: Drive): ApiResponse<Drive> {
   store.set(drive.id, drive)
-  return { data: drive, meta: createMeta() }
+  return { data: withActiveTime(drive), meta: createMeta() }
 }
 
 export async function mockPrepareDrive(
@@ -105,11 +120,12 @@ export async function mockPrepareDrive(
 }
 
 export async function mockGetActiveDrive(): Promise<ApiResponse<ActiveDrive>> {
-  return { data: { drive: findActive() }, meta: createMeta() }
+  const drive = findActive()
+  return { data: { drive: drive && withActiveTime(drive) }, meta: createMeta() }
 }
 
 export async function mockGetDrive(driveId: string): Promise<ApiResponse<Drive>> {
-  return { data: getOrThrow(driveId), meta: createMeta() }
+  return { data: withActiveTime(getOrThrow(driveId)), meta: createMeta() }
 }
 
 export async function mockUpdateDrive(
@@ -143,10 +159,83 @@ export async function mockStartDrive(
     throw mockApiError(422, 'VALIDATION_FAILED', '목적지를 정한 뒤 출발할 수 있어요.')
   }
 
+  const startedAt = new Date().toISOString()
+  activeSince.set(driveId, startedAt)
+
   return save({
     ...drive,
     status: 'ACTIVE',
-    startedAt: new Date().toISOString(),
+    startedAt,
+    controlVersion: drive.controlVersion + 1,
+  })
+}
+
+function getInProgress(driveId: string, expectedVersion: number) {
+  const drive = getOrThrow(driveId)
+  if (drive.status !== 'ACTIVE' && drive.status !== 'PAUSED') {
+    throw mockApiError(409, 'CONFLICT', '주행 중인 드라이브가 아니에요.')
+  }
+  checkVersion(drive, expectedVersion)
+  return withActiveTime(drive)
+}
+
+export async function mockPauseDrive(
+  driveId: string,
+  { expectedVersion }: DriveVersionRequest,
+): Promise<ApiResponse<Drive>> {
+  const drive = getInProgress(driveId, expectedVersion)
+  if (drive.status !== 'ACTIVE') throw mockApiError(409, 'CONFLICT', '이미 기록이 중단되었어요.')
+  activeSince.delete(driveId)
+
+  return save({
+    ...drive,
+    status: 'PAUSED',
+    pausedAt: new Date().toISOString(),
+    controlVersion: drive.controlVersion + 1,
+  })
+}
+
+export async function mockResumeDrive(
+  driveId: string,
+  { expectedVersion }: DriveVersionRequest,
+): Promise<ApiResponse<Drive>> {
+  const drive = getInProgress(driveId, expectedVersion)
+  if (drive.status !== 'PAUSED') throw mockApiError(409, 'CONFLICT', '이미 주행 중이에요.')
+  const now = new Date().toISOString()
+  activeSince.set(driveId, now)
+
+  return save({
+    ...drive,
+    status: 'ACTIVE',
+    pausedAt: null,
+    metrics: {
+      ...drive.metrics,
+      pausedDurationSeconds: drive.metrics.pausedDurationSeconds + elapsedSeconds(drive.pausedAt),
+    },
+    controlVersion: drive.controlVersion + 1,
+  })
+}
+
+export async function mockEndDrive(
+  driveId: string,
+  { expectedVersion, reason }: EndDriveRequest,
+): Promise<ApiResponse<Drive>> {
+  const drive = getInProgress(driveId, expectedVersion)
+  activeSince.delete(driveId)
+  const endedAt = new Date()
+
+  return save({
+    ...drive,
+    status: 'ENDED',
+    pausedAt: null,
+    endedAt: endedAt.toISOString(),
+    endReason: reason,
+    metrics: {
+      ...drive.metrics,
+      pausedDurationSeconds: drive.metrics.pausedDurationSeconds + elapsedSeconds(drive.pausedAt),
+    },
+    canCreateCard: true,
+    editableUntil: new Date(endedAt.getTime() + 24 * 60 * 60 * 1000).toISOString(),
     controlVersion: drive.controlVersion + 1,
   })
 }

@@ -66,9 +66,18 @@ export interface StartDriveRequest {
   initialCoordinate: Coordinate
 }
 
-// POST /drives/{driveId}/cancel
+// POST /drives/{driveId}/cancel · pause · resume
 export interface CancelPreparedDriveRequest {
   expectedVersion: number
+}
+
+export type DriveVersionRequest = CancelPreparedDriveRequest
+
+// POST /drives/{driveId}/end
+export interface EndDriveRequest {
+  expectedVersion: number
+  reason: DriveEndReason
+  lastRecordedSequence: number // 마지막으로 보낸 GPS 묶음 번호
 }
 
 export interface DriveRequestOptions {

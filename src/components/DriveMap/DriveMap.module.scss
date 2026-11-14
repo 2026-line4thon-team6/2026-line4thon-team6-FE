@@ -1,0 +1,43 @@
+.map {
+  width: 100%;
+  height: 100%;
+  background-color: color('blue'); // 지도 타일이 오기 전 바다색
+}
+
+.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: color('gray-100');
+}
+
+.fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: color('blue');
+  color: color('gray-600');
+  @include typo('body-s');
+}
+
+// 카카오 오버레이 상자는 폭이 0이라 전역 img max-width: 100%에 걸리지 않게 한다
+.current,
+.pin {
+  max-width: none;
+}
+
+.current {
+  display: block;
+  width: 30px;
+  height: 30px;
+}
+
+.pin {
+  display: block;
+  width: 64px;
+  height: 74px;
+}

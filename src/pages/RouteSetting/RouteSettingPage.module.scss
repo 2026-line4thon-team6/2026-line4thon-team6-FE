@@ -73,7 +73,7 @@ $gutter: 25px;
 .map {
   position: absolute;
   inset: 0;
-  background-color: color('gray-100');
+  isolation: isolate; // 카카오 지도 안의 z-index가 검색창 · 버튼을 덮지 않게
 }
 
 .bottom {
