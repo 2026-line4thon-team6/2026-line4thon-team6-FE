@@ -42,7 +42,7 @@ function createStore(): Map<string, PlaceDetail> {
         coordinate: { latitude: 37.3456, longitude: 126.6878 },
         thumbnailUrl: spot.imageUrl ?? null,
         category: CATEGORY_BY_ID[spot.categoryId],
-        hashtags: id === '1' ? [...spot.tags, '드라이브코스'] : spot.tags,
+        hashtags: spot.tags,
         estimatedDurationSeconds: toSeconds(spot.travelTime),
         distanceMeters: null,
         isFavorite: spot.liked,

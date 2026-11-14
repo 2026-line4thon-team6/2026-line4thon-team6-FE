@@ -37,7 +37,7 @@ describe('장소 정보', () => {
     expect(screen.getByText('바다')).toBeInTheDocument()
     expect(screen.getByText('#일몰')).toBeInTheDocument()
     expect(screen.getByText('#해안도로')).toBeInTheDocument()
-    expect(screen.getByText('#드라이브코스')).toBeInTheDocument()
+    expect(screen.queryByText('#드라이브코스')).not.toBeInTheDocument()
     expect(screen.getByText(/붉은 등대와 아름다운 노을이 어우러진/)).toBeInTheDocument()
   })
 
