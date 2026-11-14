@@ -77,6 +77,53 @@ describe('메뉴', () => {
   })
 })
 
+describe('앱 설치하기', () => {
+  it('설치할 수 있으면 메뉴 맨 아래에 앱 설치하기를 보여 준다', () => {
+    renderPage({ installMode: 'prompt', onInstall: vi.fn() })
+
+    const groups = screen.getAllByRole('list', { name: /메뉴/ })
+    const last = within(groups.at(-1)!).getAllByRole('button').at(-1)
+    expect(last).toHaveAccessibleName('앱 설치하기')
+  })
+
+  it('이미 앱으로 실행 중이면 보여 주지 않는다', () => {
+    renderPage({ installMode: null })
+
+    expect(screen.queryByRole('button', { name: '앱 설치하기' })).not.toBeInTheDocument()
+  })
+
+  it('브라우저 설치 창이 있으면 바로 설치를 요청한다', async () => {
+    const onInstall = vi.fn()
+    const { user } = renderPage({ installMode: 'prompt', onInstall })
+
+    await user.click(screen.getByRole('button', { name: '앱 설치하기' }))
+
+    expect(onInstall).toHaveBeenCalled()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('아이폰은 공유 메뉴의 홈 화면에 추가를 안내한다', async () => {
+    const { user } = renderPage({ installMode: 'ios', onInstall: vi.fn() })
+
+    await user.click(screen.getByRole('button', { name: '앱 설치하기' }))
+
+    const sheet = screen.getByRole('dialog', { name: '홈 화면에 붕붕어스 추가하기' })
+    expect(sheet).toHaveTextContent('공유')
+    expect(sheet).toHaveTextContent('홈 화면에 추가')
+
+    await user.click(within(sheet).getByRole('button', { name: '확인' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('설치 창이 없는 다른 브라우저는 브라우저 메뉴를 안내한다', async () => {
+    const { user } = renderPage({ installMode: 'manual', onInstall: vi.fn() })
+
+    await user.click(screen.getByRole('button', { name: '앱 설치하기' }))
+
+    expect(screen.getByRole('dialog', { name: '홈 화면에 붕붕어스 추가하기' })).toHaveTextContent('브라우저 메뉴')
+  })
+})
+
 describe('로그아웃 바텀시트', () => {
   it('로그아웃을 누르면 확인 시트를 연다 (닫기 버튼 없이 손잡이만)', async () => {
     const { user, onLogout } = renderPage()

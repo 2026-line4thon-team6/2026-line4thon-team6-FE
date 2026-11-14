@@ -4,6 +4,8 @@ import selfieImage from '@/assets/images/my/couple-selfie.webp'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
 import BottomNavBar from '@/components/BottomNavBar/BottomNavBar'
 import type { Couple } from '@/types/couple'
+import type { InstallMode } from '@/utils/pwaInstall'
+import InstallGuideSheet from './InstallGuideSheet'
 import LogoutSheet from './LogoutSheet'
 import styles from './MyPage.module.scss'
 
@@ -40,11 +42,31 @@ interface MyPageProps {
   // 로그아웃 확인 시트에서 '로그아웃'을 눌렀을 때
   onLogout: () => void
   onTabChange: (tab: NavTab) => void
+  // 앱 설치(PWA). null이면 이미 앱으로 실행 중이라 메뉴를 숨긴다
+  installMode?: InstallMode
+  // 브라우저 설치 창 띄우기 (installMode가 'prompt'일 때)
+  onInstall?: () => void
 }
 
 // 마이 화면 (하단 네비바 '마이' 탭)
-function MyPage({ status, couple, onProfileClick, onMenuClick, onLogout, onTabChange }: MyPageProps) {
+function MyPage({
+  status,
+  couple,
+  onProfileClick,
+  onMenuClick,
+  onLogout,
+  onTabChange,
+  installMode = null,
+  onInstall,
+}: MyPageProps) {
   const [logoutOpen, setLogoutOpen] = useState(false)
+  const [installGuide, setInstallGuide] = useState<'ios' | 'manual' | null>(null)
+
+  // 설치 창을 띄울 수 있으면 바로 띄우고, 아니면 홈 화면에 추가하는 방법을 안내한다
+  const handleInstall = () => {
+    if (installMode === 'prompt') onInstall?.()
+    else if (installMode) setInstallGuide(installMode)
+  }
 
   const unlinked = status === 'ready' && couple === null
   const title = couple?.mascotName ?? (unlinked ? '연인과 연결해 보세요' : '')
@@ -92,10 +114,17 @@ function MyPage({ status, couple, onProfileClick, onMenuClick, onLogout, onTabCh
           <li>
             <MenuRow icon="🚪" label="로그아웃" onClick={() => setLogoutOpen(true)} />
           </li>
+          {installMode && (
+            <li>
+              <MenuRow icon="📲" label="앱 설치하기" onClick={handleInstall} />
+            </li>
+          )}
         </ul>
       </main>
 
       <BottomNavBar active="my" onChange={onTabChange} />
+
+      {installGuide && <InstallGuideSheet mode={installGuide} onClose={() => setInstallGuide(null)} />}
 
       {logoutOpen && (
         <LogoutSheet

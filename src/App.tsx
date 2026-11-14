@@ -17,6 +17,7 @@ import useNotifications from '@/hooks/useNotifications'
 import usePendingCards from '@/hooks/usePendingCards'
 import usePlaceDetail from '@/hooks/usePlaceDetail'
 import usePlaylistLibrary from '@/hooks/usePlaylistLibrary'
+import usePwaInstall from '@/hooks/usePwaInstall'
 import useRadioEpisode from '@/hooks/useRadioEpisode'
 import useRadioStories from '@/hooks/useRadioStories'
 import useRecordMap from '@/hooks/useRecordMap'
@@ -404,6 +405,7 @@ function MyRoute({ auth }: { auth: Auth }) {
   const navigate = useNavigate()
   const goTab = useTabNavigate()
   const { status, couple } = useMyCouple()
+  const pwa = usePwaInstall()
 
   const handleMenuClick = (menu: MyMenu) => {
     const legal = LEGAL_MENUS[menu]
@@ -427,6 +429,8 @@ function MyRoute({ auth }: { auth: Auth }) {
       onMenuClick={handleMenuClick}
       onLogout={() => void handleLogout()}
       onTabChange={goTab}
+      installMode={pwa.mode}
+      onInstall={pwa.install}
     />
   )
 }
