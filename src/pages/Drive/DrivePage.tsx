@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import musicNoteIcon from '@/assets/icons/music-note.svg'
 import DriveMap from '@/components/DriveMap/DriveMap'
 import DriveNameSheet from '@/components/DriveNameSheet/DriveNameSheet'
@@ -10,6 +10,7 @@ import SegmentedControl from '@/components/SegmentedControl/SegmentedControl'
 import Toast from '@/components/Toast/Toast'
 import type { Drive } from '@/types/drive'
 import type { Coordinate } from '@/types/route'
+import useSnapSheet from '@/hooks/useSnapSheet'
 import { getDriveStats } from '@/utils/driveStats'
 import styles from './DrivePage.module.scss'
 import DriveConfirmModal from './DriveConfirmModal'
@@ -44,6 +45,10 @@ interface DrivePageProps {
   contents?: ReactNode
   stamps?: ReactNode
 }
+
+// 접힘: 손잡이(38) + 탭(40) + 여백(16) / 기본: Figma 드라이브 화면 패널 높이
+const COLLAPSED_HEIGHT = 94
+const DEFAULT_HEIGHT = 268
 
 const FIT_PADDING: [number, number, number, number] = [90, 70, 140, 40]
 
@@ -88,9 +93,29 @@ function DrivePage({
   const [tab, setTab] = useState<PanelTab>('contents')
   const [locateKey, setLocateKey] = useState(0)
   const [toast, setToast] = useState<string | null>(null)
-  const [expanded, setExpanded] = useState(false)
-  const dragStartY = useRef<number | null>(null)
+  const pageRef = useRef<HTMLDivElement>(null)
+  const insetRef = useRef<HTMLSpanElement>(null)
+  const [frame, setFrame] = useState({ height: 0, safeTop: 0, safeBottom: 0 })
+  const sheet = useSnapSheet({
+    collapsed: COLLAPSED_HEIGHT + frame.safeBottom,
+    default: DEFAULT_HEIGHT,
+    full: Math.max(frame.height - frame.safeTop, DEFAULT_HEIGHT),
+  })
+  const expanded = sheet.height > DEFAULT_HEIGHT + 40
   const runningSeconds = useRunningSeconds(drive)
+
+  useLayoutEffect(() => {
+    const page = pageRef.current
+    const inset = insetRef.current
+    if (!page || !inset) return
+    const measure = () =>
+      setFrame({ height: page.clientHeight, safeTop: inset.offsetHeight, safeBottom: inset.offsetWidth })
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(measure)
+    observer.observe(page)
+    return () => observer.disconnect()
+  }, [])
 
   const [locationDismissed, setLocationDismissed] = useState(false)
   const [prevLocationDenied, setPrevLocationDenied] = useState(locationDenied)
@@ -115,14 +140,6 @@ function DrivePage({
     if (ended) setConfirmingEnd(false)
   }
 
-  const handlePointerUp = (event: PointerEvent<HTMLButtonElement>) => {
-    const start = dragStartY.current
-    dragStartY.current = null
-    if (start === null) return
-    const dy = event.clientY - start
-    setExpanded((value) => (dy < -20 ? true : dy > 20 ? false : !value))
-  }
-
   const locate = () => {
     setLocateKey((key) => key + 1)
     onLocate?.()
@@ -139,7 +156,8 @@ function DrivePage({
   }
 
   return (
-    <div className={styles.page}>
+    <div ref={pageRef} className={styles.page}>
+      <span ref={insetRef} className={styles.insetProbe} aria-hidden />
       <div className={styles.map}>
         <DriveMap
           current={currentCoordinate}
@@ -174,7 +192,7 @@ function DrivePage({
         </p>
       )}
 
-      <div className={[styles.bottom, expanded && styles.expanded].filter(Boolean).join(' ')}>
+      <div className={styles.bottom}>
         <div className={styles.overlay} hidden={expanded}>
           <div className={styles.controlRow}>
             {restAreaAlert && (
@@ -203,17 +221,18 @@ function DrivePage({
           <DriveStats items={getDriveStats(drive, runningSeconds)} />
         </div>
 
-        <section className={styles.panel} aria-label="드라이브 콘텐츠">
+        <section
+          className={[styles.panel, !sheet.dragging && styles.settling].filter(Boolean).join(' ')}
+          style={{ height: sheet.height }}
+          aria-label="드라이브 콘텐츠"
+        >
           <button
             type="button"
             className={styles.handle}
-            aria-label={expanded ? '패널 접기' : '패널 펼치기'}
-            aria-expanded={expanded}
-            onPointerDown={(event) => {
-              dragStartY.current = event.clientY
-            }}
-            onPointerUp={handlePointerUp}
-            onClick={(event) => event.detail === 0 && setExpanded((value) => !value)}
+            aria-label={sheet.snap === 'full' ? '패널 접기' : '패널 펼치기'}
+            aria-expanded={sheet.snap === 'full'}
+            {...sheet.handleProps}
+            onClick={(event) => event.detail === 0 && sheet.toggle()}
           />
           <SegmentedControl aria-label="콘텐츠 종류" options={TABS} value={tab} onChange={setTab} />
 

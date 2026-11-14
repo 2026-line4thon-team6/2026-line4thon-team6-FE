@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
 import type { Drive } from '@/types/drive'
+import ContentCards from './ContentCards'
 import DrivePage from './DrivePage'
 
 const PREPARING: Drive = {
@@ -44,6 +45,7 @@ const meta = {
     onRename: async () => true,
     onRouteSearch: fn(),
     onLocate: fn(),
+    contents: <ContentCards />,
     onEnd: async () => true,
   },
   render: function Render(args) {

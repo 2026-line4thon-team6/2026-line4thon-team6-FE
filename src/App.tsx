@@ -11,10 +11,12 @@ import useMyCouple from '@/hooks/useMyCouple'
 import CardPromptModal from '@/components/CardPromptModal/CardPromptModal'
 import DriveNameSheet from '@/components/DriveNameSheet/DriveNameSheet'
 import useCardDetail from '@/hooks/useCardDetail'
+import { arrangeGenres, arrangeMoods, arrangeWeathers } from '@/utils/playlistKeywords'
 import useDrive from '@/hooks/useDrive'
 import useActiveDrive from '@/hooks/useActiveDrive'
 import useArrival from '@/hooks/useArrival'
 import useDriveRestAreas from '@/hooks/useDriveRestAreas'
+import usePlaylistGeneration from '@/hooks/usePlaylistGeneration'
 import useDriveMap from '@/hooks/useDriveMap'
 import useDriveCard from '@/hooks/useDriveCard'
 import useNotifications from '@/hooks/useNotifications'
@@ -37,6 +39,10 @@ import PlaylistsPage from '@/pages/Archive/PlaylistsPage'
 import RadioStoriesPage from '@/pages/Archive/RadioStoriesPage'
 import CouplePage from '@/pages/Couple/CouplePage'
 import CoupleInvitePage from '@/pages/CoupleInvite/CoupleInvitePage'
+import ContentCards from '@/pages/Drive/ContentCards'
+import PlaylistGeneratingPage from '@/pages/DjPlaylist/PlaylistGeneratingPage'
+import PlaylistPreferencePage from '@/pages/DjPlaylist/PlaylistPreferencePage'
+import PlaylistResultPage from '@/pages/DjPlaylist/PlaylistResultPage'
 import DrivePage from '@/pages/Drive/DrivePage'
 import RestAreaDetailModal from '@/pages/Drive/RestAreaDetailModal'
 import StampsTab from '@/pages/Drive/StampsTab'
@@ -263,6 +269,8 @@ function DriveRoute() {
         onEnd={handleEnd}
         locationDenied={map.locationDenied}
         onLocationRetry={map.retryLocation}
+        // TODO: 라디오 · 게임 화면 연결
+        contents={<ContentCards onPlaylistClick={() => navigate('/drive/playlist')} />}
         stamps={<StampsTab drive={drive} currentCoordinate={map.current} />}
       />
       {restAreaDetail.detail && <RestAreaDetailModal detail={restAreaDetail.detail} onClose={restAreaDetail.close} />}
@@ -274,6 +282,48 @@ function DriveRoute() {
         />
       )}
     </>
+  )
+}
+
+function DjPlaylistRoute() {
+  const navigate = useNavigate()
+  const { drive } = useDrive()
+  const generation = usePlaylistGeneration(drive?.id ?? null)
+  const { config } = generation
+
+  if (generation.step === 'generating') {
+    return <PlaylistGeneratingPage onCancel={() => void generation.cancel()} onBack={() => void generation.cancel()} />
+  }
+
+  if (generation.step === 'done' && generation.playlist) {
+    return (
+      <PlaylistResultPage
+        playlist={generation.playlist}
+        onToggleSave={() => void generation.toggleSave()}
+        onReorder={(trackIds) => void generation.reorder(trackIds)}
+        onDelete={(trackId) => void generation.removeTrack(trackId)}
+        onRestart={generation.restart}
+        // TODO: 앱 안에서 재생하지 않는다. 재생 카드 화면이 정해지면 연결
+        onPlayAll={() => navigate('/drive')}
+        onBack={() => navigate('/drive')}
+      />
+    )
+  }
+
+  return (
+    <PlaylistPreferencePage
+      moods={arrangeMoods(config?.moods ?? [])}
+      weathers={arrangeWeathers(config?.weatherOptions ?? [])}
+      genres={arrangeGenres(config?.genres ?? [])}
+      moodMax={config?.limits.moodMaxCount ?? 2}
+      genreMax={config?.limits.genreMaxCount ?? 3}
+      value={generation.preference}
+      submitting={generation.submitting}
+      error={generation.error}
+      onChange={generation.setPreference}
+      onSubmit={() => void generation.submit()}
+      onBack={() => navigate(-1)}
+    />
   )
 }
 
@@ -798,6 +848,7 @@ function App() {
         <Route path="/notifications" element={<NotificationsRoute onRead={handleNotificationRead} />} />
         <Route path="/drive" element={<DriveRoute />} />
         <Route path="/drive/route" element={<RouteSettingRoute />} />
+        <Route path="/drive/playlist" element={<DjPlaylistRoute />} />
         <Route path="/my" element={<MyRoute auth={auth} />} />
         <Route path="/my/couple" element={<CoupleRoute />} />
         <Route path="/couple/invite" element={<CoupleInviteRoute />} />
