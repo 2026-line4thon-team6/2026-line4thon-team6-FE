@@ -90,3 +90,29 @@ describe('fetchRecords', () => {
     expect(data.items[0].driveDate >= data.items[1].driveDate).toBe(true)
   })
 })
+
+describe('fetchRecordCalendar', () => {
+  it('달을 쿼리로 보내 GET /records/calendar 를 요청한다', async () => {
+    const { fetchRecordCalendar } = await loadWithBackend()
+
+    await fetchRecordCalendar('2026-10')
+
+    expect(requestedUrl().pathname).toBe('/api/v1/records/calendar')
+    expect(requestedUrl().searchParams.get('month')).toBe('2026-10')
+  })
+
+  it('백엔드 주소가 없으면 그 달에 기록이 있는 날짜와 개수만 날짜순으로 돌려준다', async () => {
+    vi.resetModules()
+    const { fetchRecordCalendar } = await import('./records')
+
+    const { data } = await fetchRecordCalendar('2026-09')
+
+    expect(data.month).toBe('2026-09')
+    expect(data.days).toEqual([
+      { date: '2026-09-06', count: 1 },
+      { date: '2026-09-13', count: 1 },
+      { date: '2026-09-20', count: 1 },
+      { date: '2026-09-27', count: 1 },
+    ])
+  })
+})

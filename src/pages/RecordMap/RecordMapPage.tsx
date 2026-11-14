@@ -5,6 +5,7 @@ import mascotImage from '@/assets/images/record-map-mascot.webp'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
 import BottomNavBar from '@/components/BottomNavBar/BottomNavBar'
 import type { RecordMapMarker, RecordSummary } from '@/types/record'
+import { formatDate } from '@/utils/formatDate'
 import RecordListItem from './RecordListItem'
 import RecordMapView from './RecordMapView'
 import RecordPreview from './RecordPreview'
@@ -17,6 +18,8 @@ interface RecordMapPageProps {
   view: RecordView
   // 조건과 관계없는 전체 기록 수. 모르는 동안은 null
   totalCount: number | null
+  // 날짜로 검색 중이면 그 날짜 (YYYY-MM-DD). 검색창에 날짜를 보여준다
+  date: string | null
   mapStatus: LoadStatus
   markers: RecordMapMarker[]
   listStatus: LoadStatus
@@ -24,6 +27,8 @@ interface RecordMapPageProps {
   hasMoreRecords: boolean
   onSearch: (query: string) => void
   onCalendarClick: () => void
+  // 날짜로 검색 중에 검색어를 입력하기 시작하면 날짜 검색을 푼다
+  onDateClear: () => void
   onViewChange: (view: RecordView) => void
   onLoadMore: () => void
   // 미리보기 카드 · 목록의 기록을 누르면 기록 상세로, 공유 버튼을 누르면 공유로 이동한다
@@ -63,6 +68,7 @@ function LoadMoreTrigger({ onLoadMore }: { onLoadMore: () => void }) {
 function RecordMapPage({
   view,
   totalCount,
+  date,
   mapStatus,
   markers,
   listStatus,
@@ -70,6 +76,7 @@ function RecordMapPage({
   hasMoreRecords,
   onSearch,
   onCalendarClick,
+  onDateClear,
   onViewChange,
   onLoadMore,
   onCardClick,
@@ -81,6 +88,18 @@ function RecordMapPage({
   // 사진 마커를 누르면 그 목적지의 최신 기록을 미리보기로 띄운다
   const [preview, setPreview] = useState<RecordSummary | null>(null)
   const status = view === 'map' ? mapStatus : listStatus
+
+  // 날짜를 새로 고르면 입력하던 검색어를 비운다 (렌더링 중 초기화)
+  const [shownDate, setShownDate] = useState(date)
+  if (shownDate !== date) {
+    setShownDate(date)
+    if (date) setQuery('')
+  }
+
+  const handleQueryChange = (value: string) => {
+    if (date) onDateClear()
+    setQuery(value)
+  }
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
@@ -110,8 +129,10 @@ function RecordMapPage({
             type="search"
             aria-label="기록 검색"
             placeholder="장소나 드라이브 제목을 검색해보세요."
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            value={date ? formatDate(date) : query}
+            // 날짜를 보여주는 중에 누르면 전체를 선택해, 바로 입력하면 날짜 대신 검색어가 들어가게 한다
+            onFocus={(event) => date && event.target.select()}
+            onChange={(event) => handleQueryChange(event.target.value)}
           />
           <button className={styles.searchButton} type="submit" aria-label="검색">
             <img src={searchIcon} alt="" width={17} height={17} />

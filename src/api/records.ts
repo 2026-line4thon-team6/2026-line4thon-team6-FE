@@ -1,6 +1,6 @@
-import { mockFetchRecordMap, mockFetchRecords } from '@/mocks/records'
+import { mockFetchRecordCalendar, mockFetchRecordMap, mockFetchRecords } from '@/mocks/records'
 import type { ApiResponse } from '@/types/api'
-import type { MapBounds, RecordMap, RecordPage } from '@/types/record'
+import type { MapBounds, RecordCalendar, RecordMap, RecordPage } from '@/types/record'
 import { apiFetch, USE_MOCK } from './client'
 
 export interface FetchRecordMapParams {
@@ -29,6 +29,13 @@ export function fetchRecords(params: FetchRecordsParams = {}): Promise<ApiRespon
   if (USE_MOCK) return mockFetchRecords(params)
 
   return apiFetch<RecordPage>(`/records${toQuery(params)}`)
+}
+
+// GET /records/calendar — 그 달(YYYY-MM)에 기록이 있는 날짜와 개수
+export function fetchRecordCalendar(month: string): Promise<ApiResponse<RecordCalendar>> {
+  if (USE_MOCK) return mockFetchRecordCalendar(month)
+
+  return apiFetch<RecordCalendar>(`/records/calendar${toQuery({ month })}`)
 }
 
 // 값이 있는 항목만 쿼리 문자열로 만든다

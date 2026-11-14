@@ -18,11 +18,13 @@ import DriveCardPage from '@/pages/DriveCard/DriveCardPage'
 import HomePage from '@/pages/Home/HomePage'
 import NotificationsPage from '@/pages/Notifications/NotificationsPage'
 import PlaceDetailPage from '@/pages/PlaceDetail/PlaceDetailPage'
+import RecordCalendarSheet from '@/pages/RecordMap/RecordCalendarSheet'
 import RecordMapPage, { type RecordView } from '@/pages/RecordMap/RecordMapPage'
 import RouteSettingPage from '@/pages/RouteSetting/RouteSettingPage'
 import type { HomeSummary } from '@/types/home'
 import type { Notification } from '@/types/notification'
 import type { Category, SpotSummary } from '@/types/spot'
+import { todayInSeoul } from '@/utils/calendar'
 import { copyText, createIdempotencyKey, shareTo } from '@/utils/share'
 
 // 화면 주소. 마이 화면은 아직 없어 탭을 눌러도 이동하지 않는다
@@ -196,14 +198,28 @@ function RouteSettingRoute() {
   )
 }
 
-// 기록 지도. 검색어가 바뀌면 지도 마커와 기록 목록을 그 조건으로 다시 불러온다.
-// 상단의 '총 N번'은 조건과 관계없는 목록 API의 totalCount를 쓴다
+// 기록 지도. 검색어나 날짜가 바뀌면 지도 마커와 기록 목록을 그 조건으로 다시 불러온다.
+// 검색어와 날짜는 함께 쓰지 않는다. 상단의 '총 N번'은 조건과 관계없는 목록 API의 totalCount를 쓴다
 function RecordMapRoute() {
   const goTab = useTabNavigate()
   const [view, setView] = useState<RecordView>('map')
   const [query, setQuery] = useState('')
-  const map = useRecordMap({ q: query })
-  const list = useRecords({ q: query })
+  const [date, setDate] = useState<string | null>(null)
+  const [calendarOpen, setCalendarOpen] = useState(false)
+  const filter = date ? { date } : { q: query }
+  const map = useRecordMap(filter)
+  const list = useRecords(filter)
+
+  const handleSearch = (nextQuery: string) => {
+    setQuery(nextQuery)
+    setDate(null)
+  }
+
+  const handleDateSelect = (nextDate: string) => {
+    setDate(nextDate)
+    setQuery('')
+    setCalendarOpen(false)
+  }
 
   const retry = () => {
     if (map.status === 'error') map.retry()
@@ -211,24 +227,36 @@ function RecordMapRoute() {
   }
 
   return (
-    <RecordMapPage
-      view={view}
-      totalCount={list.totalCount}
-      mapStatus={map.status}
-      markers={map.markers}
-      listStatus={list.status}
-      records={list.records}
-      hasMoreRecords={list.hasMore}
-      onSearch={setQuery}
-      onViewChange={setView}
-      onLoadMore={() => void list.loadMore()}
-      onRetry={retry}
-      onTabChange={goTab}
-      // TODO: 날짜 검색(캘린더) · 기록 상세 · 기록 지도 공유 화면이 생기면 연결한다
-      onCalendarClick={() => {}}
-      onCardClick={() => {}}
-      onShare={() => {}}
-    />
+    <>
+      <RecordMapPage
+        view={view}
+        totalCount={list.totalCount}
+        date={date}
+        mapStatus={map.status}
+        markers={map.markers}
+        listStatus={list.status}
+        records={list.records}
+        hasMoreRecords={list.hasMore}
+        onSearch={handleSearch}
+        onViewChange={setView}
+        onLoadMore={() => void list.loadMore()}
+        onRetry={retry}
+        onTabChange={goTab}
+        onCalendarClick={() => setCalendarOpen(true)}
+        onDateClear={() => setDate(null)}
+        // TODO: 기록 상세 · 기록 지도 공유 화면이 생기면 연결한다
+        onCardClick={() => {}}
+        onShare={() => {}}
+      />
+      {calendarOpen && (
+        <RecordCalendarSheet
+          selectedDate={date}
+          today={todayInSeoul()}
+          onSelect={handleDateSelect}
+          onClose={() => setCalendarOpen(false)}
+        />
+      )}
+    </>
   )
 }
 
