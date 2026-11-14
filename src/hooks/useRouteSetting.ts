@@ -25,6 +25,7 @@ function useRouteSetting(destinationPlaceId?: string) {
   const [results, setResults] = useState<PlaceSummary[] | null>(null)
   const [route, setRoute] = useState<Route | null>(null)
   const [routeStatus, setRouteStatus] = useState<'idle' | 'loading' | 'error'>('idle')
+  const [locationStatus, setLocationStatus] = useState<'loading' | 'ready' | 'unavailable'>('loading')
   const initialDestination = useRef(destinationPlaceId)
 
   const loadHistory = () =>
@@ -37,15 +38,22 @@ function useRouteSetting(destinationPlaceId?: string) {
 
     getCurrentCoordinate()
       .then(async (coordinate) => {
-        if (!coordinate) return
-        const { data } = await reverseGeocode(coordinate)
-        setOrigin({ placeId: null, name: '내 위치', address: data.address ?? '', coordinate })
+        if (!coordinate) {
+          setLocationStatus('unavailable')
+          return
+        }
+        // 주소를 못 받아도 좌표만으로 경로는 계산할 수 있다
+        const address = await reverseGeocode(coordinate)
+          .then(({ data }) => data.address ?? '')
+          .catch(() => '')
+        setOrigin({ placeId: null, name: '내 위치', address, coordinate })
+        setLocationStatus('ready')
       })
-      .catch(() => setOrigin(null))
+      .catch(() => setLocationStatus('unavailable'))
   }, [])
 
   // 입력하는 동안 결과를 바로 보여준다. 최근 검색 저장은 검색을 확정할 때만 한다
-  const keyword = route ? '' : query.trim()
+  const keyword = route || routeStatus === 'loading' ? '' : query.trim()
   useEffect(() => {
     if (!keyword) return
     let ignore = false
@@ -66,11 +74,9 @@ function useRouteSetting(destinationPlaceId?: string) {
       .then(loadHistory)
       .catch(() => {})
 
+  // 출발지가 없으면 화면에서 위치 권한 안내를 보여준다
   const routeTo = async (destination: RoutePoint) => {
-    if (!origin) {
-      setRouteStatus('error')
-      return
-    }
+    if (!origin) return
     setRouteStatus('loading')
     try {
       const { data } = await createRoute({ origin, destination }, createIdempotencyKey())
@@ -123,6 +129,7 @@ function useRouteSetting(destinationPlaceId?: string) {
 
   return {
     origin,
+    locationStatus,
     history,
     query,
     results: query.trim() ? results : null,

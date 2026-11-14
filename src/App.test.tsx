@@ -121,12 +121,13 @@ describe('드라이브 모드 진입', () => {
     expect(await screen.findByRole('button', { name: '경로 탐색' })).toBeInTheDocument()
   })
 
-  it('시트 바깥을 누르면 드라이브를 만들지 않고 닫힌다', async () => {
+  it('시트 바깥을 누르면 드라이브를 만들지 않고 시트가 닫힌다', async () => {
     const user = renderApp()
 
     await user.click(screen.getByRole('button', { name: '드라이브 시작하기' }))
-    await screen.findByRole('dialog', { name: '드라이브 준비 완료!' })
-    await user.keyboard('{Escape}')
+    const sheet = await screen.findByRole('dialog', { name: '드라이브 준비 완료!' })
+    // 시트를 감싼 어두운 배경
+    await user.click(sheet.parentElement!)
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('오늘은 어디로 떠나볼까요?')

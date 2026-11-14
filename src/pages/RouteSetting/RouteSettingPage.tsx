@@ -7,11 +7,12 @@ import SearchResultItem from '@/components/SearchResultItem/SearchResultItem'
 import type { PlaceSummary } from '@/types/place'
 import type { Route } from '@/types/route'
 import type { SearchHistoryItem } from '@/types/search'
-import { formatArrival, formatDistance, formatElapsed } from '@/utils/driveStats'
+import { formatArrival, formatDistance, formatEstimatedDuration } from '@/utils/driveStats'
 import styles from './RouteSettingPage.module.scss'
 
 interface RouteSettingPageProps {
   originAddress: string | null
+  locationUnavailable?: boolean
   query: string
   history: SearchHistoryItem[]
   // null이면 최근 검색을 보여준다
@@ -39,6 +40,7 @@ const formatDate = (iso: string) => {
 // 경로 설정 (Figma 검색 289:20769 · 289:20830 · 289:20892, 경로 설정하기 289:21024)
 function RouteSettingPage({
   originAddress,
+  locationUnavailable = false,
   query,
   history,
   results,
@@ -71,13 +73,22 @@ function RouteSettingPage({
         <GlassIconButton icon="close" aria-label="닫기" onClick={onClose} />
       </header>
 
+      {locationUnavailable && (
+        <p role="alert" className={styles.message}>
+          현재 위치를 확인할 수 없어요. 위치 권한을 허용해 주세요.
+        </p>
+      )}
       {routeStatus === 'error' && (
         <p role="alert" className={styles.message}>
           경로를 찾지 못했어요. 다시 시도해 주세요.
         </p>
       )}
 
-      {route ? (
+      {routeStatus === 'loading' ? (
+        <p role="status" className={styles.message}>
+          경로를 찾는 중이에요.
+        </p>
+      ) : route ? (
         <>
           {/* TODO: 카카오맵에 route.polyline 그리기 */}
           <div className={styles.map} aria-hidden="true" />
@@ -85,7 +96,7 @@ function RouteSettingPage({
             <DriveStats
               className={styles.stats}
               items={[
-                { label: '예상 주행 시간', value: formatElapsed(route.durationSeconds) },
+                { label: '예상 주행 시간', value: formatEstimatedDuration(route.durationSeconds) },
                 { label: '이동 거리', value: formatDistance(route.distanceMeters) },
                 { label: '예상 도착 시간', value: formatArrival(route.estimatedArrivalAt) },
               ]}

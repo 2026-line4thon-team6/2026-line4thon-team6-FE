@@ -138,7 +138,8 @@ function DriveRoute() {
       status={status}
       drive={drive}
       onRename={rename}
-      onRouteSearch={() => navigate('/drive/route', { state: location.state })}
+      // 경로를 이미 정했으면 장소 상세에서 넘어온 목적지는 다시 쓰지 않는다
+      onRouteSearch={() => navigate('/drive/route', { state: drive?.routeId ? null : location.state })}
     />
   )
 }
@@ -153,7 +154,8 @@ function RouteSettingRoute() {
 
   if (status === 'empty') return <Navigate to="/" replace />
 
-  const backToDrive = () => navigate('/drive', { replace: true })
+  // /drive 에서 들어왔으면 방문 기록을 하나 되돌린다
+  const backToDrive = () => (location.key === 'default' ? navigate('/drive', { replace: true }) : navigate(-1))
 
   const handleConfirm = async () => {
     if (!routeSetting.route) return
@@ -167,6 +169,7 @@ function RouteSettingRoute() {
   return (
     <RouteSettingPage
       originAddress={routeSetting.origin?.address || null}
+      locationUnavailable={routeSetting.locationStatus === 'unavailable'}
       query={routeSetting.query}
       history={routeSetting.history}
       results={routeSetting.results}

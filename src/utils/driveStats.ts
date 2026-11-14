@@ -8,6 +8,15 @@ export function formatElapsed(seconds: number) {
   return `${minutes}분 ${seconds % 60}초`
 }
 
+// 예상 시간은 분까지만 (Figma 경로 설정하기: '1시간 20분')
+export function formatEstimatedDuration(seconds: number) {
+  const totalMinutes = Math.max(1, Math.round(seconds / 60))
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  if (hours === 0) return `${minutes}분`
+  return `${hours}시간 ${minutes}분`
+}
+
 export function formatDistance(meters: number) {
   return `${(meters / 1000).toFixed(1)}km`
 }
