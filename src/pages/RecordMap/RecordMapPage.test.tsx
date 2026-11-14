@@ -153,6 +153,20 @@ describe('RecordMapPage', () => {
       expect(onSearch).toHaveBeenCalledWith('바다')
     })
 
+    it('날짜로 검색 중이면 검색창의 X로 바로 전체 기록으로 돌아갈 수 있다', async () => {
+      const onDateClear = vi.fn()
+      render(<RecordMapPage {...PAGE_PROPS} date="2026-10-24" onDateClear={onDateClear} />)
+
+      await userEvent.setup().click(screen.getByRole('button', { name: '날짜 검색 해제' }))
+      expect(onDateClear).toHaveBeenCalledTimes(1)
+    })
+
+    it('날짜로 검색 중이 아니면 X를 보여 주지 않는다', () => {
+      renderPage({ date: null })
+
+      expect(screen.queryByRole('button', { name: '날짜 검색 해제' })).not.toBeInTheDocument()
+    })
+
     it('날짜 검색을 풀면 빈 검색창으로 돌아온다', () => {
       const { rerender } = render(<RecordMapPage {...PAGE_PROPS} date="2026-10-24" />)
       rerender(<RecordMapPage {...PAGE_PROPS} date={null} />)

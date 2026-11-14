@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react'
 import calendarIcon from '@/assets/icons/calendar.svg'
+import clearIcon from '@/assets/icons/delete-small.svg'
 import searchIcon from '@/assets/icons/search-gray.svg'
 import mascotImage from '@/assets/images/record-map-mascot.webp'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
@@ -27,7 +28,7 @@ interface RecordMapPageProps {
   hasMoreRecords: boolean
   onSearch: (query: string) => void
   onCalendarClick: () => void
-  // 날짜로 검색 중에 검색어를 입력하기 시작하면 날짜 검색을 푼다
+  // 날짜 검색을 푼다 (검색창의 X를 누르거나, 날짜 검색 중에 검색어를 입력하기 시작할 때)
   onDateClear: () => void
   onViewChange: (view: RecordView) => void
   onLoadMore: () => void
@@ -134,6 +135,12 @@ function RecordMapPage({
             onFocus={(event) => date && event.target.select()}
             onChange={(event) => handleQueryChange(event.target.value)}
           />
+          {/* 날짜로 검색 중일 때만: 누르면 전체 기록으로 돌아간다 (드라이브 모드 최근 검색의 X 아이콘) */}
+          {date && (
+            <button className={styles.searchButton} type="button" aria-label="날짜 검색 해제" onClick={onDateClear}>
+              <img src={clearIcon} alt="" width={11.5} height={11.5} />
+            </button>
+          )}
           <button className={styles.searchButton} type="submit" aria-label="검색">
             <img src={searchIcon} alt="" width={17} height={17} />
           </button>
