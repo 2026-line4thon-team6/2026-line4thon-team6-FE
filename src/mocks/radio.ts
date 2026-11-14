@@ -1,3 +1,4 @@
+import { ApiError } from '@/api/client'
 import type { ApiMeta, ApiResponse, CursorPage } from '@/types/api'
 import type { RadioEpisode } from '@/types/radio'
 
@@ -7,7 +8,19 @@ let requestCount = 0
 const meta = (): ApiMeta => ({ requestId: `req_mock_radio_${++requestCount}`, serverTime: new Date().toISOString() })
 
 const STORIES: [story: string, broadcastText: string][] = [
-  ['오늘 날씨가 너무 좋아서 갑자기 바다 보러 가자고 했는데 흔쾌히 운전해줘서 고마워!', '맑은 하늘 아래 즉흥 바다 여행, 운전대를 잡아준 연인에게 고마운 마음을 전해요.'],
+  // 첫 사연의 방송 문구는 Figma '보관함 상세'(812:10416)의 DJ 멘트
+  [
+    '오늘 날씨가 너무 좋아서 갑자기 바다 보러 가자고 했는데 흔쾌히 운전해줘서 고마워!',
+    [
+      '안녕하세요, 여러분! 붕붕이 DJ입니다. 🎙️',
+      '오늘은 연인과 함께 바다로 드라이브를 떠난 한 분의 사연을 소개해 드릴게요.',
+      '',
+      '“오랜만에 남자친구와 바다를 보러 가게 됐어요. 평소에는 표현을 잘 못 하는 편인데, 오늘만큼은 운전해 주는 남자친구에게 고맙다는 말을 전하고 싶어요. 덕분에 가는 길마저 즐겁고 행복하거든요.”',
+      '',
+      '참 따뜻한 사연이죠? 어쩌면 여행에서 가장 기억에 남는 순간은 멋진 풍경보다도, 좋아하는 사람과 함께한 시간이 아닐까 싶어요.',
+      '지금 옆에 있는 소중한 사람에게 작은 고마움 한마디 건네보는 건 어떨까요? 두 분의 남은 드라이브도 행복한 순간들로 가득하길 바라겠습니다.',
+    ].join('\n'),
+  ],
   ['바다 가는 길에 노래를 듣다가 우리 처음 만난 날 들었던 노래가 나와서 깜짝 놀랐어.', '추억의 노래가 흘러나온 바닷길, 두 분의 첫 만남이 떠오르는 순간이네요.'],
   ['어느덧 함께한지 백일이 됐어. 앞으로도 같이 많은 곳을 달려보자.', '백일을 맞은 두 분, 앞으로 함께 달릴 길이 더 기대돼요.'],
   ['솔로천국 커플지옥이라는 말이 있는데 우리는 커플천국인 것 같아.', '커플천국이라 말하는 두 분의 드라이브, 오늘도 행복이 가득하길 바라요.'],
@@ -39,4 +52,16 @@ export async function mockFetchRadioHistory(q?: string): Promise<ApiResponse<Cur
     (episode) => !keyword || `${episode.story ?? ''} ${episode.broadcastText ?? ''}`.includes(keyword),
   )
   return { data: { items: structuredClone(items), nextCursor: null, hasMore: false }, meta: meta() }
+}
+
+// GET /radio/episodes/{episodeId}. 목 서버에는 음성 파일이 없어 audioUrl은 null
+export async function mockFetchRadioEpisode(episodeId: string): Promise<ApiResponse<RadioEpisode>> {
+  const episode = MOCK_RADIO_EPISODES.find(({ id }) => id === episodeId)
+  if (!episode) {
+    throw new ApiError(404, {
+      error: { code: 'RESOURCE_NOT_FOUND', message: '사연을 찾을 수 없어요.', details: [], retryable: false },
+      meta: meta(),
+    })
+  }
+  return { data: structuredClone(episode), meta: meta() }
 }

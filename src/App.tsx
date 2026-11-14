@@ -17,6 +17,7 @@ import useNotifications from '@/hooks/useNotifications'
 import usePendingCards from '@/hooks/usePendingCards'
 import usePlaceDetail from '@/hooks/usePlaceDetail'
 import usePlaylistLibrary from '@/hooks/usePlaylistLibrary'
+import useRadioEpisode from '@/hooks/useRadioEpisode'
 import useRadioStories from '@/hooks/useRadioStories'
 import useRecordMap from '@/hooks/useRecordMap'
 import useRecords from '@/hooks/useRecords'
@@ -35,6 +36,7 @@ import LegalDocumentPage from '@/pages/LegalDocument/LegalDocumentPage'
 import MyPage, { type MyMenu } from '@/pages/My/MyPage'
 import NotificationsPage from '@/pages/Notifications/NotificationsPage'
 import PlaceDetailPage from '@/pages/PlaceDetail/PlaceDetailPage'
+import RadioStoryPage from '@/pages/RadioStory/RadioStoryPage'
 import RecordDetailPage from '@/pages/RecordDetail/RecordDetailPage'
 import RecordCalendarSheet from '@/pages/RecordMap/RecordCalendarSheet'
 import RecordMapPage, { type RecordView } from '@/pages/RecordMap/RecordMapPage'
@@ -486,13 +488,33 @@ function PlaylistsRoute() {
 }
 
 function RadioStoriesRoute() {
+  const navigate = useNavigate()
   const goBack = useGoBack('/my')
   const { setQuery, retry, ...state } = useRadioStories()
 
-  // TODO: 라디오 사연 상세(방송 문구 · 다시 듣기) 화면이 생기면 이동한다
   return (
-    <RadioStoriesPage {...state} onBack={goBack} onRetry={retry} onQueryChange={setQuery} onStoryClick={() => {}} />
+    <RadioStoriesPage
+      {...state}
+      onBack={goBack}
+      onRetry={retry}
+      onQueryChange={setQuery}
+      onStoryClick={(episodeId) => navigate(`/my/stories/${encodeURIComponent(episodeId)}`)}
+    />
   )
+}
+
+// 라디오 사연 상세. 주소로 바로 들어왔으면 뒤로가기로 보관함에 간다
+function RadioStoryRoute({ episodeId }: { episodeId: string }) {
+  const goBack = useGoBack('/my/stories')
+  const { refreshAudio, retry, ...state } = useRadioEpisode(episodeId)
+
+  return <RadioStoryPage {...state} onBack={goBack} onRetry={retry} onAudioError={refreshAudio} />
+}
+
+// 사연이 바뀌면 상세 화면을 새로 마운트해 이전 사연의 재생 상태가 남지 않게 한다
+function RadioStoryRouteByParam() {
+  const { episodeId = '' } = useParams()
+  return <RadioStoryRoute key={episodeId} episodeId={episodeId} />
 }
 
 // 연인 초대 · 코드 연결. 연결하거나 건너뛰면 메인 홈으로 간다 (기능명세서 L9)
@@ -696,6 +718,7 @@ function App() {
         />
         <Route path="/my/playlists" element={<PlaylistsRoute />} />
         <Route path="/my/stories" element={<RadioStoriesRoute />} />
+        <Route path="/my/stories/:episodeId" element={<RadioStoryRouteByParam />} />
         <Route path="/drives/:driveId/card" element={<DriveCardRouteByParam
                 userId={home.userId}
                 myNickname={home.nickname}

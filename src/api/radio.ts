@@ -1,4 +1,4 @@
-import { mockFetchRadioHistory } from '@/mocks/radio'
+import { mockFetchRadioEpisode, mockFetchRadioHistory } from '@/mocks/radio'
 import type { ApiResponse, CursorPage } from '@/types/api'
 import type { RadioEpisode } from '@/types/radio'
 import { apiFetch, USE_MOCK } from './client'
@@ -12,4 +12,12 @@ export function fetchRadioHistory(q?: string): Promise<ApiResponse<CursorPage<Ra
   if (USE_MOCK) return mockFetchRadioHistory(keyword)
 
   return apiFetch<CursorPage<RadioEpisode>>(`/radio/episodes${keyword ? `?q=${encodeURIComponent(keyword)}` : ''}`)
+}
+
+// GET /radio/episodes/{episodeId} — 생성자 본인의 사연 한 개 (방송 문구 · 임시 음성 URL).
+// 음성 URL이 만료되면 이 API를 다시 불러 새 URL을 받는다
+export function fetchRadioEpisode(episodeId: string): Promise<ApiResponse<RadioEpisode>> {
+  if (USE_MOCK) return mockFetchRadioEpisode(episodeId)
+
+  return apiFetch<RadioEpisode>(`/radio/episodes/${encodeURIComponent(episodeId)}`)
 }
