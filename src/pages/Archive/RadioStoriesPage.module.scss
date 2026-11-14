@@ -1,0 +1,100 @@
+// 사연 검색창 (Figma 323 x 48, 화면 가운데). 좁은 화면에서는 좌우 여백을 남기고 줄어든다
+.search {
+  position: relative;
+  width: calc(100% - 2 * var(--archive-gutter));
+  max-width: 323px;
+  margin: 1px auto 0;
+}
+
+// iOS Safari는 16px 미만 입력칸을 누르면 화면을 확대하므로 시안(15px)보다 1px 키운다
+.input {
+  width: 100%;
+  height: 48px;
+  padding: 0 44px 0 15px;
+  border: 4px solid color('divider');
+  border-radius: 20px;
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: -0.02em;
+  color: color('black');
+  background-color: color('white');
+  appearance: none;
+
+  &::placeholder {
+    color: color('gray-400');
+  }
+
+  // 브라우저 기본 지우기(x) 버튼은 돋보기와 겹치므로 숨긴다
+  &::-webkit-search-cancel-button {
+    display: none;
+  }
+
+  &:focus-visible {
+    border-color: color('coral-stroke');
+    outline: none;
+  }
+}
+
+.searchIcon {
+  position: absolute;
+  top: 50%;
+  right: 18px;
+  width: 15px;
+  height: 15px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+// 행 사이 20px 간격 + 1.3px 구분선 (Figma 340 폭, 왼쪽 26 · 오른쪽 22 안쪽 여백)
+.list {
+  margin-top: 2px;
+  padding: 0 var(--archive-gutter);
+
+  li {
+    border-bottom: 1.3px solid color('divider');
+  }
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 20px 22px 20px 26px;
+  @include typo('body-m-medium');
+  color: color('black');
+  text-align: left;
+
+  &:active {
+    background-color: color('divider');
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: -2px;
+  }
+}
+
+// 시안처럼 말풍선 아래쪽을 글자 아랫줄에 맞춘다
+.storyIcon {
+  flex-shrink: 0;
+  align-self: flex-end;
+  margin-bottom: 2px;
+}
+
+.story {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+// 시안의 화살표는 왼쪽을 향해 있어 뒤집어 쓴다
+.chevron {
+  flex-shrink: 0;
+  width: 6px;
+  height: auto;
+  margin-left: 8px;
+  transform: scaleX(-1);
+}

@@ -1,6 +1,12 @@
-import { mockFetchPlaceDetail, mockFetchPlaceShare, mockSendPlaceToPartner, mockSetPlaceFavorite } from '@/mocks/places'
-import type { ApiResponse } from '@/types/api'
-import type { PlaceDetail, PlaceShare, SendToPartnerResult } from '@/types/place'
+import {
+  mockFetchFavorites,
+  mockFetchPlaceDetail,
+  mockFetchPlaceShare,
+  mockSendPlaceToPartner,
+  mockSetPlaceFavorite,
+} from '@/mocks/places'
+import type { ApiResponse, CursorPage } from '@/types/api'
+import type { PlaceCategory, PlaceDetail, PlaceShare, PlaceSummary, SendToPartnerResult } from '@/types/place'
 import { apiFetch, USE_MOCK } from './client'
 
 const path = (placeId: string) => `/places/${encodeURIComponent(placeId)}`
@@ -28,6 +34,13 @@ export async function setPlaceFavorite(placeId: string, favorite: boolean): Prom
   if (USE_MOCK) return mockSetPlaceFavorite(placeId, favorite)
 
   await apiFetch(`/me/favorite-places/${encodeURIComponent(placeId)}`, { method: favorite ? 'PUT' : 'DELETE' })
+}
+
+// GET /me/favorite-places — 내가 찜한 장소. category를 생략하면 전체 (보관함의 카테고리 칩 필터)
+export function fetchFavorites(category?: PlaceCategory): Promise<ApiResponse<CursorPage<PlaceSummary>>> {
+  if (USE_MOCK) return mockFetchFavorites(category)
+
+  return apiFetch<CursorPage<PlaceSummary>>(`/me/favorite-places${category ? `?category=${category}` : ''}`)
 }
 
 export interface SendToPartnerOptions {

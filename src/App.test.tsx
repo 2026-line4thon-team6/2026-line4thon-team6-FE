@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { prepareDrive } from '@/api/drives'
 import { resetMockCouple } from '@/mocks/couples'
+import { resetMockPlaces } from '@/mocks/places'
 import { resetMockCards } from '@/mocks/cards'
 import { resetMockDrives } from '@/mocks/drives'
 import { resetMockRoutes } from '@/mocks/routes'
@@ -47,6 +48,7 @@ async function startDriveFromHome(user: ReturnType<typeof userEvent.setup>) {
 
 beforeEach(() => {
   resetMockCouple()
+  resetMockPlaces()
   resetMockCards()
 })
 
@@ -210,6 +212,66 @@ describe('커플 페이지', () => {
     await user.click(screen.getByRole('button', { name: '연결 해제' }))
 
     expect(await screen.findByRole('button', { name: /연인과 연결해 보세요/ })).toBeInTheDocument()
+  })
+})
+
+describe('보관함', () => {
+  it('찜한 드라이브 코스: 카드를 누르면 장소 상세로 가고, 뒤로가면 보관함으로 돌아온다', async () => {
+    const user = renderApp('/my')
+
+    await user.click(await screen.findByRole('button', { name: '찜한 드라이브 코스' }))
+    expect(screen.getByRole('heading', { level: 1, name: '찜한 드라이브 코스' })).toBeInTheDocument()
+
+    await user.click(await screen.findByRole('button', { name: '시흥 오이도' }))
+    expect(await screen.findByRole('heading', { level: 1, name: '시흥 오이도' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '뒤로가기' }))
+    expect(await screen.findByRole('heading', { level: 1, name: '찜한 드라이브 코스' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '뒤로가기' }))
+    expect(await screen.findByRole('button', { name: /누적 330km/ })).toBeInTheDocument()
+  })
+
+  it('찜한 드라이브 코스: 카테고리 칩으로 거르고, 찜을 취소하면 홈 카드의 하트에도 반영된다', async () => {
+    const user = renderApp('/')
+    await user.click(screen.getByRole('button', { name: '마이' }))
+    await user.click(await screen.findByRole('button', { name: '찜한 드라이브 코스' }))
+
+    await user.click(screen.getByRole('button', { name: '야경' }))
+    const card = await screen.findByRole('article', { name: '서울 남산 순환도로' })
+    expect(screen.queryByRole('article', { name: '시흥 오이도' })).not.toBeInTheDocument()
+
+    await user.click(within(card).getByRole('button', { name: '좋아요 취소' }))
+    expect(within(card).getByRole('button', { name: '좋아요' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '뒤로가기' }))
+    await user.click(await screen.findByRole('button', { name: '홈' }))
+    await user.click(screen.getByRole('button', { name: '야경' }))
+    const homeCard = screen.getByRole('button', { name: '서울 남산 순환도로' }).closest('article')
+    expect(homeCard!.querySelector('button[aria-pressed="false"]')).not.toBeNull()
+  })
+
+  it('플레이리스트 보관함: 저장한 플레이리스트와 개수를 보여 준다', async () => {
+    const user = renderApp('/my')
+
+    await user.click(await screen.findByRole('button', { name: '플레이리스트 보관함' }))
+
+    expect(await screen.findByRole('heading', { level: 2 })).toHaveTextContent('내가 저장한 플레이리스트 4개')
+    expect(screen.getByRole('button', { name: /노을처럼 따뜻한 우리/ })).toBeInTheDocument()
+  })
+
+  it('라디오 사연 보관함: 검색어를 입력하면 맞는 사연만 남는다', async () => {
+    const user = renderApp('/my')
+
+    await user.click(await screen.findByRole('button', { name: '라디오 사연 보관함' }))
+    const list = await screen.findByRole('list', { name: '보낸 사연' })
+    expect(within(list).getAllByRole('button')).toHaveLength(10)
+
+    await user.type(screen.getByRole('searchbox', { name: '사연 검색' }), '휴게소')
+
+    await waitFor(() =>
+      expect(within(screen.getByRole('list', { name: '보낸 사연' })).getAllByRole('button')).toHaveLength(1),
+    )
+    expect(screen.getByRole('button', { name: /^배가 너무 고파서/ })).toBeInTheDocument()
   })
 })
 

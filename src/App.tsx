@@ -4,6 +4,7 @@ import { logout } from '@/api/auth'
 import { fetchCardShare } from '@/api/cards'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
 import useCouplePage from '@/hooks/useCouplePage'
+import useFavorites from '@/hooks/useFavorites'
 import useLegalDocument from '@/hooks/useLegalDocument'
 import useMyCouple from '@/hooks/useMyCouple'
 import CardPromptModal from '@/components/CardPromptModal/CardPromptModal'
@@ -14,11 +15,16 @@ import useDriveCard from '@/hooks/useDriveCard'
 import useNotifications from '@/hooks/useNotifications'
 import usePendingCards from '@/hooks/usePendingCards'
 import usePlaceDetail from '@/hooks/usePlaceDetail'
+import usePlaylistLibrary from '@/hooks/usePlaylistLibrary'
+import useRadioStories from '@/hooks/useRadioStories'
 import useRecordMap from '@/hooks/useRecordMap'
 import useRecords from '@/hooks/useRecords'
 import useRouteSetting from '@/hooks/useRouteSetting'
 import useStartDrive, { type DriveLocationState } from '@/hooks/useStartDrive'
 import { MOCK_CATEGORIES, MOCK_HOME, MOCK_SPOTS } from '@/mocks/home'
+import FavoritesPage from '@/pages/Archive/FavoritesPage'
+import PlaylistsPage from '@/pages/Archive/PlaylistsPage'
+import RadioStoriesPage from '@/pages/Archive/RadioStoriesPage'
 import CouplePage from '@/pages/Couple/CouplePage'
 import DrivePage from '@/pages/Drive/DrivePage'
 import DriveCardPage from '@/pages/DriveCard/DriveCardPage'
@@ -60,6 +66,13 @@ const LEGAL_MENUS: Partial<Record<MyMenu, LegalDocumentType>> = {
   privacy: 'PRIVACY',
   terms: 'TERMS',
   openSource: 'OPEN_SOURCE',
+}
+
+// 마이 화면 메뉴 → 보관함 화면 주소
+const ARCHIVE_PATHS: Partial<Record<MyMenu, string>> = {
+  favorites: '/my/favorites',
+  playlists: '/my/playlists',
+  stories: '/my/stories',
 }
 
 function useTabNavigate() {
@@ -375,8 +388,9 @@ function MyRoute() {
 
   const handleMenuClick = (menu: MyMenu) => {
     const legal = LEGAL_MENUS[menu]
-    if (legal) navigate(LEGAL_PATHS[legal])
-    // TODO: 보관함(찜한 드라이브 · 플레이리스트 · 라디오 사연) · FAQ 화면이 생기면 이동한다
+    const path = legal ? LEGAL_PATHS[legal] : ARCHIVE_PATHS[menu]
+    if (path) navigate(path)
+    // TODO: FAQ 화면이 생기면 이동한다
   }
 
   // TODO: 로그인 화면이 생기면 로그인 화면으로 보낸다. 지금은 세션이 없어 홈으로 이동한다
@@ -415,6 +429,52 @@ function CoupleRoute() {
       onDisconnect={disconnect}
       onDisconnected={() => navigate('/my', { replace: true })}
     />
+  )
+}
+
+interface FavoritesRouteProps {
+  onFavoriteChange: (placeId: string, favorite: boolean) => void
+}
+
+// 찜한 드라이브 코스. 찜을 취소하면 홈 카드의 하트에도 반영한다
+function FavoritesRoute({ onFavoriteChange }: FavoritesRouteProps) {
+  const navigate = useNavigate()
+  const goBack = useGoBack('/my')
+  const { status, places, category, selectCategory, toggleFavorite, retry } = useFavorites()
+
+  const handleFavoriteToggle = async (placeId: string, favorite: boolean) => {
+    if (await toggleFavorite(placeId, favorite)) onFavoriteChange(placeId, favorite)
+  }
+
+  return (
+    <FavoritesPage
+      status={status}
+      places={places}
+      category={category}
+      onBack={goBack}
+      onRetry={retry}
+      onSelectCategory={selectCategory}
+      onFavoriteToggle={(placeId, favorite) => void handleFavoriteToggle(placeId, favorite)}
+      onPlaceClick={(placeId) => navigate(`/places/${encodeURIComponent(placeId)}`)}
+    />
+  )
+}
+
+function PlaylistsRoute() {
+  const goBack = useGoBack('/my')
+  const { retry, ...state } = usePlaylistLibrary()
+
+  // TODO: 플레이리스트 상세 화면이 생기면 이동한다
+  return <PlaylistsPage {...state} onBack={goBack} onRetry={retry} onPlaylistClick={() => {}} />
+}
+
+function RadioStoriesRoute() {
+  const goBack = useGoBack('/my')
+  const { setQuery, retry, ...state } = useRadioStories()
+
+  // TODO: 라디오 사연 상세(방송 문구 · 다시 듣기) 화면이 생기면 이동한다
+  return (
+    <RadioStoriesPage {...state} onBack={goBack} onRetry={retry} onQueryChange={setQuery} onStoryClick={() => {}} />
   )
 }
 
@@ -563,6 +623,12 @@ function App() {
       <Route path="/drive/route" element={<RouteSettingRoute />} />
       <Route path="/my" element={<MyRoute />} />
       <Route path="/my/couple" element={<CoupleRoute />} />
+      <Route
+        path="/my/favorites"
+        element={<FavoritesRoute onFavoriteChange={(placeId, favorite) => setSpotLiked(Number(placeId), favorite)} />}
+      />
+      <Route path="/my/playlists" element={<PlaylistsRoute />} />
+      <Route path="/my/stories" element={<RadioStoriesRoute />} />
       {Object.entries(LEGAL_PATHS).map(([type, path]) => (
         <Route
           key={type}
