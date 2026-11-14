@@ -88,7 +88,7 @@ $gutter: 25px;
   padding: 13px 12px 15px;
   overflow: hidden;
   border-radius: 18px;
-  isolation: isolate; // Safari에서 blur된 이미지가 둥근 모서리 밖으로 새지 않게 한다
+  isolation: isolate; // 배경 사진(z-index -1)이 배너 밖으로 깔리지 않게 한다
 }
 
 .bannerImage {
@@ -100,8 +100,7 @@ $gutter: 25px;
   max-width: none;
   height: 235px;
   object-fit: cover;
-  opacity: 0.8;
-  filter: blur(4px);
+  opacity: 0.8; // Figma: 시간대별 사진 모두 불투명도 80%, 블러 없음
 }
 
 .infoList {

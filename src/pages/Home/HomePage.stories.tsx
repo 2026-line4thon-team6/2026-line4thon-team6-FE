@@ -15,6 +15,7 @@ const meta = {
     categories: MOCK_CATEGORIES,
     spots: MOCK_SPOTS,
     carConnected: true,
+    timeOfDay: 'evening',
     onNotificationClick: fn(),
     onStartDrive: fn(),
     onSpotClick: fn(),
@@ -70,3 +71,9 @@ export const PendingCard: Story = {
     pendingCard: { count: 1, driveId: 'drv_01', remainingSeconds: 18 * 3600 },
   },
 }
+
+// 시간대별 배너 배경 (Figma '시간대별 배너 이미지' 609:10169)
+export const Dawn: Story = { args: { timeOfDay: 'dawn' } }
+export const Day: Story = { args: { timeOfDay: 'day' } }
+export const Evening: Story = { args: { timeOfDay: 'evening' } }
+export const Night: Story = { args: { timeOfDay: 'night' } }
