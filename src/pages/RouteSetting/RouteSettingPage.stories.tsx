@@ -45,6 +45,8 @@ export const NoResults: Story = {
   args: { query: '없는 장소', results: [] },
 }
 
+// 예상 도착 시간은 목 서버가 현재 시각으로 계산해 빌드마다 바뀐다 → Chromatic 비교가 흔들리지 않게 고정한다
+// (Date 생성자의 지역 시각이라 어느 시간대에서 찍어도 '14시 30분')
 export const RoutePreview: Story = {
-  args: { query: '서울 반포 한강공원', route: ROUTE },
+  args: { query: '서울 반포 한강공원', route: { ...ROUTE, estimatedArrivalAt: new Date(2026, 10, 14, 14, 30).toISOString() } },
 }
