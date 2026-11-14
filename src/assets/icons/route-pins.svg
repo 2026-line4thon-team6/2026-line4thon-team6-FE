@@ -1,0 +1,11 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="16" height="62.5" viewBox="0 0 16 62.5" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Frame 2117905399">
+<path id="Ellipse 275" d="M12 7.5C12 9.98528 9.98528 12 7.5 12C5.01472 12 3 9.98528 3 7.5C3 5.01472 5.01472 3 7.5 3C9.98528 3 12 5.01472 12 7.5Z" fill="white" stroke-width="4" stroke="#FFB19D"/>
+<g id="Frame 2117905397">
+<circle id="Ellipse 276" cx="7.6001" cy="22.5" r="1.5" fill="#FFB19D"/>
+<circle id="Ellipse 277" cx="7.6001" cy="28.5" r="1.5" fill="#FFB19D"/>
+<circle id="Ellipse 278" cx="7.6001" cy="34.5" r="1.5" fill="#FFB19D"/>
+</g>
+<path id="Subtract" d="M8 42.5C12.4182 42.5001 16 46.0818 16 50.5C16 54.9182 11.9999 58.5001 8 62.5C4.00005 58.5001 0 54.9182 0 50.5C1.3787e-05 46.0818 3.58179 42.5 8 42.5ZM8 47.5C6.34318 47.5 5.00001 48.8432 5 50.5C5 52.1568 6.34317 53.5 8 53.5C9.65679 53.4999 11 52.1568 11 50.5C11 48.8432 9.65678 47.5001 8 47.5Z" fill="#F88379"/>
+</g>
+</svg>

@@ -1,0 +1,93 @@
+// Figma: 행 높이 50 + 아래 구분선(글자 시작점부터). 행 사이 간격 20은 목록에서 준다
+.item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  width: 100%;
+  text-align: left;
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    bottom: -10px;
+    left: 37px;
+    border-bottom: 1px solid color('divider');
+  }
+
+  &:active {
+    opacity: 0.7;
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}
+
+.arrow {
+  flex-shrink: 0;
+  width: 24px;
+  height: 22px;
+  margin-top: 2px;
+}
+
+// 휴게소 핀 (Figma 20.5 x 25.6). 화살표와 글자 시작점을 맞추려고 같은 폭 안에 둔다
+.pin {
+  flex-shrink: 0;
+  width: 24px;
+  height: 26px;
+  padding: 0 2px;
+}
+
+.text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.name {
+  overflow: hidden;
+  @include typo('body-m-medium');
+  color: color('black');
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.highlight {
+  color: color('coral-pressed');
+  background: none;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  @include typo('body-s');
+  white-space: nowrap;
+}
+
+.distance {
+  flex-shrink: 0;
+  color: color('gray-600');
+
+  // 거리와 주소 사이 세로 구분선
+  &::after {
+    content: '';
+    display: inline-block;
+    width: 1px;
+    height: 14px;
+    margin-left: 5px;
+    vertical-align: -2px;
+    background-color: color('gray-200');
+  }
+}
+
+.address {
+  overflow: hidden;
+  color: color('gray-400');
+  text-overflow: ellipsis;
+}
