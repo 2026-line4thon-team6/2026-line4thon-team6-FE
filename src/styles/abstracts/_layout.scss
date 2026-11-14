@@ -1,10 +1,10 @@
 @use 'colors' as *;
 
 // 하단 네비바(155px) 중 safe-area가 없는 기기에서 화면에 보이는 높이.
-// 탭 라벨이 125px까지 내려오므로 그 아래 8px 여백을 남기고, 나머지 22px만 홈 인디케이터 영역으로 숨긴다
+// 탭 라벨이 134px까지 내려오므로(Figma Navigation 63:1377) 그 아래 8px 여백을 남기고, 나머지 13px만 홈 인디케이터 영역으로 숨긴다
 $nav-height: 155px;
-$nav-visible-height: 133px;
-$nav-indicator-height: 22px;
+$nav-visible-height: 142px;
+$nav-indicator-height: 13px;
 
 // 하단 네비바가 있는 화면의 기본 틀. Figma 기준 폭 390px, 그보다 넓으면 가운데 정렬한다
 // 사용 예) .page { @include app-page; }
