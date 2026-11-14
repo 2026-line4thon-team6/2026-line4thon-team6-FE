@@ -23,6 +23,7 @@ import useRecordMap from '@/hooks/useRecordMap'
 import useRecords from '@/hooks/useRecords'
 import useRouteSetting from '@/hooks/useRouteSetting'
 import useStartDrive, { type DriveLocationState } from '@/hooks/useStartDrive'
+import useTimeOfDay from '@/hooks/useTimeOfDay'
 import { MOCK_CATEGORIES, MOCK_HOME, MOCK_SPOTS } from '@/mocks/home'
 import FavoritesPage from '@/pages/Archive/FavoritesPage'
 import PlaylistsPage from '@/pages/Archive/PlaylistsPage'
@@ -563,6 +564,7 @@ function HomeRoute({ home, categories, spots, pendingPromptSeen, onPendingPrompt
   const goTab = useTabNavigate()
   const { summary } = usePendingCards()
   const drive = useStartDrive(home.couple)
+  const timeOfDay = useTimeOfDay()
 
   const goCard = (driveId: string) => {
     onPendingPromptSeen()
@@ -572,6 +574,7 @@ function HomeRoute({ home, categories, spots, pendingPromptSeen, onPendingPrompt
   return (
     <>
       <HomePage
+        timeOfDay={timeOfDay}
         home={home}
         categories={categories}
         spots={spots}

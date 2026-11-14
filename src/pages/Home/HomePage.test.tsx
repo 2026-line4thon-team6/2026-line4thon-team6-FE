@@ -23,6 +23,7 @@ function renderHome(props: Partial<Props> = {}) {
       categories={MOCK_CATEGORIES}
       spots={MOCK_SPOTS}
       carConnected
+      timeOfDay="evening"
       {...handlers}
       {...props}
     />,
@@ -83,6 +84,18 @@ describe('알림 아이콘', () => {
 })
 
 describe('드라이브 정보 배너', () => {
+  it.each([
+    ['dawn', 'dawn'],
+    ['day', 'day'],
+    ['evening', 'evening'],
+    ['night', 'night'],
+  ] as const)('시간대(%s)에 맞는 배경 사진을 보여 준다', (timeOfDay, file) => {
+    renderHome({ timeOfDay })
+
+    // 배경 사진은 꾸밈용이라 대체 텍스트가 없다
+    expect(banner().querySelector('img')).toHaveAttribute('src', expect.stringContaining(file))
+  })
+
   it('날씨, 교통 상황, 추천 테마를 표시한다', () => {
     renderHome()
 
