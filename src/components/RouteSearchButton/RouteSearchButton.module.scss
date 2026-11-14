@@ -1,0 +1,21 @@
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border: 0.5px solid color('coral');
+  border-radius: 50%;
+  background: gradient('coral-text');
+  box-shadow: shadow('icon');
+
+  // Figma pressed: 배경만 코랄 pressed 단색
+  &:active {
+    background: color('coral-pressed');
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}

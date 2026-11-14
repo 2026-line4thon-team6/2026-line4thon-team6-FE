@@ -1,0 +1,125 @@
+// Figma 기록 지도 - 공유 (284:15197). 내용 영역 340px
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  margin-top: 15px;
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+// 86 x 107: 269 x 337 폴라로이드를 0.32배로 줄인다
+$thumb-scale: calc(86 / 269);
+
+.thumbnail {
+  flex-shrink: 0;
+  width: 86px;
+  height: 107px;
+  overflow: hidden;
+  box-shadow: 0 0 10px rgb(0 0 0 / 15%);
+}
+
+.polaroid {
+  display: flex;
+  flex-direction: column;
+  width: 269px;
+  height: 337px;
+  padding: 14px;
+  background-color: color('coral-bg');
+  transform: scale($thumb-scale);
+  transform-origin: top left;
+}
+
+.photo {
+  width: 242px;
+  height: 251px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.polaroidTitle {
+  margin-top: 10px;
+  padding: 0 5px;
+  overflow: hidden;
+  color: #000;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  @include typo('body-l-bold');
+}
+
+.polaroidDate {
+  padding: 0 5px;
+  color: color('coral-stroke');
+  @include typo('caption');
+}
+
+.text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.heading {
+  padding-right: 40px; // 닫기 버튼 자리
+  color: #000;
+  @include typo('body-l-bold');
+}
+
+.description {
+  margin-top: 5px;
+  color: color('gray-600');
+  white-space: nowrap;
+  @include typo('body-m-15');
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 30px;
+  margin-top: 20px;
+  padding-left: 12px;
+  border-radius: 5px;
+  background-color: color('divider');
+}
+
+.url {
+  min-width: 0;
+  overflow: hidden;
+  color: color('gray-600');
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  @include typo('caption');
+}
+
+.copy {
+  flex-shrink: 0;
+  // 아이콘(34 x 35)이 링크 상자(30px)보다 커서 위아래로 살짝 넘친다
+  margin: -3px 0 -2px;
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: -4px;
+  }
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.sectionHeading {
+  color: #000;
+  @include typo('body-m-medium');
+}
