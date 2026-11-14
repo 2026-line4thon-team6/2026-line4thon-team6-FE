@@ -15,7 +15,6 @@ import { resetMockRecordDeletions } from './mocks/records'
 import App from './App'
 import type { RecordMapMarker } from './types/record'
 
-// 드라이브 지도도 SDK를 쓰므로 빈 지도로 바꾼다
 vi.mock('./components/DriveMap/DriveMap', () => ({ default: () => <div data-testid="drive-map" /> }))
 
 // 카카오 지도 SDK는 jsdom에서 동작하지 않으므로 마커 버튼만 그리는 가짜 지도로 바꾼다
@@ -570,7 +569,6 @@ describe('드라이브 모드 진입', () => {
 
     await startDriveFromHome(user)
     const sheet = await screen.findByRole('dialog', { name: '드라이브 준비 완료!' })
-    // 시트를 감싼 어두운 배경
     await user.click(sheet.parentElement!)
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -767,7 +765,6 @@ describe('드라이브 주행 · 마치기', () => {
     const popup = await screen.findByRole('dialog', { name: '휴게소 도장 찍기' })
     expect(within(popup).getByRole('button', { name: '도장찍기' })).toBeDisabled()
 
-    // 목 위치(서초동)에서 가장 가까운 시흥하늘휴게소는 이미 찍은 곳이다
     await user.click(within(popup).getByRole('button', { name: '현재 위치로 찾기' }))
     await waitFor(() => expect(within(popup).getByRole('textbox', { name: '휴게소 이름' })).toHaveValue('시흥하늘휴게소'))
     await user.click(within(popup).getByRole('button', { name: '도장찍기' }))

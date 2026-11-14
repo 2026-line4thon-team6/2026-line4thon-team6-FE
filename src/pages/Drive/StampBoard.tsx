@@ -6,7 +6,6 @@ import pinkStamp from '@/assets/images/stamp/stamp-pink.webp'
 import type { RestArea, StampBook } from '@/types/restArea'
 import styles from './StampBoard.module.scss'
 
-// Figma 289:20501 도장판(359 x 630) 위 칸 16개의 왼쪽 위 좌표
 const SLOTS = [
   [98, 44],
   [177, 34],
@@ -35,7 +34,6 @@ interface StampBoardProps {
 const chunk = <T,>(items: T[], size: number) =>
   Array.from({ length: Math.ceil(items.length / size) }, (_, i) => items.slice(i * size, (i + 1) * size))
 
-// 휴게소 스탬프 탭 (Figma 289:20501). 찍은 도장을 먼저 찍은 순서대로 채우고, 나머지는 잠긴 칸
 function StampBoard({ book, onStampClick, onEmptyClick }: StampBoardProps) {
   const earned = (book?.items ?? [])
     .filter((area) => area.earned)
@@ -58,7 +56,6 @@ function StampBoard({ book, onStampClick, onEmptyClick }: StampBoardProps) {
         )}
       </div>
 
-      {/* 칸이 16개를 넘으면 도장판을 이어 붙인다 */}
       {chunk(slots, SLOTS.length).map((boardSlots, boardIndex) => (
         <ul key={boardIndex} className={styles.board} style={{ backgroundImage: `url(${boardImage})` }}>
           {boardSlots.map((area, i) => {

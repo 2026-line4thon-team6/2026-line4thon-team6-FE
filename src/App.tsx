@@ -206,7 +206,6 @@ function PlaceDetailRoute({ placeId, couple, mascotName, onFavoriteChange }: Pla
   )
 }
 
-// 진행 중인 드라이브가 없으면 홈으로 돌려보낸다
 function DriveRoute() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -232,7 +231,6 @@ function DriveRoute() {
 
   if (status === 'empty') return <Navigate to="/" replace />
 
-  // 직접 마치면 도착 팝업 없이 홈으로 간다. 미작성 카드는 홈의 팝업 · 배너가 안내한다 (기능명세 04 · 19)
   // TODO: 실패 토스트
   const handleEnd = async () => {
     const ended = await end('USER_ENDED')
@@ -255,7 +253,6 @@ function DriveRoute() {
         onRestAreaAlertClose={() => restAreaAlert && dismissRestAreaAlert(restAreaAlert.restArea.id)}
         onLocate={() => void map.locate()}
         onRename={rename}
-        // 경로를 정했으면 장소 상세에서 넘어온 목적지 대신 정해 둔 목적지를 채운다 (기능명세 04 상단바)
         onRouteSearch={() =>
           navigate('/drive/route', {
             state: drive?.destination ? { destinationName: drive.destination.name } : location.state,
@@ -290,14 +287,12 @@ function RouteSettingRoute() {
 
   if (status === 'empty') return <Navigate to="/" replace />
 
-  // /drive 에서 들어왔으면 방문 기록을 하나 되돌린다
   const backToDrive = () => (location.key === 'default' ? navigate('/drive', { replace: true }) : navigate(-1))
 
   const handleConfirm = async () => {
     if (!routeSetting.route) return
     setConfirming(true)
     const saved = await setRoute(routeSetting.route.id)
-    // Figma에 출발 버튼이 없어 처음 경로를 정하면 바로 출발한다
     if (saved && drive?.status === 'PREPARING') await start()
     setConfirming(false)
     // TODO: 실패 토스트

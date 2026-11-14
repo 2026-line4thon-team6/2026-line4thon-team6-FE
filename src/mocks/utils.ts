@@ -16,7 +16,6 @@ export function mockApiError(status: number, code: string, message: string) {
   })
 }
 
-// 직선 거리(m)
 export function distanceBetween(from: Coordinate, to: Coordinate) {
   const R = 6371000
   const rad = (degree: number) => (degree * Math.PI) / 180
@@ -26,7 +25,6 @@ export function distanceBetween(from: Coordinate, to: Coordinate) {
   return Math.round(2 * R * Math.asin(Math.sqrt(a)))
 }
 
-// Route.polyline과 같은 인코딩 형식
 export function encodePolyline(points: Coordinate[]) {
   let previousLat = 0
   let previousLng = 0
@@ -52,7 +50,6 @@ export function encodePolyline(points: Coordinate[]) {
   return result
 }
 
-// 커서 = 다음 시작 위치
 export function paginate<T>(all: T[], cursor: string | undefined, limit = 20) {
   const start = cursor ? Number(cursor) : 0
   const items = all.slice(start, start + limit)

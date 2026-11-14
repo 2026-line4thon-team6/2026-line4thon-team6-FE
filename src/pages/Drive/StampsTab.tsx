@@ -19,14 +19,12 @@ interface StampsTabProps {
 
 type Selected = { restArea: RestArea; method: 'GPS' | 'MANUAL' }
 
-// Figma에 결과 화면이 없어 토스트로 알린다
 const claimMessage = (claim: StampClaim | null) => {
   if (!claim) return '도장을 찍지 못했어요. 다시 시도해 주세요.'
   if (claim.status === 'VERIFIED') return claim.alreadyEarned ? '이미 찍은 도장이에요.' : '도장을 찍었어요!'
   return claim.reason ?? '방문을 확인하고 있어요.'
 }
 
-// 드라이브 하단 패널의 휴게소 스탬프 탭: 도장판 · 휴게소 상세 · 도장 찍기 · 휴게소 검색
 function StampsTab({ drive, currentCoordinate }: StampsTabProps) {
   const stamps = useStamps(drive)
   const search = useRestAreaSearch(currentCoordinate)

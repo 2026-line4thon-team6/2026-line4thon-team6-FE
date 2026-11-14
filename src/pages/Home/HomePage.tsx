@@ -43,7 +43,6 @@ interface HomePageProps {
   timeOfDay: TimeOfDay
   // 24시간 안에 저장하지 않은 드라이브 카드 (GET /cards/pending). 없으면 null
   pendingCard?: PendingSummary | null
-  // 주행 중인 드라이브가 있으면 미작성 카드 배너 자리에 대신 보여 준다
   activeDrive?: boolean
   onNotificationClick?: () => void
   onStartDrive?: () => void

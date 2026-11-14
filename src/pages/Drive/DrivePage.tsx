@@ -31,7 +31,6 @@ interface DrivePageProps {
   destination?: Coordinate | null
   restAreas?: { id: string; name: string; coordinate: Coordinate }[]
   onRestAreaClick?: (restAreaId: string) => void
-  // 앞쪽 휴게소 접근 알림. 없으면 null
   restAreaAlert?: { name: string; meters: number } | null
   onRestAreaAlertClose?: () => void
   onRename: (title: string) => Promise<boolean>
@@ -39,14 +38,10 @@ interface DrivePageProps {
   onLocate?: () => void
   onPause?: () => void
   onResume?: () => void
-  // 실패하면 false. 마치기 팝업이 그대로 남는다
   onEnd?: () => Promise<boolean>
   locationDenied?: boolean
-  // 위치 재요청, 허용되면 true
   onLocationRetry?: () => Promise<boolean>
-  // 콘텐츠 탭 카드
   contents?: ReactNode
-  // 휴게소 스탬프 탭
   stamps?: ReactNode
 }
 
@@ -93,7 +88,6 @@ function DrivePage({
   const [tab, setTab] = useState<PanelTab>('contents')
   const [locateKey, setLocateKey] = useState(0)
   const [toast, setToast] = useState<string | null>(null)
-  // 하단 패널: 기본 높이 ↔ 화면 전체 (Figma 드라이브 289:20284 · 스탬프 289:20501)
   const [expanded, setExpanded] = useState(false)
   const dragStartY = useRef<number | null>(null)
   const runningSeconds = useRunningSeconds(drive)
@@ -121,7 +115,6 @@ function DrivePage({
     if (ended) setConfirmingEnd(false)
   }
 
-  // 손잡이를 위아래로 밀거나 누르면 패널을 펼치고 접는다
   const handlePointerUp = (event: PointerEvent<HTMLButtonElement>) => {
     const start = dragStartY.current
     dragStartY.current = null
@@ -220,7 +213,6 @@ function DrivePage({
               dragStartY.current = event.clientY
             }}
             onPointerUp={handlePointerUp}
-            // 키보드(Enter · Space)로 누를 때
             onClick={(event) => event.detail === 0 && setExpanded((value) => !value)}
           />
           <SegmentedControl aria-label="콘텐츠 종류" options={TABS} value={tab} onChange={setTab} />

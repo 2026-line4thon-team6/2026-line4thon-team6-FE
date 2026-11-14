@@ -26,7 +26,6 @@ let driveCount = 0
 const elapsedSeconds = (since: string | null) =>
   since ? Math.max(0, Math.floor((Date.now() - Date.parse(since)) / 1000)) : 0
 
-// GPS가 없는 목에서는 마지막 시작 · 재개 이후 흐른 시간을 주행 시간에 더한다
 const activeSince = new Map<string, string>()
 
 function withActiveTime(drive: Drive): Drive {

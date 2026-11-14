@@ -6,7 +6,6 @@ interface ActiveDriveBannerProps {
   className?: string
 }
 
-// 홈 상단 드라이브 진행중 배너
 function ActiveDriveBanner({ onClick, className }: ActiveDriveBannerProps) {
   return (
     <button type="button" className={[styles.banner, className].filter(Boolean).join(' ')} onClick={onClick}>

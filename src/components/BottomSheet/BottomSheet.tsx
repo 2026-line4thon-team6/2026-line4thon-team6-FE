@@ -7,7 +7,6 @@ interface BottomSheetProps {
   'aria-label': string
   onClose: () => void
   children: ReactNode
-  // 우측상단 닫기
   showClose?: boolean
   className?: string
 }

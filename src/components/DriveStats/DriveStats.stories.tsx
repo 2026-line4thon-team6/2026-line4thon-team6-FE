@@ -6,7 +6,6 @@ const meta = {
   component: DriveStats,
   tags: ['autodocs'],
   globals: {
-    // 지도 위에 올라가는 글래스 카드라 어두운 배경에서 확인
     backgrounds: { value: 'photo' },
   },
   decorators: [
@@ -22,7 +21,6 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-// 01 첫 진입: 목적지를 정하기 전이라 비워서 표시
 export const BeforeDestination: Story = {
   args: {
     items: [
@@ -33,7 +31,6 @@ export const BeforeDestination: Story = {
   },
 }
 
-// 경로 설정하기: 경로 미리보기 값
 export const RoutePreview: Story = {
   args: {
     items: [

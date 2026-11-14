@@ -5,7 +5,6 @@ import type { Coordinate } from '@/types/route'
 
 const SEARCH_DELAY_MS = 300
 
-// 휴게소 이름 검색. 위치를 알면 거리와 함께 가까운 순으로 받는다
 function useRestAreaSearch(coordinate: Coordinate | null) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<{ keyword: string; items: RestArea[] } | null>(null)

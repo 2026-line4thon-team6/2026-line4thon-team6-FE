@@ -18,7 +18,6 @@ interface RouteSettingPageProps {
   locationUnavailable?: boolean
   query: string
   history: SearchHistoryItem[]
-  // null이면 최근 검색을 보여준다
   results: PlaceSummary[] | null
   route: Route | null
   routeStatus: 'idle' | 'loading' | 'error'
@@ -32,7 +31,6 @@ interface RouteSettingPageProps {
   onClose: () => void
 }
 
-// '서울 서초구 서초동' → '서초구 서초동'
 const shortAddress = (address: string) => address.split(' ').slice(1).join(' ') || address
 
 const formatDate = (iso: string) => {
@@ -40,10 +38,8 @@ const formatDate = (iso: string) => {
   return `${date.getMonth() + 1}.${String(date.getDate()).padStart(2, '0')}`
 }
 
-// 검색창 · 주행 정보 · 버튼에 가리지 않게
 const FIT_PADDING: [number, number, number, number] = [150, 40, 230, 40]
 
-// 경로 설정 (Figma 검색 289:20769 · 289:20830 · 289:20892, 경로 설정하기 289:21024)
 function RouteSettingPage({
   originAddress,
   locationUnavailable = false,

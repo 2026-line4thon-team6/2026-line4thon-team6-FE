@@ -33,7 +33,6 @@ export const Filled: Story = {
   args: { destination: '서울 반포 한강 공원' },
 }
 
-// 입력하고 Enter로 검색
 export const Interactive: Story = {
   render: function Render(args) {
     const [destination, setDestination] = useState('')

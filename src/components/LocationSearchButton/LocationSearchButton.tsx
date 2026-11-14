@@ -2,7 +2,6 @@ import type { ButtonHTMLAttributes } from 'react'
 import pinIcon from '@/assets/icons/pin-coral.svg'
 import styles from './LocationSearchButton.module.scss'
 
-// '현재 위치로 찾기' 버튼. 검색어 대신 내 위치 주변으로 찾을 때 쓴다
 function LocationSearchButton({
   className,
   type = 'button',

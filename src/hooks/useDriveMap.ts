@@ -8,7 +8,6 @@ function useDriveMap(routeId: string | null) {
   const [position, setPosition] = useState<Position | null>(null)
   const [route, setRoute] = useState<{ id: string; data: Route } | null>(null)
   const [locationDenied, setLocationDenied] = useState(false)
-  // 권한이 거부되면 브라우저가 watch를 멈추므로, 다시 허용되면 새로 건다
   const [watchKey, setWatchKey] = useState(0)
 
   const locate = useCallback(async () => {
@@ -28,7 +27,6 @@ function useDriveMap(routeId: string | null) {
     [watchKey],
   )
 
-  // 허용되면 true
   const retryLocation = useCallback(async () => {
     const next = await requestPosition()
     if (!next) return false

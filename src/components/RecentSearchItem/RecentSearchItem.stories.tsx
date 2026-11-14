@@ -34,7 +34,6 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 
-// 장소 검색 화면의 최근 검색어 목록
 export const List: Story = {
   render: (args) => (
     <ul style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>

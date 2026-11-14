@@ -1,4 +1,3 @@
-// Figma: 행 높이 35 + 아래 구분선(아이콘 오른쪽부터). 행 사이 간격 20은 목록에서 준다
 .item {
   position: relative;
   display: flex;
@@ -49,7 +48,6 @@
   color: color('gray-400');
 }
 
-// 아이콘은 10px이지만 누르기 쉽게 터치 영역을 넓힌다
 .delete {
   display: flex;
   flex-shrink: 0;

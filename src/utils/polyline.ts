@@ -1,6 +1,5 @@
 import type { Coordinate } from '@/types/route'
 
-// Google encoded polyline (precision 5, 위도 · 경도 순)을 좌표 목록으로 푼다
 export function decodePolyline(encoded: string): Coordinate[] {
   const points: Coordinate[] = []
   let index = 0

@@ -7,14 +7,12 @@ import styles from './RestAreaSearchPage.module.scss'
 
 interface RestAreaSearchPageProps {
   query: string
-  // null이면 아직 검색 전
   results: RestArea[] | null
   onQueryChange: (value: string) => void
   onSelect: (restArea: RestArea) => void
   onClose: () => void
 }
 
-// 휴게소 검색 (Figma 342:8671). 도장 찍기 팝업의 검색창을 누르면 화면 위에 열린다
 function RestAreaSearchPage({ query, results, onQueryChange, onSelect, onClose }: RestAreaSearchPageProps) {
   return (
     <div className={styles.page} role="dialog" aria-modal="true" aria-label="휴게소 검색">

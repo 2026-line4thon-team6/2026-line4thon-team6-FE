@@ -17,7 +17,6 @@ function useOverlay<T extends HTMLElement>(onClose: () => void) {
     )
     const previousOverflows = scrollers.map((element) => element.style.overflow)
     scrollers.forEach((element) => (element.style.overflow = 'hidden'))
-    // 시트 안 입력창에 autoFocus가 있으면 그 포커스를 유지하고, 없을 때만 시트로 옮긴다
     if (!ref.current?.contains(document.activeElement)) ref.current?.focus()
 
     const handleKeyDown = (event: KeyboardEvent) => {

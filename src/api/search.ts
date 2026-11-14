@@ -13,12 +13,11 @@ import { apiFetch, USE_MOCK } from './client'
 
 export interface SearchPlacesParams {
   q: string
-  coordinate?: Coordinate // 보내야 distanceMeters가 채워진다
+  coordinate?: Coordinate
   cursor?: string
   limit?: number
 }
 
-// GET /places — 장소 검색
 export function searchPlaces(params: SearchPlacesParams): Promise<ApiResponse<CursorPage<PlaceSummary>>> {
   if (USE_MOCK) return mockSearchPlaces(params)
 
@@ -32,14 +31,12 @@ export function searchPlaces(params: SearchPlacesParams): Promise<ApiResponse<Cu
   return apiFetch<CursorPage<PlaceSummary>>(`/places?${query}`)
 }
 
-// GET /me/search-history — 최근 검색어
 export function getSearchHistory(): Promise<ApiResponse<SearchHistoryItem[]>> {
   if (USE_MOCK) return mockGetSearchHistory()
 
   return apiFetch<SearchHistoryItem[]>('/me/search-history')
 }
 
-// POST /me/search-history — 검색을 실행할 때 저장 (조회만으로는 저장되지 않는다)
 export function saveSearchHistory(query: string, idempotencyKey: string): Promise<ApiResponse<SearchHistoryItem>> {
   if (USE_MOCK) return mockSaveSearchHistory(query)
 
@@ -50,14 +47,12 @@ export function saveSearchHistory(query: string, idempotencyKey: string): Promis
   })
 }
 
-// DELETE /me/search-history/{historyId}
 export async function deleteSearchHistory(historyId: string): Promise<void> {
   if (USE_MOCK) return mockDeleteSearchHistory(historyId)
 
   await apiFetch(`/me/search-history/${encodeURIComponent(historyId)}`, { method: 'DELETE' })
 }
 
-// GET /locations/reverse-geocode — 현재 좌표 → 출발지 주소
 export function reverseGeocode(coordinate: Coordinate): Promise<ApiResponse<ReverseGeocode>> {
   if (USE_MOCK) return mockReverseGeocode(coordinate)
 

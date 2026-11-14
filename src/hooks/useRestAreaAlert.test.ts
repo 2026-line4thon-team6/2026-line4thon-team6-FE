@@ -16,7 +16,6 @@ const area = (id: string, latitude: number, distanceAlongRouteMeters: number | n
   distanceMeters: null,
 })
 
-// 위도 0.01도 ≈ 1.1km
 const current = { latitude: 37.0, longitude: 126.8 }
 
 describe('useRestAreaAlert', () => {

@@ -23,8 +23,6 @@ interface GlassIconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   'aria-label': string
 }
 
-// 36px 원형 글래스 버튼
-// 상세 페이지 이미지 위: 뒤로가기, 공유하기, 삭제 / 드라이브 모드 지도 위: 닫기, 현재 위치, 나가기, 일시정지
 function GlassIconButton({ icon, className, type = 'button', ...props }: GlassIconButtonProps) {
   return (
     <button type={type} className={[styles.button, className].filter(Boolean).join(' ')} {...props}>

@@ -27,7 +27,6 @@ const REST_AREAS: RestAreaSeed[] = [
   { id: 'rest_mock_16', name: '함평천지휴게소', highwayName: '서해안고속도로', direction: '목포 방향', coordinate: { latitude: 35.095, longitude: 126.5165 } },
 ]
 
-// Figma 도장판처럼 처음 3곳은 이미 찍은 상태로 시작한다
 const INITIAL_EARNED: Record<string, string> = {
   rest_mock_1: '2026-10-25T05:00:00Z',
   rest_mock_2: '2026-10-25T07:30:00Z',
@@ -43,17 +42,14 @@ export function resetMockStamps() {
   claimCount = 0
 }
 
-// 기능명세 05: 소개글은 늘 같다
 const INTRODUCTION = '맛있는 음식부터 쇼핑과 문화생활까지 한곳에서!\n드라이브 중 잠시 들러 특별한 휴식을 즐겨보세요.'
 
-// Figma 휴게소 상세 대표 메뉴
 const MENUS: RestAreaMenu[] = [
   { name: '돼지고기 김치찌개', imageUrl: '/mocks/rest-areas/menu-1.webp', description: '얼큰한 김치찌개와 갓 지은 솥밥' },
   { name: '돈가츠 오므라이스', imageUrl: '/mocks/rest-areas/menu-2.webp', description: '돈가츠와 부드러운 오므라이스' },
   { name: '숯불고기 물냉면', imageUrl: '/mocks/rest-areas/menu-3.webp', description: '시원한 냉면에 숯불고기' },
   { name: '묵은지 김치찜 솥밥', imageUrl: '/mocks/rest-areas/menu-4.webp', description: '깊은 맛의 묵은지와 돼지목살' },
 ]
-// 메뉴 데이터가 없는 휴게소 (detailsAvailable=false)
 const NO_MENU = new Set(['rest_mock_16'])
 
 const normalize = (text: string) => text.replace(/\s+/g, '').toLowerCase()
@@ -81,7 +77,6 @@ export async function mockSearchRestAreas({
   return { data: paginate(all, cursor, limit), meta: createMeta() }
 }
 
-// 실제 경로 대신 출발지~목적지 거리 안의 휴게소를 돌려준다
 export async function mockGetDriveRestAreas(
   driveId: string,
   { cursor, limit = 20 }: { cursor?: string; limit?: number } = {},
@@ -135,7 +130,6 @@ export async function mockGetStampBook({
   }
 }
 
-// 실제 서버는 주행 GPS로 방문을 확인한다. 목에서는 주행 중이면 바로 찍어 준다
 export async function mockClaimStamp(
   driveId: string,
   { restAreaId }: StampClaimRequest,

@@ -7,7 +7,6 @@ export interface Position {
   accuracyMeters: number
 }
 
-// 위치 권한이 없거나 실패하면 null. 목 모드에서는 Figma의 '서초구 서초동' 좌표를 쓴다
 export function getCurrentCoordinate(): Promise<Coordinate | null> {
   if (USE_MOCK) return Promise.resolve(MOCK_CURRENT_COORDINATE)
   if (!navigator.geolocation) return Promise.resolve(null)
@@ -28,7 +27,6 @@ const toPosition = ({ coords }: GeolocationPosition): Position => ({
 
 const HIGH_ACCURACY: PositionOptions = { enableHighAccuracy: true, maximumAge: 5000, timeout: 10_000 }
 
-// 위치가 바뀔 때마다 알려 준다. 권한이 꺼져 있으면 onDenied. 해제 함수를 돌려준다
 export function watchPosition(onChange: (position: Position) => void, onDenied?: () => void): () => void {
   if (USE_MOCK) {
     onChange({ coordinate: MOCK_CURRENT_COORDINATE, accuracyMeters: 10 })
@@ -47,7 +45,6 @@ export function watchPosition(onChange: (position: Position) => void, onDenied?:
   return () => navigator.geolocation.clearWatch(id)
 }
 
-// 위치를 한 번 다시 요청한다. 권한이 꺼져 있거나 실패하면 null
 export function requestPosition(): Promise<Position | null> {
   if (USE_MOCK) return Promise.resolve({ coordinate: MOCK_CURRENT_COORDINATE, accuracyMeters: 10 })
   if (!navigator.geolocation) return Promise.resolve(null)

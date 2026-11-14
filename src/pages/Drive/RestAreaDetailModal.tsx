@@ -11,7 +11,6 @@ interface RestAreaDetailModalProps {
   onClose: () => void
 }
 
-// 휴게소 상세 팝업 (Figma 289:20356). 대표 메뉴 데이터가 없으면 메뉴 칸 없이 보여 준다
 function RestAreaDetailModal({ detail, onClose }: RestAreaDetailModalProps) {
   const titleId = useId()
   const { restArea, introduction, menus, detailsAvailable } = detail

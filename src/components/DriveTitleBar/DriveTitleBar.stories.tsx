@@ -24,7 +24,6 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 
-// 드라이브명이 길면 말줄임
 export const LongTitle: Story = {
   args: { title: '연인과 함께 떠나는 노을 맛집 해안도로 드라이브 코스' },
 }

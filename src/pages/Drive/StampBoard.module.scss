@@ -1,6 +1,5 @@
 $board-width: 359px;
 
-// 스탬프 탭 제목은 Figma에서 패널 여백(25)보다 5px 바깥(x 20)에 있다
 .eyebrow,
 .titleRow {
   margin-left: -5px;
@@ -45,7 +44,6 @@ $board-width: 359px;
   background-color: color('coral-2');
 }
 
-// Figma 도장판은 패널 여백(25px)보다 넓어서 양옆으로 조금 넘친다
 .board {
   position: relative;
   width: $board-width;

@@ -17,7 +17,6 @@ import { DEFAULT_DRIVE_TITLE, resetMockDrives } from './drives'
 import { resetMockRoutes } from './routes'
 import { MOCK_CURRENT_COORDINATE, resetMockSearchHistory } from './search'
 
-// 백엔드 주소가 없는 테스트 환경에서는 API 함수가 목 데이터로 응답한다
 const options = { coupleId: 'cpl_01', idempotencyKey: 'test-idempotency-key-0001' }
 const members = { driverUserId: 'usr_driver', passengerUserId: 'usr_passenger', recorderUserId: 'usr_passenger' }
 
@@ -84,7 +83,6 @@ describe('드라이브 목 API', () => {
     expect(started.status).toBe('ACTIVE')
     expect(started.startedAt).not.toBeNull()
 
-    // 시작한 주행은 취소할 수 없다
     expect(await errorCode(cancelPreparedDrive(drive.id, { expectedVersion: started.controlVersion }, options))).toBe(
       'CONFLICT',
     )

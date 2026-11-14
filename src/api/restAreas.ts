@@ -12,7 +12,7 @@ import type { Coordinate } from '@/types/route'
 import { apiFetch, USE_MOCK } from './client'
 
 export interface SearchRestAreasParams {
-  q?: string // 없으면 현재 위치 주변 휴게소
+  q?: string
   coordinate?: Coordinate
   cursor?: string
   limit?: number
@@ -29,7 +29,6 @@ const withQuery = (path: string, query: URLSearchParams) => {
   return search ? `${path}?${search}` : path
 }
 
-// GET /rest-areas — 휴게소 검색
 export function searchRestAreas(params: SearchRestAreasParams = {}): Promise<ApiResponse<CursorPage<RestArea>>> {
   if (USE_MOCK) return mockSearchRestAreas(params)
 
@@ -42,7 +41,6 @@ export function searchRestAreas(params: SearchRestAreasParams = {}): Promise<Api
   return apiFetch<CursorPage<RestArea>>(withQuery('/rest-areas', query))
 }
 
-// GET /drives/{driveId}/rest-areas — 현재 경로 위 휴게소
 export function getDriveRestAreas(
   driveId: string,
   params: { cursor?: string; limit?: number } = {},
@@ -52,21 +50,18 @@ export function getDriveRestAreas(
   return apiFetch<CursorPage<RestArea>>(withQuery(`/drives/${encodeURIComponent(driveId)}/rest-areas`, pageQuery(params)))
 }
 
-// GET /rest-areas/{restAreaId} — 휴게소 상세 · 대표 메뉴
 export function getRestArea(restAreaId: string): Promise<ApiResponse<RestAreaDetail>> {
   if (USE_MOCK) return mockGetRestArea(restAreaId)
 
   return apiFetch<RestAreaDetail>(`/rest-areas/${encodeURIComponent(restAreaId)}`)
 }
 
-// GET /couples/me/stamps — 도장판
 export function getStampBook(params: { cursor?: string; limit?: number } = {}): Promise<ApiResponse<StampBook>> {
   if (USE_MOCK) return mockGetStampBook(params)
 
   return apiFetch<StampBook>(withQuery('/couples/me/stamps', pageQuery(params)))
 }
 
-// POST /drives/{driveId}/stamp-claims — 도장 찍기
 export function claimStamp(
   driveId: string,
   body: StampClaimRequest,
@@ -81,7 +76,6 @@ export function claimStamp(
   })
 }
 
-// GET /stamp-claims/{claimId} — PENDING이었던 도장 결과 다시 보기
 export function getStampClaim(claimId: string): Promise<ApiResponse<StampClaim>> {
   if (USE_MOCK) return mockGetStampClaim(claimId)
 

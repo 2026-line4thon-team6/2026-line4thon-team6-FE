@@ -8,7 +8,6 @@ interface DriveConfirmModalProps {
   description: string
   cancelLabel: string
   confirmLabel: string
-  // Figma 왼쪽 버튼 폭. 드라이브 마치기 117 · 위치 권한 136
   cancelWidth: number
   confirmDisabled?: boolean
   onCancel: () => void
@@ -16,7 +15,6 @@ interface DriveConfirmModalProps {
   onClose: () => void
 }
 
-// 드라이브 모드의 두 버튼 팝업 (Figma 드라이브 마치기 289:29957 · 위치권한 팝업창 592:10100)
 function DriveConfirmModal({
   title,
   description,

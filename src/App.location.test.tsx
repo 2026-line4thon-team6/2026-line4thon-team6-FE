@@ -14,7 +14,6 @@ import App from './App'
 
 vi.mock('./components/DriveMap/DriveMap', () => ({ default: () => <div data-testid="drive-map" /> }))
 
-// 위치를 테스트에서 옮기거나 권한을 끌 수 있게 한다
 const listeners = new Set<{ onChange: (position: Position) => void; onDenied?: () => void }>()
 const moveTo = (position: Position) => act(() => listeners.forEach(({ onChange }) => onChange(position)))
 const denyLocation = () => act(() => listeners.forEach(({ onDenied }) => onDenied?.()))

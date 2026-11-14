@@ -9,7 +9,6 @@
   background: gradient('coral-text');
   box-shadow: shadow('icon');
 
-  // Figma pressed: 배경만 코랄 pressed 단색
   &:active {
     background: color('coral-pressed');
   }

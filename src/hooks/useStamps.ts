@@ -4,7 +4,6 @@ import type { Drive } from '@/types/drive'
 import type { RestArea, StampBook, StampClaim } from '@/types/restArea'
 import type { Coordinate } from '@/types/route'
 
-// 도장판 전체(카탈로그)를 모든 페이지에 걸쳐 불러온다
 async function loadStampBook(): Promise<StampBook> {
   const { data: first } = await getStampBook({ limit: 100 })
   const items = [...first.items]
@@ -16,7 +15,6 @@ async function loadStampBook(): Promise<StampBook> {
   return { ...first, items, nextCursor: null, hasMore: false }
 }
 
-// 휴게소 스탬프 탭: 도장판 · 도장 찍기
 function useStamps(drive: Drive | null) {
   const [book, setBook] = useState<StampBook | null>(null)
 
@@ -28,7 +26,6 @@ function useStamps(drive: Drive | null) {
 
   useEffect(reload, [reload])
 
-  // GPS: 현재 위치로 찾은 휴게소 · MANUAL: 이름으로 검색한 휴게소
   const claim = async (
     restArea: RestArea,
     method: 'GPS' | 'MANUAL',
