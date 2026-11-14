@@ -1,13 +1,16 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { prepareDrive } from '@/api/drives'
 import { resetMockCards } from '@/mocks/cards'
 import { resetMockDrives } from '@/mocks/drives'
 import { resetMockRoutes } from '@/mocks/routes'
 import { resetMockSearchHistory } from '@/mocks/search'
 import App from './App'
+
+// 카카오 지도 SDK는 jsdom에서 동작하지 않으므로 지도 자리만 그린다
+vi.mock('./pages/RecordMap/RecordMapView', () => ({ default: () => <div data-testid="map" /> }))
 
 // 백엔드 주소가 없는 테스트 환경에서는 목 데이터로 응답한다
 function renderApp(path = '/') {
@@ -114,6 +117,29 @@ describe('홈 · 알림 → 장소 상세 이동', () => {
     renderApp('/places/999')
 
     expect(await screen.findByRole('alert')).toHaveTextContent('장소 정보를 불러오지 못했어요.')
+  })
+})
+
+describe('홈 ↔ 기록 지도 이동', () => {
+  it('하단 네비바의 기록 지도 탭을 누르면 함께한 드라이브 횟수가 보이고, 홈 탭으로 돌아올 수 있다', async () => {
+    const user = renderApp()
+
+    await user.click(screen.getByRole('button', { name: '기록 지도' }))
+
+    expect(screen.getByRole('heading', { level: 1, name: '우리 어디까지 가봤지?' })).toBeInTheDocument()
+    expect(await screen.findByText('총 12번의 드라이브를 함께했어요')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '홈' }))
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('오늘은 어디로 떠나볼까요?')
+  })
+
+  it('기록 지도에서 검색하면 검색어에 맞는 기록만 다시 불러온다', async () => {
+    const user = renderApp('/map')
+    await screen.findByText('총 12번의 드라이브를 함께했어요')
+
+    await user.type(screen.getByRole('searchbox', { name: '기록 검색' }), '오이도{Enter}')
+
+    expect(await screen.findByText('총 2번의 드라이브를 함께했어요')).toBeInTheDocument()
   })
 })
 
