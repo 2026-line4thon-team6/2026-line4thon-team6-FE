@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes } from 'react'
 import backIcon from '@/assets/icons/back.svg'
 import shareIcon from '@/assets/icons/share.svg'
-import trashIcon from '@/assets/icons/trash.svg'
+import trashIcon from '@/assets/icons/trash-fill.svg'
 import styles from './GlassIconButton.module.scss'
 
 const ICONS = {

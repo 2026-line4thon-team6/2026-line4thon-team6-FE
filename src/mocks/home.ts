@@ -8,6 +8,7 @@ import type { Category, SpotSummary } from '@/types/spot'
 
 // 홈 화면 목업 데이터 (API 연동 전 미리보기·스토리북용)
 export const MOCK_HOME: HomeSummary = {
+  userId: 'usr_minjun', // 목 드라이브 카드(src/mocks/cards)의 동승자
   nickname: '민준',
   mascotName: '붕붕이',
   daysTogether: 23,
