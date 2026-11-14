@@ -12,7 +12,7 @@
   transform: translateX(-50%);
 
   nav {
-    margin-bottom: min(0px, calc(env(safe-area-inset-bottom, 0px) - #{$nav-indicator-height}));
+    margin-bottom: min(0px, calc(var(--safe-bottom) - #{$nav-indicator-height}));
   }
 
   button {

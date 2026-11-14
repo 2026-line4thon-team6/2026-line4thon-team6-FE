@@ -14,7 +14,7 @@
   width: 100%;
   max-width: var(--app-max-width);
   max-height: 90%;
-  padding: 39px 25px calc(26px + env(safe-area-inset-bottom, 0px));
+  padding: 39px 25px calc(26px + var(--safe-bottom));
   overflow-y: auto;
   border-radius: 30px 30px 0 0;
   background-color: color('coral-bg');

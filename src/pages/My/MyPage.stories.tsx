@@ -16,6 +16,7 @@ const meta = {
     onMenuClick: fn(),
     onLogout: fn(),
     onTabChange: fn(),
+    onInstall: fn(),
   },
 } satisfies Meta<typeof MyPage>
 
@@ -39,4 +40,14 @@ export const LongMascotName: Story = {
   args: {
     couple: MOCK_COUPLE.couple && { ...MOCK_COUPLE.couple, mascotName: '우리집귀염둥이붕붕이와함께' },
   },
+}
+
+// 앱 설치하기: 브라우저 설치 창을 바로 띄울 수 있을 때 (크롬 · 삼성 인터넷)
+export const InstallPrompt: Story = {
+  args: { installMode: 'prompt' },
+}
+
+// 앱 설치하기: 아이폰은 누르면 '공유 → 홈 화면에 추가' 안내 시트
+export const InstallGuideIos: Story = {
+  args: { installMode: 'ios' },
 }

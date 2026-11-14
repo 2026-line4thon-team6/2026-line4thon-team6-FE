@@ -11,13 +11,12 @@ $nav-indicator-height: 13px;
 @mixin app-page {
   position: relative;
   max-width: var(--app-max-width);
-  min-height: 100vh; // dvh 미지원 웹뷰 대비
-  min-height: 100dvh;
+  min-height: var(--app-height);
   margin: 0 auto;
   // 노치·상태바 영역(PWA 전체화면)만큼 내리고, 브라우저에서는 최소 여백을 둔다
-  padding-top: max(env(safe-area-inset-top, 0px), 12px);
+  padding-top: max(var(--safe-top), 12px);
   // 하단 고정 네비바에 내용이 가려지지 않게 한다
-  padding-bottom: calc(min(#{$nav-height}, #{$nav-visible-height} + env(safe-area-inset-bottom, 0px)) + 24px);
+  padding-bottom: calc(min(#{$nav-height}, #{$nav-visible-height} + var(--safe-bottom)) + 24px);
   overflow-x: hidden;
   background-color: color('coral-bg');
 }

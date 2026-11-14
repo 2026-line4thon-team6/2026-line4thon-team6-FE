@@ -1,8 +1,7 @@
 // Figma 기준 390 x 844 (My_UI > 찜한 드라이브 · 플리 보관함 · 라디오 사연 보관함)
 .page {
   max-width: var(--app-max-width);
-  min-height: 100vh; // dvh 미지원 웹뷰 대비
-  min-height: 100dvh;
+  min-height: var(--app-height);
   margin: 0 auto;
   background-color: color('coral-bg');
   // 좌우 여백. 각 보관함 화면의 목록도 이 값을 쓴다
@@ -14,7 +13,7 @@
   display: flex;
   align-items: center;
   gap: 20px;
-  padding: calc(max(env(safe-area-inset-top, 0px), 12px) + 5px) var(--archive-gutter) 0;
+  padding: calc(max(var(--safe-top), 12px) + 5px) var(--archive-gutter) 0;
 }
 
 .title {
@@ -23,7 +22,7 @@
 }
 
 .body {
-  padding: 21px 0 calc(34px + env(safe-area-inset-bottom, 0px));
+  padding: 21px 0 calc(34px + var(--safe-bottom));
 }
 
 .message {

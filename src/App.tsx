@@ -18,6 +18,7 @@ import useNotifications from '@/hooks/useNotifications'
 import usePendingCards from '@/hooks/usePendingCards'
 import usePlaceDetail from '@/hooks/usePlaceDetail'
 import usePlaylistLibrary from '@/hooks/usePlaylistLibrary'
+import usePwaInstall from '@/hooks/usePwaInstall'
 import useRadioEpisode from '@/hooks/useRadioEpisode'
 import useRadioStories from '@/hooks/useRadioStories'
 import useRecordMap from '@/hooks/useRecordMap'
@@ -385,7 +386,15 @@ function RecordMapRoute() {
 }
 
 // 기록 상세. 삭제하면 이전 화면(기록 지도)으로 돌아가고, 기록 지도는 다시 불러와 지운 기록이 빠진다
-function RecordDetailRoute({ cardId }: { cardId: string }) {
+interface RecordDetailRouteProps {
+  cardId: string
+  // 소감 칸을 나 · 상대방으로 나눌 때 쓴다
+  myUserId: string
+  myNickname: string
+  partnerNickname: string | null
+}
+
+function RecordDetailRoute({ cardId, myUserId, myNickname, partnerNickname }: RecordDetailRouteProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const goBack = useGoBack()
@@ -411,14 +420,17 @@ function RecordDetailRoute({ cardId }: { cardId: string }) {
       onBack={goBack}
       onRetry={retry}
       onDelete={handleDelete}
+      myUserId={myUserId}
+      myNickname={myNickname}
+      partnerNickname={partnerNickname}
       // TODO: 플레이리스트 화면이 생기면 연결한다
     />
   )
 }
 
-function RecordDetailRouteByParam() {
+function RecordDetailRouteByParam(props: Omit<RecordDetailRouteProps, 'cardId'>) {
   const { cardId = '' } = useParams()
-  return <RecordDetailRoute key={cardId} cardId={cardId} />
+  return <RecordDetailRoute key={cardId} cardId={cardId} {...props} />
 }
 
 // 장소가 바뀌면 상세 화면을 새로 마운트해 이전 장소의 상태가 남지 않게 한다
@@ -432,6 +444,7 @@ function MyRoute({ auth }: { auth: Auth }) {
   const navigate = useNavigate()
   const goTab = useTabNavigate()
   const { status, couple } = useMyCouple()
+  const pwa = usePwaInstall()
 
   const handleMenuClick = (menu: MyMenu) => {
     const legal = LEGAL_MENUS[menu]
@@ -455,6 +468,8 @@ function MyRoute({ auth }: { auth: Auth }) {
       onMenuClick={handleMenuClick}
       onLogout={() => void handleLogout()}
       onTabChange={goTab}
+      installMode={pwa.mode}
+      onInstall={pwa.install}
     />
   )
 }
@@ -690,6 +705,9 @@ function App() {
   const [home, setHome] = useState(MOCK_HOME)
   const [spots, setSpots] = useState(MOCK_SPOTS)
   const [pendingPromptSeen, setPendingPromptSeen] = useState(false)
+  // 로그인한 사용자(GET /me). 홈 데이터는 아직 목이라 실서버에선 id가 맞지 않으므로 로그인 정보를 먼저 쓴다
+  const me = { id: auth.user?.id ?? home.userId, nickname: auth.user?.nickname ?? home.nickname }
+  const partnerNickname = home.couple?.partnerNickname ?? null
 
   // 알림을 읽으면 홈의 새 알림 표시도 맞춘다. API 연동 후에는 홈을 다시 조회해 반영한다
   const handleNotificationRead = () =>
@@ -736,7 +754,12 @@ function App() {
           }
         />
         <Route path="/map" element={<RecordMapRoute />} />
-        <Route path="/cards/:cardId" element={<RecordDetailRouteByParam />} />
+        <Route
+          path="/cards/:cardId"
+          element={
+            <RecordDetailRouteByParam myUserId={me.id} myNickname={me.nickname} partnerNickname={partnerNickname} />
+          }
+        />
         <Route path="/notifications" element={<NotificationsRoute onRead={handleNotificationRead} />} />
         <Route path="/drive" element={<DriveRoute />} />
         <Route path="/drive/route" element={<RouteSettingRoute />} />
@@ -750,11 +773,10 @@ function App() {
         <Route path="/my/playlists" element={<PlaylistsRoute />} />
         <Route path="/my/stories" element={<RadioStoriesRoute />} />
         <Route path="/my/stories/:episodeId" element={<RadioStoryRouteByParam />} />
-        <Route path="/drives/:driveId/card" element={<DriveCardRouteByParam
-                userId={home.userId}
-                myNickname={home.nickname}
-                partnerNickname={home.couple?.partnerNickname ?? null}
-              />} />
+        <Route
+          path="/drives/:driveId/card"
+          element={<DriveCardRouteByParam userId={me.id} myNickname={me.nickname} partnerNickname={partnerNickname} />}
+        />
         <Route
           path="/places/:placeId"
           element={
