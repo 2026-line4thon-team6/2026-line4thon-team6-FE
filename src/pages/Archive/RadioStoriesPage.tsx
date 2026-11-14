@@ -1,7 +1,7 @@
 import { RADIO_SEARCH_MAX_LENGTH } from '@/api/radio'
 import chevronIcon from '@/assets/icons/chevron-light.svg'
 import storyIcon from '@/assets/icons/radio-story.svg'
-import searchIcon from '@/assets/icons/search.svg'
+import searchIcon from '@/assets/icons/search-coral.svg'
 import type { RadioEpisode } from '@/types/radio'
 import ArchiveLayout from './ArchiveLayout'
 import styles from './RadioStoriesPage.module.scss'
