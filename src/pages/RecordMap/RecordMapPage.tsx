@@ -1,6 +1,6 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react'
 import calendarIcon from '@/assets/icons/calendar.svg'
-import searchIcon from '@/assets/icons/search.svg'
+import searchIcon from '@/assets/icons/search-gray.svg'
 import mascotImage from '@/assets/images/record-map-mascot.webp'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
 import BottomNavBar from '@/components/BottomNavBar/BottomNavBar'
