@@ -224,6 +224,8 @@ describe('보관함', () => {
 
     await user.click(await screen.findByRole('button', { name: '찜한 드라이브 코스' }))
     expect(screen.getByRole('heading', { level: 1, name: '찜한 드라이브 코스' })).toBeInTheDocument()
+    // 첫 화면은 바다 칩이 골라진 상태로 연다
+    expect(screen.getByRole('button', { name: '바다' })).toHaveAttribute('aria-pressed', 'true')
 
     await user.click(await screen.findByRole('button', { name: '시흥 오이도' }))
     expect(await screen.findByRole('heading', { level: 1, name: '시흥 오이도' })).toBeInTheDocument()

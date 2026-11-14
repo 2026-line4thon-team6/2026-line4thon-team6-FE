@@ -36,7 +36,7 @@ function renderPage(props: Partial<Props> = {}) {
     onFavoriteToggle: vi.fn(),
     onPlaceClick: vi.fn(),
   }
-  render(<FavoritesPage status="ready" places={PLACES} category={null} {...handlers} {...props} />)
+  render(<FavoritesPage status="ready" places={PLACES} category="SEA" {...handlers} {...props} />)
   return { user: userEvent.setup(), ...handlers }
 }
 
@@ -97,12 +97,6 @@ describe('코스 카드', () => {
 })
 
 describe('상태', () => {
-  it('찜한 코스가 없으면 안내한다', () => {
-    renderPage({ places: [] })
-
-    expect(screen.getByText('아직 찜한 드라이브 코스가 없어요.')).toBeInTheDocument()
-  })
-
   it('고른 카테고리에 찜한 코스가 없으면 그렇게 안내한다', () => {
     renderPage({ places: [], category: 'CAR_CAMPING' })
 

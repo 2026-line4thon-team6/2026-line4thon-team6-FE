@@ -13,29 +13,32 @@ afterEach(() => {
 })
 
 describe('useFavorites', () => {
-  it('처음에는 카테고리 없이 전체 찜 목록을 불러온다', async () => {
+  it('처음에는 첫 칩(바다) 카테고리의 찜 목록을 불러온다 (홈 카테고리 칩과 같음)', async () => {
     const spy = vi.spyOn(placesApi, 'fetchFavorites')
     const { result } = renderHook(() => useFavorites())
 
     await waitFor(() => expect(result.current.status).toBe('ready'))
-    expect(spy).toHaveBeenCalledWith(undefined)
-    expect(result.current.category).toBeNull()
+    expect(spy).toHaveBeenCalledWith('SEA')
+    expect(result.current.category).toBe('SEA')
     expect(result.current.places.length).toBeGreaterThan(0)
+    expect(result.current.places.every((place) => place.category === 'SEA')).toBe(true)
   })
 
-  it('카테고리를 고르면 그 카테고리로 다시 불러오고, 다시 고르면 전체로 돌아간다', async () => {
+  it('다른 칩을 고르면 그 카테고리로 다시 불러오고, 고른 칩을 다시 눌러도 선택은 그대로다', async () => {
     const spy = vi.spyOn(placesApi, 'fetchFavorites')
     const { result } = renderHook(() => useFavorites())
     await waitFor(() => expect(result.current.status).toBe('ready'))
 
-    act(() => result.current.selectCategory('SEA'))
-    await waitFor(() => expect(spy).toHaveBeenLastCalledWith('SEA'))
+    act(() => result.current.selectCategory('NIGHT_VIEW'))
+    await waitFor(() => expect(spy).toHaveBeenLastCalledWith('NIGHT_VIEW'))
     await waitFor(() => expect(result.current.status).toBe('ready'))
-    expect(result.current.places.every((place) => place.category === 'SEA')).toBe(true)
+    expect(result.current.places.every((place) => place.category === 'NIGHT_VIEW')).toBe(true)
 
-    act(() => result.current.selectCategory('SEA'))
-    await waitFor(() => expect(spy).toHaveBeenLastCalledWith(undefined))
-    expect(result.current.category).toBeNull()
+    const calls = spy.mock.calls.length
+    act(() => result.current.selectCategory('NIGHT_VIEW'))
+    expect(result.current.category).toBe('NIGHT_VIEW')
+    expect(result.current.status).toBe('ready')
+    expect(spy).toHaveBeenCalledTimes(calls)
   })
 
   it('찜을 취소해도 목록에 남겨 두고 하트만 비운다 (바로 되돌릴 수 있게)', async () => {
