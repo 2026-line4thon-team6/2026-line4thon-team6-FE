@@ -93,3 +93,10 @@ export interface ReflectionPut {
   submitted: boolean
   expectedVersion: number
 }
+
+// GET /cards/{cardId}/share — 커플 전용 링크. 링크만으로는 볼 수 없고, 같은 커플이 로그인해야 열린다
+export interface CardShare {
+  url: string
+  access: 'COUPLE_ONLY'
+  expiresAt: string | null
+}

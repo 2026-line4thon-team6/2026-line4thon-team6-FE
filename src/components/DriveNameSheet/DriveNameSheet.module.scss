@@ -1,0 +1,35 @@
+// Figma: 시트 위쪽 52px 아래부터 내용, 내용 아래 32px + 홈 인디케이터. 좌우 25px은 BottomSheet 기본값
+.sheet {
+  padding-top: 52px;
+  padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 23px;
+}
+
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: center;
+}
+
+.title {
+  @include typo('title-m-bold');
+  color: color('black');
+}
+
+.description {
+  @include typo('body-m');
+  color: color('gray-600');
+}
+
+// Figma: 시트 내용 폭 340 안에서 버튼은 322
+.submit {
+  width: calc(100% - 18px);
+  box-shadow: none;
+}

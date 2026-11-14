@@ -1,0 +1,32 @@
+.stats {
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  height: 81px;
+  padding: 10px 8px 13px;
+  border-radius: 20px;
+  text-align: center;
+  background: gradient('glass');
+  box-shadow: shadow('icon');
+}
+
+.label {
+  @include typo('body-s');
+  color: color('gray-600');
+  white-space: nowrap;
+}
+
+.value {
+  @include typo('body-l-bold');
+  color: color('gray-900');
+  white-space: nowrap;
+}
