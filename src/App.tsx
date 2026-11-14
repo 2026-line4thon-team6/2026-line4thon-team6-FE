@@ -12,6 +12,7 @@ import CardPromptModal from '@/components/CardPromptModal/CardPromptModal'
 import DriveNameSheet from '@/components/DriveNameSheet/DriveNameSheet'
 import useCardDetail from '@/hooks/useCardDetail'
 import useDrive from '@/hooks/useDrive'
+import useActiveDrive from '@/hooks/useActiveDrive'
 import useArrival from '@/hooks/useArrival'
 import useDriveMap from '@/hooks/useDriveMap'
 import useDriveCard from '@/hooks/useDriveCard'
@@ -34,6 +35,7 @@ import RadioStoriesPage from '@/pages/Archive/RadioStoriesPage'
 import CouplePage from '@/pages/Couple/CouplePage'
 import CoupleInvitePage from '@/pages/CoupleInvite/CoupleInvitePage'
 import DrivePage from '@/pages/Drive/DrivePage'
+import StampsTab from '@/pages/Drive/StampsTab'
 import DriveCardPage from '@/pages/DriveCard/DriveCardPage'
 import HomePage from '@/pages/Home/HomePage'
 import LegalDocumentPage from '@/pages/LegalDocument/LegalDocumentPage'
@@ -252,6 +254,7 @@ function DriveRoute() {
         onEnd={handleEnd}
         locationDenied={map.locationDenied}
         onLocationRetry={map.retryLocation}
+        stamps={<StampsTab drive={drive} currentCoordinate={map.current} />}
       />
       {arrivedDriveId && (
         <CardPromptModal
@@ -628,6 +631,7 @@ function HomeRoute({ home, categories, spots, pendingPromptSeen, onPendingPrompt
   const goTab = useTabNavigate()
   const { summary } = usePendingCards()
   const drive = useStartDrive(home.couple)
+  const activeDrive = useActiveDrive()
   const timeOfDay = useTimeOfDay()
 
   const goCard = (driveId: string) => {
@@ -644,6 +648,8 @@ function HomeRoute({ home, categories, spots, pendingPromptSeen, onPendingPrompt
         spots={spots}
         carConnected
         pendingCard={summary}
+        activeDrive={activeDrive}
+        onActiveDriveClick={() => navigate('/drive')}
         onNotificationClick={() => navigate('/notifications')}
         onSpotClick={(id) => navigate(`/places/${id}`)}
         onLikeToggle={onLikeToggle}

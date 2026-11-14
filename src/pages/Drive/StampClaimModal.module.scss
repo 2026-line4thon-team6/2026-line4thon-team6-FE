@@ -1,0 +1,48 @@
+// Figma 340 x 444. 내용은 위 40 · 양옆 15 · 아래 23
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 15px 23px;
+  text-align: center;
+}
+
+.image {
+  width: 128px;
+  height: 126px;
+}
+
+.title {
+  margin-top: 21px;
+  @include typo('title-s-bold');
+  color: color('black');
+}
+
+.description {
+  margin-top: 9px;
+  @include typo('body-s');
+  color: color('gray-400');
+}
+
+.locate {
+  width: 289px;
+  max-width: 100%;
+  margin-top: 14px;
+}
+
+.search {
+  margin-top: 14px;
+  cursor: pointer;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  width: 300px;
+  max-width: 100%;
+  margin-top: 14px;
+}
+
+.cancel {
+  flex: 0 0 96px;
+}

@@ -6,6 +6,7 @@ import { resetMockCards } from '@/mocks/cards'
 import { resetMockCouple } from '@/mocks/couples'
 import { resetMockDrives } from '@/mocks/drives'
 import { resetMockPlaces } from '@/mocks/places'
+import { resetMockStamps } from '@/mocks/restAreas'
 import { resetMockRoutes } from '@/mocks/routes'
 import { MOCK_CURRENT_COORDINATE, resetMockSearchHistory } from '@/mocks/search'
 import type { Position } from '@/utils/location'
@@ -42,6 +43,7 @@ beforeEach(() => {
   resetMockPlaces()
   resetMockCards()
   resetMockDrives()
+  resetMockStamps()
   resetMockRoutes()
   resetMockSearchHistory()
   localStorage.clear()

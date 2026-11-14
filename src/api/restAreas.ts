@@ -1,6 +1,13 @@
-import { mockGetDriveRestAreas, mockSearchRestAreas } from '@/mocks/restAreas'
+import {
+  mockClaimStamp,
+  mockGetDriveRestAreas,
+  mockGetRestArea,
+  mockGetStampBook,
+  mockGetStampClaim,
+  mockSearchRestAreas,
+} from '@/mocks/restAreas'
 import type { ApiResponse, CursorPage } from '@/types/api'
-import type { RestArea } from '@/types/restArea'
+import type { RestArea, RestAreaDetail, StampBook, StampClaim, StampClaimRequest } from '@/types/restArea'
 import type { Coordinate } from '@/types/route'
 import { apiFetch, USE_MOCK } from './client'
 
@@ -43,4 +50,40 @@ export function getDriveRestAreas(
   if (USE_MOCK) return mockGetDriveRestAreas(driveId, params)
 
   return apiFetch<CursorPage<RestArea>>(withQuery(`/drives/${encodeURIComponent(driveId)}/rest-areas`, pageQuery(params)))
+}
+
+// GET /rest-areas/{restAreaId} — 휴게소 상세 · 대표 메뉴
+export function getRestArea(restAreaId: string): Promise<ApiResponse<RestAreaDetail>> {
+  if (USE_MOCK) return mockGetRestArea(restAreaId)
+
+  return apiFetch<RestAreaDetail>(`/rest-areas/${encodeURIComponent(restAreaId)}`)
+}
+
+// GET /couples/me/stamps — 도장판
+export function getStampBook(params: { cursor?: string; limit?: number } = {}): Promise<ApiResponse<StampBook>> {
+  if (USE_MOCK) return mockGetStampBook(params)
+
+  return apiFetch<StampBook>(withQuery('/couples/me/stamps', pageQuery(params)))
+}
+
+// POST /drives/{driveId}/stamp-claims — 도장 찍기
+export function claimStamp(
+  driveId: string,
+  body: StampClaimRequest,
+  { coupleId, idempotencyKey }: { coupleId: string; idempotencyKey: string },
+): Promise<ApiResponse<StampClaim>> {
+  if (USE_MOCK) return mockClaimStamp(driveId, body)
+
+  return apiFetch<StampClaim>(`/drives/${encodeURIComponent(driveId)}/stamp-claims`, {
+    method: 'POST',
+    headers: { 'X-Couple-Id': coupleId, 'Idempotency-Key': idempotencyKey },
+    body: JSON.stringify(body),
+  })
+}
+
+// GET /stamp-claims/{claimId} — PENDING이었던 도장 결과 다시 보기
+export function getStampClaim(claimId: string): Promise<ApiResponse<StampClaim>> {
+  if (USE_MOCK) return mockGetStampClaim(claimId)
+
+  return apiFetch<StampClaim>(`/stamp-claims/${encodeURIComponent(claimId)}`)
 }

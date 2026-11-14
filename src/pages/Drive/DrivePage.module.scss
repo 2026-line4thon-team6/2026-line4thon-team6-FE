@@ -86,6 +86,10 @@ $panel-height: 268px;
   flex-direction: column;
   gap: 18px;
   padding: 0 $gutter 19px;
+
+  &[hidden] {
+    display: none;
+  }
 }
 
 .controls {
@@ -97,19 +101,46 @@ $panel-height: 268px;
 
 .panel {
   height: $panel-height;
-  padding: 15px $gutter 0;
+  padding: 0 $gutter;
   overflow-y: auto;
   border-radius: 30px 30px 0 0;
   background-color: color('coral-bg');
   box-shadow: 0 1px 10px rgb(0 0 0 / 10%);
 }
 
+// 막대(49 x 6) 위아래 여백까지 누를 수 있게 한다. 패널 위 15 · 탭까지 17
 .handle {
-  width: 49px;
-  height: 6px;
-  margin: 0 auto 17px;
-  border-radius: 100px;
-  background-color: color('coral-2');
+  display: block;
+  width: 109px;
+  height: 38px;
+  margin: 0 auto;
+  padding: 15px 30px 17px;
+  border: 0;
+  background: none;
+  touch-action: none;
+  cursor: grab;
+
+  &::before {
+    content: '';
+    display: block;
+    height: 6px;
+    border-radius: 100px;
+    background-color: color('coral-2');
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: -2px;
+  }
+}
+
+// 펼치면 상태바 아래까지 덮는다 (Figma 스탬프 289:20501)
+.expanded {
+  top: var(--safe-top);
+
+  .panel {
+    height: 100%;
+  }
 }
 
 .tabPanel {

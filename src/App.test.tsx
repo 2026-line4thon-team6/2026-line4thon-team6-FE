@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -8,6 +8,7 @@ import { MOCK_PARTNER_INVITE_CODE, mockEndSession, mockFetchMe, resetMockCouple 
 import { resetMockPlaces } from '@/mocks/places'
 import { resetMockCards } from '@/mocks/cards'
 import { resetMockDrives } from '@/mocks/drives'
+import { resetMockStamps } from '@/mocks/restAreas'
 import { resetMockRoutes } from '@/mocks/routes'
 import { resetMockSearchHistory } from '@/mocks/search'
 import { resetMockRecordDeletions } from './mocks/records'
@@ -52,6 +53,8 @@ async function startDriveFromHome(user: ReturnType<typeof userEvent.setup>) {
 
 beforeEach(() => {
   resetMockCouple()
+  resetMockDrives()
+  resetMockStamps()
   resetMockPlaces()
   localStorage.clear()
   sessionStorage.clear()
@@ -752,6 +755,68 @@ describe('드라이브 주행 · 마치기', () => {
 
     expect(await screen.findByRole('textbox', { name: '도착지' })).toHaveValue('서울 반포 한강공원')
     expect(await screen.findByRole('list', { name: '검색 결과' })).toBeInTheDocument()
+  })
+
+  it('휴게소 스탬프 탭: 잠긴 칸 → 현재 위치로 찾기 → 도장찍기 (이미 찍은 곳이면 안내)', async () => {
+    const user = await startDriving()
+
+    await user.click(screen.getByRole('tab', { name: '휴게소 스탬프' }))
+    expect(await screen.findByLabelText('16개 중 3개')).toBeInTheDocument()
+
+    await user.click(screen.getAllByRole('button', { name: '도장 찍기' })[0])
+    const popup = await screen.findByRole('dialog', { name: '휴게소 도장 찍기' })
+    expect(within(popup).getByRole('button', { name: '도장찍기' })).toBeDisabled()
+
+    // 목 위치(서초동)에서 가장 가까운 시흥하늘휴게소는 이미 찍은 곳이다
+    await user.click(within(popup).getByRole('button', { name: '현재 위치로 찾기' }))
+    await waitFor(() => expect(within(popup).getByRole('textbox', { name: '휴게소 이름' })).toHaveValue('시흥하늘휴게소'))
+    await user.click(within(popup).getByRole('button', { name: '도장찍기' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('이미 찍은 도장이에요.')
+    expect(screen.getByLabelText('16개 중 3개')).toBeInTheDocument()
+  })
+
+  it('휴게소 스탬프 탭: 도장 팝업의 검색창 → 휴게소 검색 → 고르고 도장찍기를 누르면 도장이 하나 늘어난다', async () => {
+    const user = await startDriving()
+
+    await user.click(screen.getByRole('tab', { name: '휴게소 스탬프' }))
+    await user.click((await screen.findAllByRole('button', { name: '도장 찍기' }))[0])
+    await user.click(within(await screen.findByRole('dialog', { name: '휴게소 도장 찍기' })).getByRole('textbox', { name: '휴게소 이름' }))
+
+    const search = await screen.findByRole('dialog', { name: '휴게소 검색' })
+    await user.type(within(search).getByRole('textbox', { name: '휴게소 이름' }), '덕평')
+    await user.click(await within(search).findByRole('button', { name: /덕평\s*자연휴게소/ }))
+
+    const popup = await screen.findByRole('dialog', { name: '휴게소 도장 찍기' })
+    expect(within(popup).getByRole('textbox', { name: '휴게소 이름' })).toHaveValue('덕평자연휴게소')
+
+    await user.click(within(popup).getByRole('button', { name: '도장찍기' }))
+    expect(await screen.findByRole('status')).toHaveTextContent('도장을 찍었어요!')
+    expect(await screen.findByLabelText('16개 중 4개')).toBeInTheDocument()
+  })
+
+  it('휴게소 스탬프 탭: 찍은 도장을 누르면 휴게소 상세와 대표 메뉴를 보여 준다', async () => {
+    const user = await startDriving()
+
+    await user.click(screen.getByRole('tab', { name: '휴게소 스탬프' }))
+    await user.click(await screen.findByRole('button', { name: '시흥하늘휴게소 도장' }))
+
+    const detail = await screen.findByRole('dialog', { name: '시흥하늘휴게소' })
+    expect(within(detail).getByText('수도권제1순환고속도로')).toBeInTheDocument()
+    expect(within(detail).getAllByRole('listitem')).toHaveLength(4)
+  })
+
+  it('주행 중에 홈으로 나가면 기록 중인 드라이브 배너가 뜨고, 누르면 드라이브 화면으로 돌아간다', async () => {
+    const user = await startDriving()
+
+    await user.click(screen.getByRole('button', { name: '드라이브 마치기' }))
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: '닫기' }))
+    cleanup()
+    const home = renderApp()
+    await home.click(await screen.findByRole('button', { name: '나중에' }))
+    await home.click(await screen.findByRole('button', { name: /현재 기록 중인 드라이브가 있어요/ }))
+
+    expect(await screen.findByRole('button', { name: '드라이브 마치기' })).toBeInTheDocument()
   })
 
   it('드라이브 마치기 팝업에서 경로 수정을 누르면 경로 설정 화면으로 간다', async () => {
