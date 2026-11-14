@@ -12,6 +12,9 @@ html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
+  // 더블탭 확대를 끈다. 핀치 확대는 viewport(user-scalable=no)와 preventPageZoom(iOS 사파리)이 막는다.
+  // 스크롤 · 핀치 터치는 그대로 넘겨서 카카오맵의 드래그 · 확대 · 축소는 지금처럼 동작한다
+  touch-action: manipulation;
 }
 
 body {

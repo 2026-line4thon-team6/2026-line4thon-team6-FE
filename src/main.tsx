@@ -4,9 +4,9 @@ import { BrowserRouter } from 'react-router'
 import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css'
 import '@/styles/global.scss'
 import App from './App.tsx'
-import { preventIosInputZoom } from '@/utils/preventIosInputZoom'
+import { preventPageZoom } from '@/utils/preventPageZoom'
 
-preventIosInputZoom()
+preventPageZoom()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
