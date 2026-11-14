@@ -468,6 +468,14 @@ describe('홈 ↔ 기록 지도 이동', () => {
       expect(items).toHaveLength(1)
       expect(items[0]).toHaveTextContent('몽산포 해변 산책')
     })
+
+    // 검색창의 X를 누르면 전체 기록으로 돌아간다
+    await user.click(screen.getByRole('button', { name: '날짜 검색 해제' }))
+    expect(screen.getByRole('searchbox', { name: '기록 검색' })).toHaveValue('')
+    await waitFor(() =>
+      expect(within(screen.getByRole('list', { name: '드라이브 기록 목록' })).getAllByRole('listitem').length).toBeGreaterThan(1),
+    )
+    expect(screen.queryByRole('button', { name: '날짜 검색 해제' })).not.toBeInTheDocument()
     vi.useRealTimers()
   })
 })
