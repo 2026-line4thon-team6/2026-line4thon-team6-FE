@@ -1,0 +1,266 @@
+$gutter: 25px;
+$top: max(var(--safe-top), 12px);
+$footer-height: 104px;
+
+.page {
+  max-width: var(--app-max-width);
+  min-height: var(--app-height);
+  margin: 0 auto;
+  padding-bottom: calc(#{$footer-height} + var(--safe-bottom));
+  background-color: color('coral-bg');
+}
+
+.header {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  padding: calc(#{$top} + 5px) $gutter 0;
+}
+
+.headerTitle {
+  @include typo('body-l-bold');
+  color: color('black');
+}
+
+.content {
+  padding: 20px $gutter 0;
+}
+
+.titleRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: calc(100% - 17px);
+
+  &::before {
+    content: '';
+    flex-shrink: 0;
+    width: 5px;
+    height: 26px;
+    border-radius: 100px;
+    background-color: color('coral-pressed-2');
+  }
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  @include typo('title-s-bold');
+  color: color('black');
+}
+
+.save {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+.meta {
+  margin-top: 8px;
+  @include typo('body-m-15');
+  color: color('gray-600');
+  word-spacing: 0.15em;
+}
+
+.keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 5px;
+  margin-top: 20px;
+}
+
+.keyword {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  height: 28px;
+  padding: 3px 12px 4px 11px;
+  border: 1px solid color('coral-pressed-2');
+  border-radius: 100px;
+  @include typo('body-s');
+  color: color('black');
+  white-space: nowrap;
+  background-color: color('coral-stroke');
+}
+
+.emoji {
+  display: inline-flex;
+  justify-content: center;
+  width: 12px;
+  @include typo('caption');
+}
+
+.tracks {
+  margin-top: 35px;
+}
+
+// 곡 한 줄 47, 구분선 위아래 10 (구분선 1px 포함해 한 칸 67)
+.track {
+  position: relative;
+  overflow: hidden;
+  padding: 10px 0 9px;
+  border-bottom: 1px solid color('divider');
+  transition: transform 0.2s ease-out;
+
+  &:first-child {
+    padding-top: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.dragging {
+  z-index: 1;
+  background-color: color('coral-bg');
+  transition: none;
+}
+
+.trackBody {
+  display: flex;
+  align-items: center;
+  height: 47px;
+  transition: transform 0.2s ease-out;
+  touch-action: pan-y;
+}
+
+.order {
+  flex-shrink: 0;
+  width: 37px;
+  @include typo('body-m-15-bold');
+  color: color('gray-800');
+}
+
+.info {
+  display: flex;
+  flex: 0 1 273px;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+}
+
+.album {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 5px;
+  object-fit: cover;
+  background-color: color('coral-2');
+}
+
+.names {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.songTitle,
+.artist {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.songTitle {
+  @include typo('body-m-medium');
+  color: color('black');
+}
+
+.artist {
+  @include typo('body-m-15');
+  color: color('gray-600');
+}
+
+.time {
+  flex-shrink: 0;
+  @include typo('body-s');
+  color: color('gray-600');
+}
+
+.handle {
+  display: flex;
+  flex-shrink: 0;
+  margin-left: auto;
+  gap: 2.5px;
+  padding: 6px 0 6px 6px;
+  border: 0;
+  background: none;
+  touch-action: none;
+  cursor: grab;
+
+  img {
+    width: 3.75px;
+    height: 18.75px;
+  }
+}
+
+.delete {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: 64px;
+  height: 48px;
+  border: 0;
+  border-radius: 10px;
+  @include typo('body-m-medium');
+  color: color('white');
+  background-color: color('coral');
+  transform: translateY(-50%);
+}
+
+.footer {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  gap: 8px;
+  max-width: var(--app-max-width);
+  height: calc(#{$footer-height} + var(--safe-bottom));
+  margin: 0 auto;
+  padding: 22px $gutter 0;
+  border-radius: 30px 30px 0 0;
+  background-color: color('white');
+  box-shadow: shadow('icon');
+}
+
+.restart,
+.playAll {
+  height: 48px;
+  border: 0;
+  border-radius: 15px;
+  @include typo('body-m-medium');
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}
+
+.restart {
+  flex: 0 0 116px;
+  color: color('coral-pressed');
+  background-color: color('coral-2');
+}
+
+.playAll {
+  flex: 1;
+  color: color('white');
+  background-color: color('coral');
+
+  &:active {
+    background-color: color('coral-pressed');
+  }
+}

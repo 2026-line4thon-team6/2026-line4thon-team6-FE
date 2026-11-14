@@ -16,3 +16,39 @@ export interface SavedPlaylist {
 export interface SavedPlaylistPage extends CursorPage<SavedPlaylist> {
   totalCount: number
 }
+
+export interface PlaylistTrack {
+  id: string
+  providerTrackId: string
+  title: string
+  artist: string
+  durationSeconds: number
+  albumImageUrl: string | null
+  providerUri: string | null
+  externalUrl: string | null
+  order: number
+}
+
+// GET /playlists/{playlistId}
+export interface Playlist {
+  id: string
+  title: string
+  moods: string[]
+  weather: string
+  genres: string[]
+  targetDurationSeconds: number
+  tracks: PlaylistTrack[]
+  trackCount: number
+  durationSeconds: number
+  savedByMe: boolean
+  createdAt: string
+  version: number
+}
+
+// POST /playlists
+export interface CreatePlaylistRequest {
+  driveId?: string
+  moods: string[]
+  weather: string
+  genres: string[]
+}

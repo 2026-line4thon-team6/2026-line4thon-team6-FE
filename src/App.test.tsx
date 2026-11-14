@@ -7,6 +7,7 @@ import { prepareDrive } from '@/api/drives'
 import { MOCK_PARTNER_INVITE_CODE, mockEndSession, mockFetchMe, resetMockCouple } from '@/mocks/couples'
 import { resetMockPlaces } from '@/mocks/places'
 import { resetMockCards } from '@/mocks/cards'
+import { resetMockDjPlaylists, setMockGenerateMs } from '@/mocks/djPlaylists'
 import { resetMockDrives } from '@/mocks/drives'
 import { resetMockStamps } from '@/mocks/restAreas'
 import { resetMockRoutes } from '@/mocks/routes'
@@ -54,6 +55,7 @@ beforeEach(() => {
   resetMockCouple()
   resetMockDrives()
   resetMockStamps()
+  resetMockDjPlaylists()
   resetMockPlaces()
   localStorage.clear()
   sessionStorage.clear()
@@ -814,6 +816,25 @@ describe('드라이브 주행 · 마치기', () => {
     await home.click(await screen.findByRole('button', { name: /현재 기록 중인 드라이브가 있어요/ }))
 
     expect(await screen.findByRole('button', { name: '드라이브 마치기' })).toBeInTheDocument()
+  })
+
+  it('DJ 플레이리스트: 카드 → 취향 선택 → 만들기 → 생성 중 → 생성 완료', async () => {
+    setMockGenerateMs(300)
+    const user = await startDriving()
+
+    await user.click(screen.getByRole('button', { name: /DJ 플레이리스트/ }))
+    await user.click(within(await screen.findByRole('list', { name: '분위기' })).getByRole('button', { name: /신나는/ }))
+    await user.click(within(screen.getByRole('list', { name: '날씨' })).getByRole('button', { name: /맑음/ }))
+    await user.click(screen.getByRole('button', { name: /AI 플레이리스트 만들기/ }))
+
+    expect(await screen.findByText('잠시만 기다려주세요..')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '노을처럼 따뜻한 우리' }, { timeout: 3000 })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '플레이리스트 저장' }))
+    expect(screen.getByRole('button', { name: '플레이리스트 저장 취소' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '다시 만들기' }))
+    expect(await screen.findByRole('button', { name: /AI 플레이리스트 만들기/ })).toBeInTheDocument()
   })
 
   it('드라이브 마치기 팝업에서 경로 수정을 누르면 경로 설정 화면으로 간다', async () => {

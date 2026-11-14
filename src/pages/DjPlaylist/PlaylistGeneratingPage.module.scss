@@ -1,0 +1,182 @@
+$gutter: 25px;
+$top: max(var(--safe-top), 12px);
+
+.page {
+  display: flex;
+  flex-direction: column;
+  max-width: var(--app-max-width);
+  min-height: var(--app-height);
+  margin: 0 auto;
+  background-color: color('coral-bg');
+}
+
+.header {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  padding: calc(#{$top} + 5px) $gutter 0;
+}
+
+.title {
+  @include typo('body-l-bold');
+  color: color('black');
+}
+
+.content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 28px;
+  align-items: center;
+  margin-top: 88px;
+}
+
+.visual {
+  position: relative;
+  width: 151px;
+  height: 151px;
+}
+
+.ring {
+  display: block;
+  width: 100%;
+  height: 100%;
+  animation: spin 2.4s linear infinite;
+}
+
+// Figma 막대 4개 (9px, 왼쪽 48 · 64 · 78 · 94)
+.bars {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
+  i {
+    position: absolute;
+    width: 9px;
+    border-radius: 20px;
+    background-color: color('coral-bg');
+    animation: bounce 0.9s ease-in-out infinite alternate;
+
+    &:nth-child(1) {
+      top: 65px;
+      left: 48px;
+      height: 21px;
+    }
+
+    &:nth-child(2) {
+      top: 56px;
+      left: 64px;
+      height: 40px;
+      animation-delay: 0.15s;
+    }
+
+    &:nth-child(3) {
+      top: 61px;
+      left: 78px;
+      height: 29px;
+      animation-delay: 0.3s;
+    }
+
+    &:nth-child(4) {
+      top: 69px;
+      left: 94px;
+      height: 13px;
+      animation-delay: 0.45s;
+    }
+  }
+}
+
+.message {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-align: center;
+}
+
+.wait {
+  @include typo('body-m-medium');
+  color: color('gray-600');
+}
+
+.lead {
+  @include typo('body-l-bold');
+  color: color('black');
+}
+
+.highlight {
+  font-style: normal;
+  color: transparent;
+  background: gradient('gradient-2');
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 214px;
+}
+
+.step {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  @include typo('body-m-medium');
+  color: color('gray-900');
+  white-space: nowrap;
+
+  img {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+.footer {
+  padding: 0 $gutter calc(34px + var(--safe-bottom));
+}
+
+.cancel {
+  width: 100%;
+  height: 48px;
+  border: 0;
+  border-radius: 100px;
+  @include typo('body-m-medium');
+  color: color('white');
+  background-color: color('coral');
+
+  &:active {
+    background-color: color('coral-pressed');
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes bounce {
+  to {
+    transform: scaleY(0.5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring,
+  .spinner,
+  .bars i {
+    animation: none;
+  }
+}
