@@ -5,12 +5,10 @@ import styles from './SearchBar.module.scss'
 interface SearchBarProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'onSubmit'> {
   value: string
   onValueChange: (value: string) => void
-  // 키보드 검색(Enter)이나 돋보기 버튼으로 검색어를 확정할 때
   onSearch: (keyword: string) => void
   'aria-label': string
 }
 
-// 한 줄 검색창 (휴게소 검색 등). 오른쪽 돋보기를 누르거나 Enter로 검색한다
 function SearchBar({
   value,
   onValueChange,

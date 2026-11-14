@@ -32,7 +32,6 @@ export const Filled: Story = {
   args: { value: '시흥하늘휴게소' },
 }
 
-// 직접 입력해보기
 export const Interactive: Story = {
   render: function Render(args) {
     const [value, setValue] = useState('')

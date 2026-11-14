@@ -17,7 +17,6 @@ const toPoint = ({ id, name, address, coordinate }: PlaceSummary): RoutePoint =>
   coordinate,
 })
 
-// 출발지(현재 위치) · 장소 검색 · 최근 검색 · 경로 미리보기
 function useRouteSetting(destinationPlaceId?: string, initialQuery = '') {
   const [origin, setOrigin] = useState<RoutePoint | null>(null)
   const [history, setHistory] = useState<SearchHistoryItem[]>([])
@@ -42,7 +41,6 @@ function useRouteSetting(destinationPlaceId?: string, initialQuery = '') {
           setLocationStatus('unavailable')
           return
         }
-        // 주소를 못 받아도 좌표만으로 경로는 계산할 수 있다
         const address = await reverseGeocode(coordinate)
           .then(({ data }) => data.address ?? '')
           .catch(() => '')
@@ -52,7 +50,6 @@ function useRouteSetting(destinationPlaceId?: string, initialQuery = '') {
       .catch(() => setLocationStatus('unavailable'))
   }, [])
 
-  // 입력하는 동안 결과를 바로 보여준다. 최근 검색 저장은 검색을 확정할 때만 한다
   const keyword = route || routeStatus === 'loading' ? '' : query.trim()
   useEffect(() => {
     if (!keyword) return
@@ -74,7 +71,6 @@ function useRouteSetting(destinationPlaceId?: string, initialQuery = '') {
       .then(loadHistory)
       .catch(() => {})
 
-  // 출발지가 없으면 화면에서 위치 권한 안내를 보여준다
   const routeTo = async (destination: RoutePoint) => {
     if (!origin) return
     setRouteStatus('loading')
@@ -87,7 +83,6 @@ function useRouteSetting(destinationPlaceId?: string, initialQuery = '') {
     }
   }
 
-  // 장소 상세에서 시작했으면 그 장소로 바로 경로를 계산한다
   useEffect(() => {
     const placeId = initialDestination.current
     if (!placeId || !origin) return

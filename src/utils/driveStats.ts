@@ -8,7 +8,6 @@ export function formatElapsed(seconds: number) {
   return `${minutes}분 ${seconds % 60}초`
 }
 
-// 예상 시간은 분까지만 (Figma 경로 설정하기: '1시간 20분')
 export function formatEstimatedDuration(seconds: number) {
   const totalMinutes = Math.max(1, Math.round(seconds / 60))
   const hours = Math.floor(totalMinutes / 60)
@@ -21,12 +20,16 @@ export function formatDistance(meters: number) {
   return `${(meters / 1000).toFixed(1)}km`
 }
 
+export function formatApproachDistance(meters: number) {
+  if (meters >= 1000) return `${Number((meters / 1000).toFixed(1))}km`
+  return `${Math.max(100, Math.round(meters / 100) * 100)}m`
+}
+
 export function formatArrival(iso: string) {
   const date = new Date(iso)
   return `${date.getHours()}시 ${date.getMinutes()}분`
 }
 
-// 주행 전에는 값 대신 '-분 -초' 같은 자리 표시를 보여준다 (Figma 첫 진입 화면)
 export function getDriveStats(drive: Drive | null, extraSeconds = 0): DriveStat[] {
   const started = drive !== null && drive.status !== 'PREPARING'
   const arrival = drive?.metrics.estimatedArrivalAt ?? null

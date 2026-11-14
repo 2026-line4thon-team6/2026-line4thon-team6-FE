@@ -8,10 +8,8 @@ interface State {
   drive: Drive | null
 }
 
-// 진행 중인 드라이브가 없으면 status='empty'
 function useDrive() {
   const [state, setState] = useState<State>({ status: 'loading', drive: null })
-  // 경로 저장 뒤 바로 출발처럼 이어서 부를 때 state는 아직 옛 controlVersion이다
   const latest = useRef<Drive | null>(null)
 
   useEffect(() => {

@@ -2,7 +2,6 @@ import type { ApiResponse } from '@/types/api'
 import type { CreateRouteRequest, Route } from '@/types/route'
 import { createMeta, distanceBetween, encodePolyline, mockApiError } from './utils'
 
-// 실제 길 대신 지점들을 직선으로 잇는다. 거리는 직선의 1.3배, 시간은 시속 50km로 어림한다
 const ROAD_FACTOR = 1.3
 const AVERAGE_SPEED_MPS = 50_000 / 3600
 const EXPIRES_IN_MS = 30 * 60 * 1000

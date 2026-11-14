@@ -5,18 +5,14 @@ import styles from './RouteSearchBox.module.scss'
 
 interface RouteSearchBoxProps
   extends Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'onSubmit'> {
-  // 출발지. 예) originLabel '내 위치', originDetail '서초구 서초동'
   originLabel: string
   originDetail?: string
   destination: string
   onDestinationChange: (value: string) => void
-  // 키보드 검색(Enter)으로 검색어를 확정할 때
   onSearch: (keyword: string) => void
-  // 경유지 추가 (+). 결과 화면 미정이라 생략하면 버튼을 숨긴다
   onAddWaypoint?: () => void
 }
 
-// 장소 검색·경로 설정 상단의 출발지 / 도착지 입력창
 function RouteSearchBox({
   originLabel,
   originDetail,

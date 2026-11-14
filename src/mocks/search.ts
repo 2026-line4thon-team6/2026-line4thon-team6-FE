@@ -5,9 +5,6 @@ import type { Coordinate } from '@/types/route'
 import type { ReverseGeocode, SearchHistoryItem } from '@/types/search'
 import { createMeta, distanceBetween, mockApiError, paginate } from './utils'
 
-// 장소 · 최근 검색어는 Figma 검색 화면(289:20830, 289:20892) 내용
-
-// Figma '내 위치 (서초구 서초동)'
 export const MOCK_CURRENT_COORDINATE: Coordinate = { latitude: 37.4837, longitude: 127.0324 }
 
 const AVERAGE_SPEED_MPS = 50_000 / 3600
@@ -93,7 +90,6 @@ const PLACES: SearchPlaceSeed[] = [
   },
 ]
 
-// '한강 공원'으로도 '한강공원'을 찾도록 공백을 무시한다
 const normalize = (text: string) => text.replace(/\s+/g, '').toLowerCase()
 
 export async function mockSearchPlaces({
@@ -123,7 +119,6 @@ export async function mockSearchPlaces({
   return { data: paginate(matched, cursor, limit), meta: createMeta() }
 }
 
-// Figma의 중복 항목(북한강 카페거리)은 명세상 하나만 남으므로 '시흥 오이도'로 바꿨다
 const createHistory = (): SearchHistoryItem[] => [
   { id: 'srch_mock_1', query: '서울 반포 한강공원', searchedAt: '2026-10-25T09:00:00Z' },
   { id: 'srch_mock_2', query: '남양주 북한강 카페거리', searchedAt: '2026-10-23T11:00:00Z' },
@@ -169,7 +164,6 @@ export async function mockDeleteSearchHistory(historyId: string): Promise<void> 
   history = history.filter((item) => item.id !== historyId)
 }
 
-// 한국 밖 좌표는 주소 없음, 그 외는 모두 '서초구 서초동'
 export async function mockReverseGeocode(coordinate: Coordinate): Promise<ApiResponse<ReverseGeocode>> {
   const inKorea =
     coordinate.latitude >= 33 && coordinate.latitude <= 39 && coordinate.longitude >= 124 && coordinate.longitude <= 132

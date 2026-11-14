@@ -4,7 +4,6 @@ import Button from '@/components/Button/Button'
 import TextField from '@/components/TextField/TextField'
 import styles from './DriveNameSheet.module.scss'
 
-// API 명세 D14: 주행 제목 최대 50자
 const DRIVE_NAME_MAX_LENGTH = 50
 
 const COPY = {
@@ -12,7 +11,6 @@ const COPY = {
   edit: { title: '드라이브명 수정하기' },
 }
 
-// 받침이 있으면 '이', 없으면 '가' (예: 붕붕이가, 별님이)
 function withSubjectParticle(word: string) {
   const code = word.charCodeAt(word.length - 1) - 0xac00
   if (code < 0 || code > 11171) return `${word}이(가)`
@@ -21,16 +19,13 @@ function withSubjectParticle(word: string) {
 
 interface DriveNameSheetProps {
   open: boolean
-  // create: 홈 '드라이브 시작하기' → 드라이브 모드 진입 / edit: 드라이브 모드 상단 드라이브명 수정
   mode: 'create' | 'edit'
   defaultName?: string
-  // create 버튼 문구에 들어가는 붕붕이 이름. 예) '붕붕! 붕붕이가 출발'
   mascotName?: string
   onSubmit: (name: string) => void
   onClose: () => void
 }
 
-// 드라이브명 입력 · 수정 바텀시트. 열릴 때마다 새로 마운트되어 입력값이 defaultName으로 초기화된다
 function DriveNameSheet({ open, onClose, mode, ...formProps }: DriveNameSheetProps) {
   if (!open) return null
 
@@ -49,7 +44,6 @@ function DriveNameForm({
 }: Omit<DriveNameSheetProps, 'open' | 'onClose'>) {
   const [name, setName] = useState(defaultName)
   const trimmed = name.trim()
-  // 처음 만들 때는 이름 없이 바로 출발할 수 있다 (기능명세 예외처리)
   const canSubmit = mode === 'create' || trimmed.length > 0
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react'
 import musicNoteIcon from '@/assets/icons/music-note.svg'
 import DriveMap from '@/components/DriveMap/DriveMap'
 import DriveNameSheet from '@/components/DriveNameSheet/DriveNameSheet'
@@ -13,6 +13,7 @@ import type { Coordinate } from '@/types/route'
 import { getDriveStats } from '@/utils/driveStats'
 import styles from './DrivePage.module.scss'
 import DriveConfirmModal from './DriveConfirmModal'
+import RestAreaAlert from './RestAreaAlert'
 
 type PanelTab = 'contents' | 'stamps'
 
@@ -28,26 +29,24 @@ interface DrivePageProps {
   routePath?: Coordinate[]
   origin?: Coordinate | null
   destination?: Coordinate | null
+  restAreas?: { id: string; name: string; coordinate: Coordinate }[]
+  onRestAreaClick?: (restAreaId: string) => void
+  restAreaAlert?: { name: string; meters: number } | null
+  onRestAreaAlertClose?: () => void
   onRename: (title: string) => Promise<boolean>
   onRouteSearch: () => void
   onLocate?: () => void
   onPause?: () => void
   onResume?: () => void
-  // 실패하면 false. 마치기 팝업이 그대로 남는다
   onEnd?: () => Promise<boolean>
   locationDenied?: boolean
-  // 위치를 다시 요청한다. 허용되면 true
   onLocationRetry?: () => Promise<boolean>
-  // 콘텐츠 탭 카드 (DJ 플레이리스트 · 라디오 · 게임)
   contents?: ReactNode
-  // 휴게소 스탬프 탭
   stamps?: ReactNode
 }
 
-// 제목 · 버튼 · 주행 정보에 가리지 않게
 const FIT_PADDING: [number, number, number, number] = [90, 70, 140, 40]
 
-// 서버 주행 시간은 요청할 때만 오므로 그 뒤 흐른 초를 화면에서 더한다
 function useRunningSeconds(drive: Drive | null) {
   const [tick, setTick] = useState({ drive, seconds: 0 })
 
@@ -61,7 +60,6 @@ function useRunningSeconds(drive: Drive | null) {
   return tick.drive === drive ? tick.seconds : 0
 }
 
-// 드라이브 모드 (Figma 첫 진입 화면 289:20959, 드라이브 289:20284, 주행 중단 289:19560, 위치권한 팝업창 592:10100)
 function DrivePage({
   status,
   drive,
@@ -69,6 +67,10 @@ function DrivePage({
   routePath,
   origin,
   destination,
+  restAreas,
+  onRestAreaClick,
+  restAreaAlert = null,
+  onRestAreaAlertClose,
   onRename,
   onRouteSearch,
   onLocate,
@@ -86,9 +88,10 @@ function DrivePage({
   const [tab, setTab] = useState<PanelTab>('contents')
   const [locateKey, setLocateKey] = useState(0)
   const [toast, setToast] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState(false)
+  const dragStartY = useRef<number | null>(null)
   const runningSeconds = useRunningSeconds(drive)
 
-  // X로 닫은 위치 권한 팝업은 권한이 다시 켜졌다가 꺼질 때 다시 띄운다
   const [locationDismissed, setLocationDismissed] = useState(false)
   const [prevLocationDenied, setPrevLocationDenied] = useState(locationDenied)
   if (locationDenied !== prevLocationDenied) {
@@ -112,12 +115,19 @@ function DrivePage({
     if (ended) setConfirmingEnd(false)
   }
 
+  const handlePointerUp = (event: PointerEvent<HTMLButtonElement>) => {
+    const start = dragStartY.current
+    dragStartY.current = null
+    if (start === null) return
+    const dy = event.clientY - start
+    setExpanded((value) => (dy < -20 ? true : dy > 20 ? false : !value))
+  }
+
   const locate = () => {
     setLocateKey((key) => key + 1)
     onLocate?.()
   }
 
-  // 웹은 기기 설정을 직접 열 수 없어서 권한을 다시 요청하고, 막혀 있으면 안내한다
   const retryLocation = async () => {
     setLocationDismissed(true)
     if (!(await onLocationRetry?.())) setToast('브라우저 설정에서 위치 권한을 허용해 주세요.')
@@ -137,6 +147,8 @@ function DrivePage({
           path={routePath}
           origin={origin}
           destination={destination}
+          restAreas={restAreas}
+          onRestAreaClick={onRestAreaClick}
           fitPadding={FIT_PADDING}
           locateKey={locateKey}
         />
@@ -162,27 +174,47 @@ function DrivePage({
         </p>
       )}
 
-      <div className={styles.bottom}>
-        <div className={styles.overlay}>
-          <div className={styles.controls}>
-            {driving && (
-              <>
-                <GlassIconButton icon="exit" aria-label="드라이브 마치기" onClick={() => setConfirmingEnd(true)} />
-                <GlassIconButton
-                  icon="pause"
-                  aria-label="주행 기록 일시정지"
-                  aria-pressed={paused}
-                  onClick={paused ? onResume : onPause}
-                />
-              </>
+      <div className={[styles.bottom, expanded && styles.expanded].filter(Boolean).join(' ')}>
+        <div className={styles.overlay} hidden={expanded}>
+          <div className={styles.controlRow}>
+            {restAreaAlert && (
+              <RestAreaAlert
+                className={styles.alert}
+                name={restAreaAlert.name}
+                meters={restAreaAlert.meters}
+                onClose={() => onRestAreaAlertClose?.()}
+              />
             )}
-            <GlassIconButton icon="locate" aria-label="현재 위치로 이동" onClick={locate} />
+            <div className={styles.controls}>
+              {driving && (
+                <>
+                  <GlassIconButton icon="exit" aria-label="드라이브 마치기" onClick={() => setConfirmingEnd(true)} />
+                  <GlassIconButton
+                    icon="pause"
+                    aria-label="주행 기록 일시정지"
+                    aria-pressed={paused}
+                    onClick={paused ? onResume : onPause}
+                  />
+                </>
+              )}
+              <GlassIconButton icon="locate" aria-label="현재 위치로 이동" onClick={locate} />
+            </div>
           </div>
           <DriveStats items={getDriveStats(drive, runningSeconds)} />
         </div>
 
         <section className={styles.panel} aria-label="드라이브 콘텐츠">
-          <div className={styles.handle} />
+          <button
+            type="button"
+            className={styles.handle}
+            aria-label={expanded ? '패널 접기' : '패널 펼치기'}
+            aria-expanded={expanded}
+            onPointerDown={(event) => {
+              dragStartY.current = event.clientY
+            }}
+            onPointerUp={handlePointerUp}
+            onClick={(event) => event.detail === 0 && setExpanded((value) => !value)}
+          />
           <SegmentedControl aria-label="콘텐츠 종류" options={TABS} value={tab} onChange={setTab} />
 
           {tab === 'contents' ? (

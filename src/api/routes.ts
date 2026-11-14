@@ -3,7 +3,6 @@ import type { ApiResponse } from '@/types/api'
 import type { CreateRouteRequest, Route } from '@/types/route'
 import { apiFetch, USE_MOCK } from './client'
 
-// POST /routes — 경로 미리보기 계산
 export function createRoute(body: CreateRouteRequest, idempotencyKey: string): Promise<ApiResponse<Route>> {
   if (USE_MOCK) return mockCreateRoute(body)
 
@@ -14,7 +13,6 @@ export function createRoute(body: CreateRouteRequest, idempotencyKey: string): P
   })
 }
 
-// GET /routes/{routeId}
 export function getRoute(routeId: string): Promise<ApiResponse<Route>> {
   if (USE_MOCK) return mockGetRoute(routeId)
 

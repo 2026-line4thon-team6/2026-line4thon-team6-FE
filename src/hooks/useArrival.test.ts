@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from 'vitest'
 import useArrival from './useArrival'
 
 const destination = { latitude: 37.5103, longitude: 126.9955 }
-// 위도 0.0005도 ≈ 55m, 0.002도 ≈ 220m
 const near = { latitude: 37.5108, longitude: 126.9955 }
 const far = { latitude: 37.5123, longitude: 126.9955 }
 

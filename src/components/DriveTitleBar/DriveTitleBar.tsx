@@ -6,7 +6,6 @@ interface DriveTitleBarProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement
   title: string
 }
 
-// 드라이브 모드 상단 드라이브명 바. 탭하면 드라이브명 수정 시트를 연다
 function DriveTitleBar({ title, className, type = 'button', ...props }: DriveTitleBarProps) {
   return (
     <button

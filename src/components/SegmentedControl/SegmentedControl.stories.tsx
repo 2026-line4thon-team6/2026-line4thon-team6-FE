@@ -41,7 +41,6 @@ export const Stamp: Story = {
   args: { value: 'stamp' },
 }
 
-// 탭을 눌러 전환
 export const Interactive: Story = {
   render: function Render(args) {
     const [value, setValue] = useState<SheetTab>('content')

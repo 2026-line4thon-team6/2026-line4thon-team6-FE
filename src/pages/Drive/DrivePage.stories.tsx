@@ -46,7 +46,6 @@ const meta = {
     onLocate: fn(),
     onEnd: async () => true,
   },
-  // 드라이브명 수정 · 일시정지 · 재개가 실제로 반영되도록 상태로 관리
   render: function Render(args) {
     const [drive, setDrive] = useState(args.drive)
     const setStatus = (status: Drive['status']) => setDrive((prev) => (prev ? { ...prev, status } : prev))
@@ -68,7 +67,6 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-// 목적지 설정 전
 export const FirstEntry: Story = {}
 
 const DRIVING: Drive = {
@@ -84,7 +82,6 @@ const DRIVING: Drive = {
 
 export const Driving: Story = {
   args: { drive: DRIVING },
-  // 주행 시간이 1초마다 올라가 Chromatic 스냅샷이 빌드마다 달라지지 않게 멈춘다
   beforeEach: () => {
     const setInterval = window.setInterval
     window.setInterval = (() => 0) as unknown as typeof window.setInterval
@@ -92,6 +89,11 @@ export const Driving: Story = {
       window.setInterval = setInterval
     }
   },
+}
+
+export const RestAreaAlert: Story = {
+  ...Driving,
+  args: { drive: DRIVING, restAreaAlert: { name: '시흥하늘휴게소', meters: 2000 }, onRestAreaAlertClose: fn() },
 }
 
 export const LocationDenied: Story = {

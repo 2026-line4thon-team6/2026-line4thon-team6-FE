@@ -1,4 +1,3 @@
-// Figma 기준 390 x 844
 $gutter: 25px;
 $panel-height: 268px;
 
@@ -13,8 +12,8 @@ $panel-height: 268px;
 
 .map {
   position: absolute;
-  inset: 0 0 calc(#{$panel-height} - 30px); // 패널 둥근 모서리 뒤까지
-  isolation: isolate; // 카카오 지도 안의 z-index가 위 버튼들을 덮지 않게
+  inset: 0 0 calc(#{$panel-height} - 30px);
+  isolation: isolate;
 }
 
 .pausedLayer {
@@ -86,18 +85,33 @@ $panel-height: 268px;
   flex-direction: column;
   gap: 18px;
   padding: 0 $gutter 19px;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.controlRow {
+  display: flex;
+  gap: 19px;
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+.alert {
+  min-width: 0;
+  margin-right: auto;
 }
 
 .controls {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  align-self: flex-end;
 }
 
 .panel {
   height: $panel-height;
-  padding: 15px $gutter 0;
+  padding: 0 $gutter;
   overflow-y: auto;
   border-radius: 30px 30px 0 0;
   background-color: color('coral-bg');
@@ -105,11 +119,36 @@ $panel-height: 268px;
 }
 
 .handle {
-  width: 49px;
-  height: 6px;
-  margin: 0 auto 17px;
-  border-radius: 100px;
-  background-color: color('coral-2');
+  display: block;
+  width: 109px;
+  height: 38px;
+  margin: 0 auto;
+  padding: 15px 30px 17px;
+  border: 0;
+  background: none;
+  touch-action: none;
+  cursor: grab;
+
+  &::before {
+    content: '';
+    display: block;
+    height: 6px;
+    border-radius: 100px;
+    background-color: color('coral-2');
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: -2px;
+  }
+}
+
+.expanded {
+  top: var(--safe-top);
+
+  .panel {
+    height: 100%;
+  }
 }
 
 .tabPanel {

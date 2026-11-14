@@ -33,10 +33,8 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-// 목적지 검색 결과
 export const Place: Story = {}
 
-// 휴게소 검색 결과 (주소 대신 고속도로 이름)
 export const RestArea: Story = {
   args: {
     variant: 'restArea',
@@ -47,12 +45,10 @@ export const RestArea: Story = {
   },
 }
 
-// 위치 권한이 없어 거리를 모를 때
 export const NoDistance: Story = {
   args: { distance: null },
 }
 
-// 장소 검색 화면의 결과 목록
 export const List: Story = {
   render: (args) => (
     <ul style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>

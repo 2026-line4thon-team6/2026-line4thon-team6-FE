@@ -6,6 +6,7 @@ import { resetMockCards } from '@/mocks/cards'
 import { resetMockCouple } from '@/mocks/couples'
 import { resetMockDrives } from '@/mocks/drives'
 import { resetMockPlaces } from '@/mocks/places'
+import { resetMockStamps } from '@/mocks/restAreas'
 import { resetMockRoutes } from '@/mocks/routes'
 import { MOCK_CURRENT_COORDINATE, resetMockSearchHistory } from '@/mocks/search'
 import type { Position } from '@/utils/location'
@@ -13,7 +14,6 @@ import App from './App'
 
 vi.mock('./components/DriveMap/DriveMap', () => ({ default: () => <div data-testid="drive-map" /> }))
 
-// 위치를 테스트에서 옮기거나 권한을 끌 수 있게 한다
 const listeners = new Set<{ onChange: (position: Position) => void; onDenied?: () => void }>()
 const moveTo = (position: Position) => act(() => listeners.forEach(({ onChange }) => onChange(position)))
 const denyLocation = () => act(() => listeners.forEach(({ onDenied }) => onDenied?.()))
@@ -42,6 +42,7 @@ beforeEach(() => {
   resetMockPlaces()
   resetMockCards()
   resetMockDrives()
+  resetMockStamps()
   resetMockRoutes()
   resetMockSearchHistory()
   localStorage.clear()

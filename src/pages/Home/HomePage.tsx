@@ -11,6 +11,7 @@ import BottomNavBar from '@/components/BottomNavBar/BottomNavBar'
 import Button from '@/components/Button/Button'
 import CategoryChip from '@/components/CategoryChip/CategoryChip'
 import NotificationButton from '@/components/NotificationButton/NotificationButton'
+import ActiveDriveBanner from '@/components/ActiveDriveBanner/ActiveDriveBanner'
 import PendingCardBanner from '@/components/PendingCardBanner/PendingCardBanner'
 import SpotCard from '@/components/SpotCard/SpotCard'
 import useDragScroll from '@/hooks/useDragScroll'
@@ -42,12 +43,14 @@ interface HomePageProps {
   timeOfDay: TimeOfDay
   // 24시간 안에 저장하지 않은 드라이브 카드 (GET /cards/pending). 없으면 null
   pendingCard?: PendingSummary | null
+  activeDrive?: boolean
   onNotificationClick?: () => void
   onStartDrive?: () => void
   onSpotClick?: (id: number) => void
   onLikeToggle?: (id: number, liked: boolean) => void
   onTabChange?: (tab: NavTab) => void
   onPendingCardClick?: (driveId: string) => void
+  onActiveDriveClick?: () => void
 }
 
 function HomePage({
@@ -57,12 +60,14 @@ function HomePage({
   carConnected,
   timeOfDay,
   pendingCard = null,
+  activeDrive = false,
   onNotificationClick,
   onStartDrive,
   onSpotClick,
   onLikeToggle,
   onTabChange,
   onPendingCardClick,
+  onActiveDriveClick,
 }: HomePageProps) {
   const categoryDrag = useDragScroll<HTMLUListElement>()
   const spotDrag = useDragScroll<HTMLUListElement>()
@@ -88,13 +93,17 @@ function HomePage({
           <span className={styles.question}>오늘은 어디로 떠나볼까요?</span>
         </h1>
 
-        {pendingCard && (
-          <PendingCardBanner
-            className={styles.pendingBanner}
-            count={pendingCard.count}
-            remainingSeconds={pendingCard.remainingSeconds}
-            onClick={() => onPendingCardClick?.(pendingCard.driveId)}
-          />
+        {activeDrive ? (
+          <ActiveDriveBanner className={styles.pendingBanner} onClick={() => onActiveDriveClick?.()} />
+        ) : (
+          pendingCard && (
+            <PendingCardBanner
+              className={styles.pendingBanner}
+              count={pendingCard.count}
+              remainingSeconds={pendingCard.remainingSeconds}
+              onClick={() => onPendingCardClick?.(pendingCard.driveId)}
+            />
+          )
         )}
 
         <section className={styles.banner} aria-label="드라이브 준비">
