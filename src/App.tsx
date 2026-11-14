@@ -1,38 +1,57 @@
 import { useRef, useState } from 'react'
-import { Route, Routes, useLocation, useNavigate, useParams } from 'react-router'
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router'
 import { logout } from '@/api/auth'
+import { fetchCardShare } from '@/api/cards'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
 import useCouplePage from '@/hooks/useCouplePage'
 import useFavorites from '@/hooks/useFavorites'
 import useLegalDocument from '@/hooks/useLegalDocument'
 import useMyCouple from '@/hooks/useMyCouple'
 import CardPromptModal from '@/components/CardPromptModal/CardPromptModal'
+import DriveNameSheet from '@/components/DriveNameSheet/DriveNameSheet'
+import useCardDetail from '@/hooks/useCardDetail'
+import useDrive from '@/hooks/useDrive'
 import useDriveCard from '@/hooks/useDriveCard'
 import useNotifications from '@/hooks/useNotifications'
 import usePendingCards from '@/hooks/usePendingCards'
 import usePlaceDetail from '@/hooks/usePlaceDetail'
 import usePlaylistLibrary from '@/hooks/usePlaylistLibrary'
 import useRadioStories from '@/hooks/useRadioStories'
+import useRecordMap from '@/hooks/useRecordMap'
+import useRecords from '@/hooks/useRecords'
+import useRouteSetting from '@/hooks/useRouteSetting'
+import useStartDrive, { type DriveLocationState } from '@/hooks/useStartDrive'
 import { MOCK_CATEGORIES, MOCK_HOME, MOCK_SPOTS } from '@/mocks/home'
 import FavoritesPage from '@/pages/Archive/FavoritesPage'
 import PlaylistsPage from '@/pages/Archive/PlaylistsPage'
 import RadioStoriesPage from '@/pages/Archive/RadioStoriesPage'
 import CouplePage from '@/pages/Couple/CouplePage'
+import DrivePage from '@/pages/Drive/DrivePage'
 import DriveCardPage from '@/pages/DriveCard/DriveCardPage'
 import HomePage from '@/pages/Home/HomePage'
 import LegalDocumentPage from '@/pages/LegalDocument/LegalDocumentPage'
 import MyPage, { type MyMenu } from '@/pages/My/MyPage'
 import NotificationsPage from '@/pages/Notifications/NotificationsPage'
 import PlaceDetailPage from '@/pages/PlaceDetail/PlaceDetailPage'
+import RecordDetailPage from '@/pages/RecordDetail/RecordDetailPage'
+import RecordCalendarSheet from '@/pages/RecordMap/RecordCalendarSheet'
+import RecordMapPage, { type RecordView } from '@/pages/RecordMap/RecordMapPage'
+import RecordShareSheet from '@/pages/RecordMap/RecordShareSheet'
+import RouteSettingPage from '@/pages/RouteSetting/RouteSettingPage'
 import type { HomeSummary } from '@/types/home'
 import type { LegalDocumentType } from '@/types/legal'
 import type { Notification } from '@/types/notification'
+import type { RecordSummary } from '@/types/record'
 import type { Category, SpotSummary } from '@/types/spot'
-import { copyText, createIdempotencyKey, shareTo } from '@/utils/share'
+import { todayInSeoul } from '@/utils/calendar'
+import { formatDate } from '@/utils/formatDate'
+import { copyText, createIdempotencyKey, type ShareChannel, type ShareLink, shareTo } from '@/utils/share'
+import { shareStory } from '@/utils/storyImage'
 
-// 화면 주소. 기록 지도 화면은 아직 없어 탭을 눌러도 이동하지 않는다
+// 화면 주소
 const TAB_PATHS: Partial<Record<NavTab, string>> = {
   home: '/',
+  map: '/map',
   my: '/my',
 }
 
@@ -108,11 +127,13 @@ function NotificationsRoute({ onRead }: NotificationsRouteProps) {
 interface PlaceDetailRouteProps {
   placeId: string
   couple: HomeSummary['couple']
+  mascotName: string
   onFavoriteChange: (placeId: string, favorite: boolean) => void
 }
 
-function PlaceDetailRoute({ placeId, couple, onFavoriteChange }: PlaceDetailRouteProps) {
+function PlaceDetailRoute({ placeId, couple, mascotName, onFavoriteChange }: PlaceDetailRouteProps) {
   const goBack = useGoBack()
+  const drive = useStartDrive(couple)
   const { status, detail, retry, toggleFavorite, getShareUrl, sendToPartner } = usePlaceDetail(placeId)
   // 같은 전송 시도의 재시도에는 같은 멱등 키를 쓰고, 성공하면 새 키로 바꾼다
   const idempotencyKey = useRef<string | null>(null)
@@ -130,23 +151,227 @@ function PlaceDetailRoute({ placeId, couple, onFavoriteChange }: PlaceDetailRout
   }
 
   return (
-    <PlaceDetailPage
+    <>
+      <PlaceDetailPage
+        status={status}
+        detail={detail}
+        partnerNickname={couple?.partnerNickname ?? null}
+        onBack={goBack}
+        onRetry={retry}
+        onFavoriteToggle={handleFavoriteToggle}
+        onStartDrive={() => void drive.start(placeId)}
+        getShareUrl={getShareUrl}
+        onCopyLink={(url) => void copyText(url)}
+        onShareChannel={(channel, url) => void shareTo(channel, { url, title: detail?.place.name ?? '' })}
+        onSendToPartner={handleSend}
+        // TODO: 커플 코드 입력 화면이 생기면 이동한다
+        onConnectRequired={() => {}}
+      />
+      <DriveNameSheet
+        open={drive.sheetOpen}
+        mode="create"
+        mascotName={mascotName}
+        onSubmit={(name) => void drive.submit(name)}
+        onClose={drive.closeSheet}
+      />
+    </>
+  )
+}
+
+// 진행 중인 드라이브가 없으면 홈으로 돌려보낸다
+function DriveRoute() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { status, drive, rename } = useDrive()
+
+  if (status === 'empty') return <Navigate to="/" replace />
+
+  return (
+    <DrivePage
       status={status}
-      detail={detail}
-      partnerNickname={couple?.partnerNickname ?? null}
-      onBack={goBack}
-      onRetry={retry}
-      onFavoriteToggle={handleFavoriteToggle}
-      // TODO: 드라이브 모드 화면이 생기면 이 장소를 목적지로 이동한다
-      onStartDrive={() => {}}
-      getShareUrl={getShareUrl}
-      onCopyLink={(url) => void copyText(url)}
-      onShareChannel={(channel, url) => void shareTo(channel, { url, title: detail?.place.name ?? '' })}
-      onSendToPartner={handleSend}
-      // TODO: 커플 코드 입력 화면이 생기면 이동한다
-      onConnectRequired={() => {}}
+      drive={drive}
+      onRename={rename}
+      // 경로를 이미 정했으면 장소 상세에서 넘어온 목적지는 다시 쓰지 않는다
+      onRouteSearch={() => navigate('/drive/route', { state: drive?.routeId ? null : location.state })}
     />
   )
+}
+
+function RouteSettingRoute() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { status, setRoute } = useDrive()
+  const { destinationPlaceId } = (location.state ?? {}) as DriveLocationState
+  const routeSetting = useRouteSetting(destinationPlaceId)
+  const [confirming, setConfirming] = useState(false)
+
+  if (status === 'empty') return <Navigate to="/" replace />
+
+  // /drive 에서 들어왔으면 방문 기록을 하나 되돌린다
+  const backToDrive = () => (location.key === 'default' ? navigate('/drive', { replace: true }) : navigate(-1))
+
+  const handleConfirm = async () => {
+    if (!routeSetting.route) return
+    setConfirming(true)
+    const saved = await setRoute(routeSetting.route.id)
+    setConfirming(false)
+    // TODO: 실패 토스트
+    if (saved) backToDrive()
+  }
+
+  return (
+    <RouteSettingPage
+      originAddress={routeSetting.origin?.address || null}
+      locationUnavailable={routeSetting.locationStatus === 'unavailable'}
+      query={routeSetting.query}
+      history={routeSetting.history}
+      results={routeSetting.results}
+      route={routeSetting.route}
+      routeStatus={routeSetting.routeStatus}
+      confirming={confirming}
+      onQueryChange={routeSetting.changeQuery}
+      onSearch={routeSetting.submitSearch}
+      onRecentSelect={routeSetting.selectRecent}
+      onRecentDelete={routeSetting.deleteRecent}
+      onResultSelect={routeSetting.selectPlace}
+      onConfirm={() => void handleConfirm()}
+      onClose={backToDrive}
+    />
+  )
+}
+
+// 기록 지도. 검색어나 날짜가 바뀌면 지도 마커와 기록 목록을 그 조건으로 다시 불러온다.
+// 검색어와 날짜는 함께 쓰지 않는다. 상단의 '총 N번'은 조건과 관계없는 목록 API의 totalCount를 쓴다
+function RecordMapRoute() {
+  const navigate = useNavigate()
+  const goTab = useTabNavigate()
+  const [view, setView] = useState<RecordView>('map')
+  const [query, setQuery] = useState('')
+  const [date, setDate] = useState<string | null>(null)
+  const [calendarOpen, setCalendarOpen] = useState(false)
+  // 공유 중인 기록 카드와 그 카드의 커플 전용 링크
+  const [sharing, setSharing] = useState<{ card: RecordSummary; link: ShareLink } | null>(null)
+  const filter = date ? { date } : { q: query }
+  const map = useRecordMap(filter)
+  const list = useRecords(filter)
+
+  const handleSearch = (nextQuery: string) => {
+    setQuery(nextQuery)
+    setDate(null)
+  }
+
+  const handleShare = (card: RecordSummary) => {
+    setSharing({ card, link: { status: 'loading' } })
+    // 링크를 받는 사이 다른 카드를 공유하기 시작했으면 늦은 응답은 버린다
+    const update = (link: ShareLink) => setSharing((prev) => (prev?.card.cardId === card.cardId ? { card, link } : prev))
+    fetchCardShare(card.cardId)
+      .then(({ data }) => update({ status: 'ready', url: data.url }))
+      .catch(() => update({ status: 'error' }))
+  }
+
+  // 인스타그램은 카드를 스토리 이미지(기록 지도 배경 + 카드)로 만들어 넘기고, 이미지 공유를 지원하지 않는 기기에서는 링크로 공유한다
+  const handleShareChannel = async (card: RecordSummary, channel: ShareChannel, url: string) => {
+    if (channel === 'instagram') {
+      const result = await shareStory({
+        photoUrl: card.thumbnailUrl,
+        title: card.title,
+        date: formatDate(card.driveDate),
+        // 스토리 배경에 지금 기록 지도의 사진 마커를 함께 그린다
+        markers: map.markers.map(({ coordinate, latestCard }) => ({ ...coordinate, photoUrl: latestCard.thumbnailUrl })),
+      })
+      if (result !== 'unsupported') return
+    }
+    await shareTo(channel, { url, title: card.title })
+  }
+
+  const handleDateSelect = (nextDate: string) => {
+    setDate(nextDate)
+    setQuery('')
+    setCalendarOpen(false)
+  }
+
+  const retry = () => {
+    if (map.status === 'error') map.retry()
+    if (list.status === 'error') list.retry()
+  }
+
+  return (
+    <>
+      <RecordMapPage
+        view={view}
+        totalCount={list.totalCount}
+        date={date}
+        mapStatus={map.status}
+        markers={map.markers}
+        listStatus={list.status}
+        records={list.records}
+        hasMoreRecords={list.hasMore}
+        onSearch={handleSearch}
+        onViewChange={setView}
+        onLoadMore={() => void list.loadMore()}
+        onRetry={retry}
+        onTabChange={goTab}
+        onCalendarClick={() => setCalendarOpen(true)}
+        onDateClear={() => setDate(null)}
+        onCardClick={(card) => navigate(`/cards/${encodeURIComponent(card.cardId)}`)}
+        onShare={handleShare}
+      />
+      {sharing && (
+        <RecordShareSheet
+          card={sharing.card}
+          link={sharing.link}
+          onClose={() => setSharing(null)}
+          onCopyLink={(url) => void copyText(url)}
+          onShareChannel={(channel, url) => void handleShareChannel(sharing.card, channel, url)}
+        />
+      )}
+      {calendarOpen && (
+        <RecordCalendarSheet
+          selectedDate={date}
+          today={todayInSeoul()}
+          onSelect={handleDateSelect}
+          onClose={() => setCalendarOpen(false)}
+        />
+      )}
+    </>
+  )
+}
+
+// 기록 상세. 삭제하면 이전 화면(기록 지도)으로 돌아가고, 기록 지도는 다시 불러와 지운 기록이 빠진다
+function RecordDetailRoute({ cardId }: { cardId: string }) {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const goBack = useGoBack()
+  const { status, card, retry, remove } = useCardDetail(cardId)
+
+  const handleDelete = async () => {
+    const outcome = await remove()
+    if (outcome === 'deleted') {
+      if (location.key === 'default') navigate('/map', { replace: true })
+      else navigate(-1)
+    }
+    return outcome
+  }
+
+  // 기능명세서 18: 도착 후 24시간 안(canEdit)이면 상세 대신 작성 화면에서 고친다.
+  // 뒤로가기로 상세에 다시 오지 않게 기록을 바꾼다
+  if (card?.canEdit) return <Navigate to={cardPath(card.driveId)} replace />
+
+  return (
+    <RecordDetailPage
+      status={status}
+      card={card}
+      onBack={goBack}
+      onRetry={retry}
+      onDelete={handleDelete}
+      // TODO: 플레이리스트 화면이 생기면 연결한다
+    />
+  )
+}
+
+function RecordDetailRouteByParam() {
+  const { cardId = '' } = useParams()
+  return <RecordDetailRoute key={cardId} cardId={cardId} />
 }
 
 // 장소가 바뀌면 상세 화면을 새로 마운트해 이전 장소의 상태가 남지 않게 한다
@@ -277,6 +502,7 @@ function HomeRoute({ home, categories, spots, pendingPromptSeen, onPendingPrompt
   const navigate = useNavigate()
   const goTab = useTabNavigate()
   const { summary } = usePendingCards()
+  const drive = useStartDrive(home.couple)
 
   const goCard = (driveId: string) => {
     onPendingPromptSeen()
@@ -294,8 +520,16 @@ function HomeRoute({ home, categories, spots, pendingPromptSeen, onPendingPrompt
         onNotificationClick={() => navigate('/notifications')}
         onSpotClick={(id) => navigate(`/places/${id}`)}
         onLikeToggle={onLikeToggle}
+        onStartDrive={() => void drive.start()}
         onTabChange={goTab}
         onPendingCardClick={goCard}
+      />
+      <DriveNameSheet
+        open={drive.sheetOpen}
+        mode="create"
+        mascotName={home.mascotName}
+        onSubmit={(name) => void drive.submit(name)}
+        onClose={drive.closeSheet}
       />
       {summary && !pendingPromptSeen && (
         <CardPromptModal
@@ -382,7 +616,11 @@ function App() {
           />
         }
       />
+      <Route path="/map" element={<RecordMapRoute />} />
+      <Route path="/cards/:cardId" element={<RecordDetailRouteByParam />} />
       <Route path="/notifications" element={<NotificationsRoute onRead={handleNotificationRead} />} />
+      <Route path="/drive" element={<DriveRoute />} />
+      <Route path="/drive/route" element={<RouteSettingRoute />} />
       <Route path="/my" element={<MyRoute />} />
       <Route path="/my/couple" element={<CoupleRoute />} />
       <Route
@@ -404,6 +642,7 @@ function App() {
         element={
           <PlaceDetailRouteByParam
             couple={home.couple}
+            mascotName={home.mascotName}
             // 상세에서 바꾼 찜 상태를 홈 카드에도 반영한다 (목 장소 id는 홈 카드 id의 문자열)
             onFavoriteChange={(placeId, favorite) => setSpotLiked(Number(placeId), favorite)}
           />

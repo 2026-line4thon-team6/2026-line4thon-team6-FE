@@ -1,5 +1,8 @@
 export type ShareChannel = 'kakaotalk' | 'instagram' | 'x' | 'facebook'
 
+// 공유 링크 상태: 받아오는 중 / 받아옴 / 실패
+export type ShareLink = { status: 'loading' } | { status: 'ready'; url: string } | { status: 'error' }
+
 interface ShareContent {
   url: string
   title: string
@@ -48,4 +51,20 @@ export async function shareTo(channel: ShareChannel, { url, title }: ShareConten
 export function createIdempotencyKey() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`
+}
+
+export type ImageShareResult = 'shared' | 'cancelled' | 'unsupported'
+
+// 이미지 파일을 기기 공유 시트로 넘긴다. 인스타그램 스토리처럼 이미지를 받는 앱을 사용자가 고른다.
+// 웹에서는 앱의 스토리 편집 화면을 바로 열 수 없어, 파일 공유를 지원하는 기기(모바일 사파리 · 크롬)에서만 동작한다
+export async function shareImage(image: Blob, { fileName, title }: { fileName: string; title: string }): Promise<ImageShareResult> {
+  const file = new File([image], fileName, { type: image.type || 'image/png' })
+  if (!navigator.share || !navigator.canShare?.({ files: [file] })) return 'unsupported'
+
+  try {
+    await navigator.share({ files: [file], title })
+    return 'shared'
+  } catch (error) {
+    return error instanceof DOMException && error.name === 'AbortError' ? 'cancelled' : 'unsupported'
+  }
 }
