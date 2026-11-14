@@ -26,7 +26,7 @@ const fail = (status: number, code: string, message: string) =>
 // Figma '카드 작성' 화면(우리의 첫 바다 드라이브)의 내용. 드라이브가 6시간 전에 끝나 18시간이 남은 상태
 function createCard(now = Date.now()): Card {
   return {
-    id: 'crd_01',
+    id: 'crd_writing', // 기록 지도 목 기록(crd_01 …)과 겹치지 않게 한다
     driveId: MOCK_CARD_DRIVE_ID,
     coupleId: 'cpl_01',
     status: 'UNWRITTEN',
@@ -214,6 +214,9 @@ const submittedReflection = (who: CardAuthor, text: string, submittedAt: string)
 const recordNotFound = () => fail(404, 'RESOURCE_NOT_FOUND', '카드를 찾을 수 없어요.')
 
 export async function mockFetchCard(cardId: string): Promise<ApiResponse<Card>> {
+  // 아직 수정 기간(24시간) 안인 작성 중 카드
+  if (cardId === card.id) return { data: copy(card), meta: meta() }
+
   const records = createMockRecords()
   const index = records.findIndex((record) => record.cardId === cardId)
   const record = records[index]
