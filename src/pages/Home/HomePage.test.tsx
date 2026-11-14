@@ -330,3 +330,29 @@ describe('가로 목록 마우스 드래그', () => {
     expect(chip).toHaveAttribute('aria-pressed', 'false')
   })
 })
+
+describe('미작성 드라이브 카드 배너', () => {
+  it('24시간 안에 저장하지 않은 카드가 있으면 인사말 아래에 배너를 표시한다', () => {
+    renderHome({ pendingCard: { count: 1, driveId: 'drv_01', remainingSeconds: 18 * 3600 } })
+
+    expect(screen.getByRole('button', { name: /미작성 드라이브 카드 1개/ })).toHaveTextContent('남은 시간 18:00:00')
+  })
+
+  it('미작성 카드가 없으면 배너를 표시하지 않는다', () => {
+    renderHome({ pendingCard: null })
+
+    expect(screen.queryByRole('button', { name: /미작성 드라이브 카드/ })).not.toBeInTheDocument()
+  })
+
+  it('배너를 누르면 마감이 가장 빠른 카드를 작성하러 간다', async () => {
+    const onPendingCardClick = vi.fn()
+    const { user } = renderHome({
+      pendingCard: { count: 2, driveId: 'drv_01', remainingSeconds: 60 },
+      onPendingCardClick,
+    })
+
+    await user.click(screen.getByRole('button', { name: /미작성 드라이브 카드 2개/ }))
+
+    expect(onPendingCardClick).toHaveBeenCalledWith('drv_01')
+  })
+})

@@ -4,9 +4,13 @@ import { logout } from '@/api/auth'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
 import useLegalDocument from '@/hooks/useLegalDocument'
 import useMyCouple from '@/hooks/useMyCouple'
+import CardPromptModal from '@/components/CardPromptModal/CardPromptModal'
+import useDriveCard from '@/hooks/useDriveCard'
 import useNotifications from '@/hooks/useNotifications'
+import usePendingCards from '@/hooks/usePendingCards'
 import usePlaceDetail from '@/hooks/usePlaceDetail'
 import { MOCK_CATEGORIES, MOCK_HOME, MOCK_SPOTS } from '@/mocks/home'
+import DriveCardPage from '@/pages/DriveCard/DriveCardPage'
 import HomePage from '@/pages/Home/HomePage'
 import LegalDocumentPage from '@/pages/LegalDocument/LegalDocumentPage'
 import MyPage, { type MyMenu } from '@/pages/My/MyPage'
@@ -15,6 +19,7 @@ import PlaceDetailPage from '@/pages/PlaceDetail/PlaceDetailPage'
 import type { HomeSummary } from '@/types/home'
 import type { LegalDocumentType } from '@/types/legal'
 import type { Notification } from '@/types/notification'
+import type { Category, SpotSummary } from '@/types/spot'
 import { copyText, createIdempotencyKey, shareTo } from '@/utils/share'
 
 // 화면 주소. 기록 지도 화면은 아직 없어 탭을 눌러도 이동하지 않는다
@@ -173,12 +178,105 @@ function LegalDocumentRoute({ type }: { type: LegalDocumentType }) {
   return <LegalDocumentPage type={type} status={status} document={document} onBack={goBack} onRetry={retry} />
 }
 
-// 홈 데이터는 API 연동 전까지 목 데이터를 쓴다 (GET /home 연동 시 교체)
-function App() {
+const cardPath = (driveId: string) => `/drives/${encodeURIComponent(driveId)}/card`
+
+interface HomeRouteProps {
+  home: HomeSummary
+  categories: Category[]
+  spots: SpotSummary[]
+  // 미작성 카드 팝업은 앱을 켠 뒤 한 번만 띄운다. 이후에는 배너로만 알린다
+  pendingPromptSeen: boolean
+  onPendingPromptSeen: () => void
+  onLikeToggle: (id: number, liked: boolean) => void
+}
+
+// 홈에 들어올 때마다 미작성 카드를 새로 불러온다
+function HomeRoute({ home, categories, spots, pendingPromptSeen, onPendingPromptSeen, onLikeToggle }: HomeRouteProps) {
   const navigate = useNavigate()
   const goTab = useTabNavigate()
+  const { summary } = usePendingCards()
+
+  const goCard = (driveId: string) => {
+    onPendingPromptSeen()
+    navigate(cardPath(driveId))
+  }
+
+  return (
+    <>
+      <HomePage
+        home={home}
+        categories={categories}
+        spots={spots}
+        carConnected
+        pendingCard={summary}
+        onNotificationClick={() => navigate('/notifications')}
+        onSpotClick={(id) => navigate(`/places/${id}`)}
+        onLikeToggle={onLikeToggle}
+        onTabChange={goTab}
+        onPendingCardClick={goCard}
+      />
+      {summary && !pendingPromptSeen && (
+        <CardPromptModal
+          variant="pending"
+          remainingSeconds={summary.remainingSeconds}
+          onConfirm={() => goCard(summary.driveId)}
+          onClose={onPendingPromptSeen}
+        />
+      )}
+    </>
+  )
+}
+
+interface DriveCardRouteProps {
+  driveId: string
+  userId: string
+}
+
+function DriveCardRoute({ driveId, userId }: DriveCardRouteProps) {
+  const navigate = useNavigate()
+  const goBack = useGoBack()
+  const { setMyText, save, saveDraft, retry, addPhotos, removePhoto, swapPhotos, ...card } = useDriveCard(
+    driveId,
+    userId,
+  )
+
+  // 저장하면 홈으로 돌아간다. 뒤로가기로 카드 화면에 다시 오지 않게 기록을 바꾼다
+  // TODO: 드라이브 카드 상세 화면이 생기면 저장한 카드 상세로 이동한다
+  const handleSave = async () => {
+    if (await save()) navigate('/', { replace: true })
+  }
+
+  // 나갈 때 쓰던 소감은 초안으로 남겨 둔다 (24시간 안에 배너로 다시 들어올 수 있다)
+  const handleLeave = async () => {
+    await saveDraft()
+    goBack()
+  }
+
+  return (
+    <DriveCardPage
+      {...card}
+      onMyTextChange={setMyText}
+      onLeave={() => void handleLeave()}
+      onRetry={retry}
+      onAddPhotos={(files) => void addPhotos(files)}
+      onRemovePhoto={(mediaId) => void removePhoto(mediaId)}
+      onSwapPhotos={() => void swapPhotos()}
+      onSave={() => void handleSave()}
+    />
+  )
+}
+
+// 드라이브가 바뀌면 카드 화면을 새로 마운트해 이전 카드의 상태가 남지 않게 한다
+function DriveCardRouteByParam({ userId }: { userId: string }) {
+  const { driveId = '' } = useParams()
+  return <DriveCardRoute key={driveId} driveId={driveId} userId={userId} />
+}
+
+// 홈 데이터는 API 연동 전까지 목 데이터를 쓴다 (GET /home 연동 시 교체)
+function App() {
   const [home, setHome] = useState(MOCK_HOME)
   const [spots, setSpots] = useState(MOCK_SPOTS)
+  const [pendingPromptSeen, setPendingPromptSeen] = useState(false)
 
   // 알림을 읽으면 홈의 새 알림 표시도 맞춘다. API 연동 후에는 홈을 다시 조회해 반영한다
   const handleNotificationRead = () =>
@@ -192,15 +290,13 @@ function App() {
       <Route
         path="/"
         element={
-          <HomePage
+          <HomeRoute
             home={home}
             categories={MOCK_CATEGORIES}
             spots={spots}
-            carConnected
-            onNotificationClick={() => navigate('/notifications')}
-            onSpotClick={(id) => navigate(`/places/${id}`)}
+            pendingPromptSeen={pendingPromptSeen}
+            onPendingPromptSeen={() => setPendingPromptSeen(true)}
             onLikeToggle={setSpotLiked}
-            onTabChange={goTab}
           />
         }
       />
@@ -213,6 +309,7 @@ function App() {
           element={<LegalDocumentRoute key={type} type={type as LegalDocumentType} />}
         />
       ))}
+      <Route path="/drives/:driveId/card" element={<DriveCardRouteByParam userId={home.userId} />} />
       <Route
         path="/places/:placeId"
         element={
