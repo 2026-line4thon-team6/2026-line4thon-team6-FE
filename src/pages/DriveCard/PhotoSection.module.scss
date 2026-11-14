@@ -1,0 +1,187 @@
+// Figma 기준 사진 영역 340 x 214
+$photo-height: 214px;
+
+.fileInput,
+.hidden {
+  @include visually-hidden;
+}
+
+// 사진이 없을 때: 앨범 일러스트 + 더하기 버튼
+.empty {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  height: $photo-height;
+  margin-top: 20px;
+  border-radius: 10px;
+  background-color: color('divider');
+  cursor: pointer;
+
+  &:active {
+    background-color: color('coral-3');
+  }
+
+  &:focus-within {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}
+
+.emptyArt {
+  position: relative;
+  width: 116px;
+  height: 91px;
+  margin-top: 60px;
+}
+
+.emptyImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.5;
+}
+
+.emptyPlus {
+  position: absolute;
+  top: 65px;
+  left: 83px;
+}
+
+.section {
+  position: relative;
+  margin-top: 6px;
+}
+
+// 더보기 버튼(36 x 22)과 메뉴. 메뉴는 사진 위 오른쪽에 뜬다
+.menuArea {
+  display: flex;
+  justify-content: flex-end;
+  margin-right: -3px;
+}
+
+.moreButton {
+  display: flex;
+  border-radius: 8px;
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+.menu {
+  position: absolute;
+  top: 24px;
+  right: -12px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 139px;
+  padding: 3px 5px 4px;
+  border-radius: 15px;
+  background-color: color('white');
+  filter: drop-shadow(0 0 5px rgb(0 0 0 / 5%));
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 32px;
+  border-radius: 10px;
+  @include typo('body-m-15');
+  color: color('black');
+  cursor: pointer;
+
+  &:active:not([aria-disabled]) {
+    font-weight: 600;
+    background-color: color('divider');
+  }
+
+  &:focus-visible,
+  &:focus-within {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: -2px;
+  }
+
+  &[aria-disabled] {
+    color: color('gray-400');
+    cursor: not-allowed;
+  }
+}
+
+.menuDivider {
+  height: 0;
+  border: 0;
+  border-top: 0.5px solid color('divider');
+}
+
+.photos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-top: 2px;
+  filter: drop-shadow(0 0 5px rgb(0 0 0 / 5%));
+}
+
+.photo {
+  position: relative;
+  height: $photo-height;
+  overflow: hidden;
+  border-radius: 10px;
+  background-color: color('gray-100');
+
+  > img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+// 사진 아래쪽 가운데 휴지통 (아이콘 17.5 x 19.5, 누르는 영역 36px)
+.removeButton {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+
+  &:active {
+    background-color: rgb(255 255 255 / 30%);
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+  }
+}
+
+// 한 장만 있을 때 오른쪽 빈칸: 한 장 더 추가
+.addTile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: $photo-height;
+  border-radius: 10px;
+  background-color: color('divider');
+  cursor: pointer;
+
+  &:active {
+    background-color: color('coral-3');
+  }
+
+  &:focus-within {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}
