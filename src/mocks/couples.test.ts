@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   MOCK_PARTNER_INVITE_CODE,
+  mockCompleteOnboarding,
+  mockLogin,
+  mockLogout,
+  mockRestoreSession,
   mockCreateInvite,
   mockDisconnectCouple,
   mockFetchMe,
@@ -152,5 +156,80 @@ describe('연인 초대 코드 발급 · 코드로 연결', () => {
     await expect(mockJoinCouple({ code: 'nope1234' })).rejects.toMatchObject({ status: 422, code: 'INVALID_INVITE' })
     await expect(mockJoinCouple({ code: mine.code })).rejects.toMatchObject({ status: 422, code: 'SELF_INVITE' })
     await expect(mockJoinCouple({ code: '   ' })).rejects.toMatchObject({ status: 422, code: 'VALIDATION_FAILED' })
+  })
+})
+
+describe('로그인 · 가입 프로필 (POST /auth/token · PUT /me/onboarding)', () => {
+  const consents = [
+    { type: 'TERMS' as const, version: '2026-11-01', agreed: true },
+    { type: 'PRIVACY' as const, version: '2026-11-01', agreed: true },
+  ]
+
+  it('처음 상태는 가입을 마친 민준으로 로그인돼 있고, 다시 로그인해도 기존 가입자다', async () => {
+    expect((await mockRestoreSession()).data.nickname).toBe('민준')
+
+    const { data } = await mockLogin('KAKAO')
+    expect(data.isNewUser).toBe(false)
+    expect(data.user.onboardingCompleted).toBe(true)
+  })
+
+  it('로그아웃하면 세션이 사라지고, 다음 로그인은 가입하지 않은 새 사용자다', async () => {
+    await mockLogout()
+    await expect(mockRestoreSession()).rejects.toMatchObject({ status: 401, code: 'AUTHENTICATION_REQUIRED' })
+
+    const { data } = await mockLogin('KAKAO')
+    expect(data.isNewUser).toBe(true)
+    expect(data.user.onboardingCompleted).toBe(false)
+    expect((await mockFetchMyCouple()).data).toEqual({ couple: null, connectionStatus: 'UNLINKED' })
+  })
+
+  it('가입 프로필을 저장하면 가입을 마친 사용자가 된다', async () => {
+    await mockLogout()
+    await mockLogin('KAKAO')
+
+    const { data } = await mockCompleteOnboarding({
+      nickname: ' 현우 ',
+      birthDate: '2002-03-04',
+      gender: 'MALE',
+      coupleStartDate: '2026-01-01',
+      mascotName: '쌩쌩이',
+      consents,
+    })
+
+    expect(data).toMatchObject({ nickname: '현우', birthDate: '2002-03-04', gender: 'MALE', onboardingCompleted: true })
+    expect((await mockLogin('KAKAO')).data.isNewUser).toBe(false)
+  })
+
+  it('가입할 때 고른 시작일 · 붕붕이 이름은 연인과 연결할 때 처음 값이 된다', async () => {
+    await mockLogout()
+    await mockLogin('KAKAO')
+    await mockCompleteOnboarding({
+      nickname: '현우',
+      birthDate: null,
+      coupleStartDate: '2026-01-01',
+      mascotName: '쌩쌩이',
+      consents,
+    })
+
+    const { data } = await mockJoinCouple({ code: MOCK_PARTNER_INVITE_CODE })
+
+    expect(data).toMatchObject({ startDate: '2026-01-01', mascotName: '쌩쌩이' })
+    expect(data.members[0].nickname).toBe('현우')
+  })
+
+  it('필수 동의가 빠지면 422 REQUIRED_CONSENT_MISSING', async () => {
+    await expect(
+      mockCompleteOnboarding({ nickname: '현우', birthDate: null, consents: [consents[0]] }),
+    ).rejects.toMatchObject({ status: 422, code: 'REQUIRED_CONSENT_MISSING' })
+  })
+
+  it('없는 날짜 · 미래 생일은 422 INVALID_BIRTH_DATE', async () => {
+    const nextYear = new Date().getFullYear() + 1
+    for (const birthDate of ['2002-02-30', `${nextYear}-01-01`]) {
+      await expect(mockCompleteOnboarding({ nickname: '현우', birthDate, consents })).rejects.toMatchObject({
+        status: 422,
+        code: 'INVALID_BIRTH_DATE',
+      })
+    }
   })
 })

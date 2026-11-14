@@ -2,8 +2,9 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { logout } from '@/api/auth'
 import { prepareDrive } from '@/api/drives'
-import { MOCK_PARTNER_INVITE_CODE, resetMockCouple } from '@/mocks/couples'
+import { MOCK_PARTNER_INVITE_CODE, mockEndSession, mockFetchMe, resetMockCouple } from '@/mocks/couples'
 import { resetMockPlaces } from '@/mocks/places'
 import { resetMockCards } from '@/mocks/cards'
 import { resetMockDrives } from '@/mocks/drives'
@@ -49,6 +50,8 @@ async function startDriveFromHome(user: ReturnType<typeof userEvent.setup>) {
 beforeEach(() => {
   resetMockCouple()
   resetMockPlaces()
+  localStorage.clear()
+  sessionStorage.clear()
   resetMockCards()
 })
 
@@ -169,13 +172,13 @@ describe('마이 화면', () => {
     expect(await screen.findByRole('button', { name: /누적 330km/ })).toBeInTheDocument()
   })
 
-  it('로그아웃 → 확인하면 홈으로 이동한다', async () => {
+  it('로그아웃 → 확인하면 로그인 화면으로 이동한다', async () => {
     const user = renderApp('/my')
 
     await user.click(await screen.findByRole('button', { name: '로그아웃' }))
     await user.click(screen.getAllByRole('button', { name: '로그아웃' }).at(-1)!)
 
-    expect(await screen.findByRole('heading', { level: 1, name: /오늘은 어디로 떠나볼까요/ })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: '붕붕어스' })).toBeInTheDocument()
   })
 })
 
@@ -298,6 +301,97 @@ describe('연인 초대', () => {
     const user = renderApp('/couple/invite')
 
     await user.click(await screen.findByRole('button', { name: '완료' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: /오늘은 어디로 떠나볼까요/ })).toBeInTheDocument()
+  })
+})
+
+describe('로그인 · 가입 (기능명세서 L1~L9)', () => {
+  // 로그아웃한 기기: 목 서버는 다음 로그인을 아직 가입하지 않은 새 사용자로 응답한다
+  async function signOut() {
+    await logout('test-logout')
+  }
+
+  it('로그인하지 않았으면 어느 주소로 들어와도 로그인 화면을 보여 준다', async () => {
+    await signOut()
+    renderApp('/my')
+
+    expect(await screen.findByRole('heading', { level: 1, name: '붕붕어스' })).toBeInTheDocument()
+  })
+
+  it('새 가입자: 로그인 → 약관 동의 → 이름 · 생일 · 성별 · 만난 날(건너뛰기) · 붕붕이 이름 → 연인 초대 → 건너뛰면 메인 홈', async () => {
+    await signOut()
+    const user = renderApp('/')
+
+    await user.click(await screen.findByRole('button', { name: '카카오로 3초 만에 시작하기' }))
+
+    // L2 환영 · 약관 동의
+    await user.click(await screen.findByRole('checkbox', { name: /이용약관 및 개인정보 처리방침에 동의해요/ }))
+    await user.click(screen.getByRole('button', { name: '만나서 반가워!' }))
+
+    // L3 → L4 닉네임
+    await user.click(await screen.findByRole('button', { name: '나는...' }))
+    await user.type(await screen.findByRole('textbox', { name: '닉네임' }), '현우')
+    await user.click(screen.getByRole('button', { name: '다음' }))
+
+    // L5 생일
+    await user.type(await screen.findByRole('textbox', { name: '생일' }), '20020304')
+    await user.click(screen.getByRole('button', { name: '다음' }))
+
+    // L6 성별
+    await user.click(await screen.findByRole('radio', { name: '남자' }))
+    await user.click(screen.getByRole('button', { name: '다음' }))
+
+    // L7 만난 날 — 건너뛰기
+    expect(await screen.findByRole('heading', { level: 2, name: '연인과 언제부터 만났나요?' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '건너뛰기' }))
+
+    // L8 붕붕이 이름 → 저장
+    await user.type(await screen.findByRole('textbox', { name: '붕붕이 이름' }), '쌩쌩이')
+    await user.click(screen.getByRole('button', { name: '다음' }))
+
+    // L9 연인 초대 → 코드 없이 완료(건너뛰기) → 메인 홈
+    expect(await screen.findByRole('heading', { level: 1, name: '연인 초대' })).toBeInTheDocument()
+    expect((await mockFetchMe()).data).toMatchObject({
+      nickname: '현우',
+      birthDate: '2002-03-04',
+      gender: 'MALE',
+      onboardingCompleted: true,
+    })
+    await user.click(screen.getByRole('button', { name: '완료' }))
+    expect(await screen.findByRole('heading', { level: 1, name: /오늘은 어디로 떠나볼까요/ })).toBeInTheDocument()
+  })
+
+  it('가입 질문에서 뒤로가기를 누르면 이전 질문으로 돌아가고, 입력한 답이 남아 있다', async () => {
+    await signOut()
+    const user = renderApp('/login')
+
+    await user.click(await screen.findByRole('button', { name: '카카오로 3초 만에 시작하기' }))
+    await user.click(await screen.findByRole('checkbox', { name: /동의해요/ }))
+    await user.click(screen.getByRole('button', { name: '만나서 반가워!' }))
+    await user.click(await screen.findByRole('button', { name: '나는...' }))
+    await user.type(await screen.findByRole('textbox', { name: '닉네임' }), '현우')
+    await user.click(screen.getByRole('button', { name: '다음' }))
+
+    await user.click(await screen.findByRole('button', { name: '뒤로가기' }))
+    expect(await screen.findByRole('textbox', { name: '닉네임' })).toHaveValue('현우')
+  })
+
+  it('가입을 마치지 않은 사용자는 다른 화면 주소로 들어와도 가입 화면으로 간다', async () => {
+    await signOut()
+    const user = renderApp('/login')
+    await user.click(await screen.findByRole('button', { name: '카카오로 3초 만에 시작하기' }))
+    await screen.findByRole('button', { name: '만나서 반가워!' })
+
+    await user.click(screen.getByRole('button', { name: '이용약관 보기' }))
+    expect(await screen.findByRole('heading', { level: 1, name: '이용 약관' })).toBeInTheDocument()
+  })
+
+  it('기존 가입자는 로그인하면 바로 메인 홈으로 간다', async () => {
+    mockEndSession() // 가입을 마친 민준의 세션만 끊긴 기기
+    const user = renderApp('/login')
+
+    await user.click(await screen.findByRole('button', { name: '카카오로 3초 만에 시작하기' }))
 
     expect(await screen.findByRole('heading', { level: 1, name: /오늘은 어디로 떠나볼까요/ })).toBeInTheDocument()
   })

@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router'
-import { logout } from '@/api/auth'
 import { fetchCardShare } from '@/api/cards'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
+import useAuth, { type Auth } from '@/hooks/useAuth'
 import useCoupleInvite from '@/hooks/useCoupleInvite'
 import useCouplePage from '@/hooks/useCouplePage'
 import useFavorites from '@/hooks/useFavorites'
@@ -40,6 +40,20 @@ import RecordCalendarSheet from '@/pages/RecordMap/RecordCalendarSheet'
 import RecordMapPage, { type RecordView } from '@/pages/RecordMap/RecordMapPage'
 import RecordShareSheet from '@/pages/RecordMap/RecordShareSheet'
 import RouteSettingPage from '@/pages/RouteSetting/RouteSettingPage'
+import {
+  AnniversaryStep,
+  BirthdayStep,
+  GenderStep,
+  IntroStep,
+  LoginRoute,
+  MascotStep,
+  MemberGate,
+  NicknameStep,
+  OAuthCallbackRoute,
+  OnboardingFlow,
+  WelcomeStep,
+} from '@/routes/AuthRoutes'
+import { LOGIN_PATH } from '@/routes/paths'
 import type { HomeSummary } from '@/types/home'
 import type { LegalDocumentType } from '@/types/legal'
 import type { Notification } from '@/types/notification'
@@ -383,7 +397,7 @@ function PlaceDetailRouteByParam(props: Omit<PlaceDetailRouteProps, 'placeId'>) 
 }
 
 // 마이 화면에 들어올 때마다 커플 요약을 새로 불러온다
-function MyRoute() {
+function MyRoute({ auth }: { auth: Auth }) {
   const navigate = useNavigate()
   const goTab = useTabNavigate()
   const { status, couple } = useMyCouple()
@@ -395,10 +409,10 @@ function MyRoute() {
     // TODO: FAQ 화면이 생기면 이동한다
   }
 
-  // TODO: 로그인 화면이 생기면 로그인 화면으로 보낸다. 지금은 세션이 없어 홈으로 이동한다
+  // 로그아웃하면 로그인 화면(L1)으로 간다
   const handleLogout = async () => {
-    await logout(null, createIdempotencyKey()).catch(() => undefined)
-    navigate('/', { replace: true })
+    await auth.signOut()
+    navigate(LOGIN_PATH, { replace: true })
   }
 
   return (
@@ -614,6 +628,7 @@ function DriveCardRouteByParam({ userId }: { userId: string }) {
 
 // 홈 데이터는 API 연동 전까지 목 데이터를 쓴다 (GET /home 연동 시 교체)
 function App() {
+  const auth = useAuth()
   const [home, setHome] = useState(MOCK_HOME)
   const [spots, setSpots] = useState(MOCK_SPOTS)
   const [pendingPromptSeen, setPendingPromptSeen] = useState(false)
@@ -627,33 +642,19 @@ function App() {
 
   return (
     <Routes>
-      <Route
-        path="/"
-        element={
-          <HomeRoute
-            home={home}
-            categories={MOCK_CATEGORIES}
-            spots={spots}
-            pendingPromptSeen={pendingPromptSeen}
-            onPendingPromptSeen={() => setPendingPromptSeen(true)}
-            onLikeToggle={setSpotLiked}
-          />
-        }
-      />
-      <Route path="/map" element={<RecordMapRoute />} />
-      <Route path="/cards/:cardId" element={<RecordDetailRouteByParam />} />
-      <Route path="/notifications" element={<NotificationsRoute onRead={handleNotificationRead} />} />
-      <Route path="/drive" element={<DriveRoute />} />
-      <Route path="/drive/route" element={<RouteSettingRoute />} />
-      <Route path="/my" element={<MyRoute />} />
-      <Route path="/my/couple" element={<CoupleRoute />} />
-      <Route path="/couple/invite" element={<CoupleInviteRoute />} />
-      <Route
-        path="/my/favorites"
-        element={<FavoritesRoute onFavoriteChange={(placeId, favorite) => setSpotLiked(Number(placeId), favorite)} />}
-      />
-      <Route path="/my/playlists" element={<PlaylistsRoute />} />
-      <Route path="/my/stories" element={<RadioStoriesRoute />} />
+      <Route path={LOGIN_PATH} element={<LoginRoute auth={auth} />} />
+      <Route path="/oauth/callback" element={<OAuthCallbackRoute auth={auth} />} />
+      <Route path="/onboarding" element={<OnboardingFlow auth={auth} />}>
+        <Route index element={<Navigate to="welcome" replace />} />
+        <Route path="welcome" element={<WelcomeStep />} />
+        <Route path="intro" element={<IntroStep />} />
+        <Route path="nickname" element={<NicknameStep />} />
+        <Route path="birthday" element={<BirthdayStep />} />
+        <Route path="gender" element={<GenderStep />} />
+        <Route path="anniversary" element={<AnniversaryStep />} />
+        <Route path="mascot" element={<MascotStep />} />
+      </Route>
+      {/* 약관 문서는 가입 중(로그인 전 동의 화면)에도 볼 수 있다 */}
       {Object.entries(LEGAL_PATHS).map(([type, path]) => (
         <Route
           key={type}
@@ -661,18 +662,48 @@ function App() {
           element={<LegalDocumentRoute key={type} type={type as LegalDocumentType} />}
         />
       ))}
-      <Route path="/drives/:driveId/card" element={<DriveCardRouteByParam userId={home.userId} />} />
-      <Route
-        path="/places/:placeId"
-        element={
-          <PlaceDetailRouteByParam
-            couple={home.couple}
-            mascotName={home.mascotName}
-            // 상세에서 바꾼 찜 상태를 홈 카드에도 반영한다 (목 장소 id는 홈 카드 id의 문자열)
-            onFavoriteChange={(placeId, favorite) => setSpotLiked(Number(placeId), favorite)}
-          />
-        }
-      />
+
+      <Route element={<MemberGate auth={auth} />}>
+        <Route
+          path="/"
+          element={
+            <HomeRoute
+              home={home}
+              categories={MOCK_CATEGORIES}
+              spots={spots}
+              pendingPromptSeen={pendingPromptSeen}
+              onPendingPromptSeen={() => setPendingPromptSeen(true)}
+              onLikeToggle={setSpotLiked}
+            />
+          }
+        />
+        <Route path="/map" element={<RecordMapRoute />} />
+        <Route path="/cards/:cardId" element={<RecordDetailRouteByParam />} />
+        <Route path="/notifications" element={<NotificationsRoute onRead={handleNotificationRead} />} />
+        <Route path="/drive" element={<DriveRoute />} />
+        <Route path="/drive/route" element={<RouteSettingRoute />} />
+        <Route path="/my" element={<MyRoute auth={auth} />} />
+        <Route path="/my/couple" element={<CoupleRoute />} />
+        <Route path="/couple/invite" element={<CoupleInviteRoute />} />
+        <Route
+          path="/my/favorites"
+          element={<FavoritesRoute onFavoriteChange={(placeId, favorite) => setSpotLiked(Number(placeId), favorite)} />}
+        />
+        <Route path="/my/playlists" element={<PlaylistsRoute />} />
+        <Route path="/my/stories" element={<RadioStoriesRoute />} />
+        <Route path="/drives/:driveId/card" element={<DriveCardRouteByParam userId={home.userId} />} />
+        <Route
+          path="/places/:placeId"
+          element={
+            <PlaceDetailRouteByParam
+              couple={home.couple}
+              mascotName={home.mascotName}
+              // 상세에서 바꾼 찜 상태를 홈 카드에도 반영한다 (목 장소 id는 홈 카드 id의 문자열)
+              onFavoriteChange={(placeId, favorite) => setSpotLiked(Number(placeId), favorite)}
+            />
+          }
+        />
+      </Route>
     </Routes>
   )
 }

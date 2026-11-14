@@ -1,0 +1,106 @@
+// Figma 484:13466 (390 x 844). 로고 · 사진 · 버튼 묶음이 화면 가운데에 온다
+.page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: var(--app-max-width);
+  min-height: 100vh; // dvh 미지원 웹뷰 대비
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: max(env(safe-area-inset-top, 0px), 24px) 30px max(env(safe-area-inset-bottom, 0px), 24px);
+  background-color: color('coral-bg');
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(40px, 9.5dvh, 80px);
+  width: 100%;
+  max-width: 329px;
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 302px;
+  text-align: center;
+}
+
+// Figma 글자 이미지(537:10086, 잘난체 그라데이션). 줄 높이는 Figma 글자 상자(33px x 1.5)에 맞춘다
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 50px;
+
+  img {
+    display: block;
+    width: 128px;
+    height: auto;
+  }
+}
+
+.description {
+  margin-top: 5px;
+  @include typo('body-m-medium');
+  color: color('gray-600');
+}
+
+.photo {
+  width: 100%;
+  height: auto;
+  margin-top: 15px;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+
+// 카카오 로그인 버튼 (카카오 디자인 가이드 노랑 · Figma #FDE500)
+.kakao {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 50px;
+  padding: 0 48px;
+  border-radius: 50px;
+  @include typo('body-m-15');
+  font-weight: 500;
+  color: color('black');
+  background-color: #fde500;
+
+  &:active:not(:disabled) {
+    filter: brightness(0.96);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}
+
+.kakaoIcon {
+  position: absolute;
+  top: 50%;
+  left: 20px;
+  transform: translateY(-50%);
+}
+
+.error {
+  @include typo('caption');
+  color: color('coral-pressed');
+  text-align: center;
+}

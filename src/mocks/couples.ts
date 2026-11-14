@@ -1,5 +1,6 @@
 import { ApiError } from '@/api/client'
 import type { ApiMeta, ApiResponse } from '@/types/api'
+import type { AuthProvider, AuthTokenResult, OnboardingRequest } from '@/types/auth'
 import type { Couple, CoupleConnection, CoupleInvite } from '@/types/couple'
 import type { Me, UpdateMeRequest } from '@/types/me'
 
@@ -59,12 +60,17 @@ let connection: CoupleConnection = structuredClone(MOCK_COUPLE)
 let me: Me = structuredClone(MOCK_ME)
 let invite: CoupleInvite | null = structuredClone(MOCK_INVITE)
 let inviteCount = 1
+// 로그인 세션 · 가입할 때 고른 커플 초기값(시작일 · 붕붕이 이름)
+let signedIn = true
+let coupleDefaults: { startDate: string | null; mascotName: string | null } = { startDate: null, mascotName: null }
 
-// 테스트 · 스토리에서 처음 상태로 되돌린다
+// 테스트 · 스토리에서 처음 상태(가입을 마친 민준으로 로그인)로 되돌린다
 export function resetMockCouple() {
   connection = structuredClone(MOCK_COUPLE)
   me = structuredClone(MOCK_ME)
   invite = structuredClone(MOCK_INVITE)
+  signedIn = true
+  coupleDefaults = { startDate: null, mascotName: null }
 }
 
 // 서버는 앞뒤 공백 · 대소문자를 무시하고 코드를 비교한다
@@ -142,7 +148,7 @@ export async function mockCreateInvite(): Promise<ApiResponse<CoupleInvite>> {
   return { data: { ...invite }, meta: meta() }
 }
 
-// 연인 코드로 연결. 시작일은 연결한 날(D+1), 이름은 기본값 붕붕이
+// 연인 코드로 연결. 초기값은 코드 발급자(목 연인은 값 없음) → 참가자(가입할 때 고른 값) → 기본값(연결한 날 · 붕붕이) 순서
 export async function mockJoinCouple(body: { code: string }): Promise<ApiResponse<Couple>> {
   if (connection.couple) throw fail(409, 'ALREADY_COUPLED', '이미 연인과 연결되어 있어요.')
   if (!body.code.trim()) throw fail(422, 'VALIDATION_FAILED', '연인의 코드를 입력해 주세요.')
@@ -157,12 +163,12 @@ export async function mockJoinCouple(body: { code: string }): Promise<ApiRespons
       { id: me.id, nickname: me.nickname, birthDate: me.birthDate, profileImageUrl: me.profileImageUrl, provider: me.provider },
       structuredClone(MOCK_PARTNER),
     ],
-    startDate: todayIso(),
-    daysTogether: 1,
+    startDate: coupleDefaults.startDate ?? todayIso(),
+    daysTogether: countDays(coupleDefaults.startDate ?? todayIso()),
     cumulativeDistanceMeters: 0,
     completedCardCount: 0,
     version: 1,
-    mascotName: '붕붕이',
+    mascotName: coupleDefaults.mascotName ?? '붕붕이',
   })
 }
 
@@ -223,4 +229,75 @@ export async function mockDisconnectCouple(): Promise<void> {
   connection = { couple: null, connectionStatus: 'DISCONNECTED' }
   // 연결에 썼던 코드는 새 상대가 쓸 수 없으니 새로 발급받아야 한다
   invite = null
+}
+
+// ── 로그인 · 가입 (POST /auth/token · POST /auth/logout · PUT /me/onboarding) ──
+
+// 확정 정책 D09: access token 30분, refresh token 14일
+const MOCK_TOKEN_TTL = { access: 30 * 60, refresh: 14 * 24 * 60 * 60 }
+
+// 목 서버에서는 로그아웃하면 다음 로그인이 아직 가입하지 않은 새 사용자가 된다. 가입 화면 흐름을 직접 써 볼 수 있게
+function startNewAccount() {
+  me = { id: 'usr_new', nickname: '', birthDate: null, profileImageUrl: null, provider: 'KAKAO', onboardingCompleted: false, gender: null }
+  connection = { couple: null, connectionStatus: 'UNLINKED' }
+  invite = null
+  coupleDefaults = { startDate: null, mascotName: null }
+}
+
+// 카카오 인증을 마친 것으로 보고 서비스 토큰을 발급한다
+export async function mockLogin(provider: AuthProvider): Promise<ApiResponse<AuthTokenResult>> {
+  void provider
+  signedIn = true
+  return {
+    data: {
+      accessToken: 'mock_access_token',
+      accessTokenExpiresInSeconds: MOCK_TOKEN_TTL.access,
+      refreshToken: 'mock_refresh_token',
+      refreshTokenExpiresInSeconds: MOCK_TOKEN_TTL.refresh,
+      tokenType: 'Bearer',
+      user: structuredClone(me),
+      isNewUser: !me.onboardingCompleted,
+    },
+    meta: meta(),
+  }
+}
+
+export async function mockLogout(): Promise<void> {
+  signedIn = false
+  startNewAccount()
+}
+
+// 계정은 그대로 두고 세션만 끊는다 (앱 데이터를 지운 기기에서 기존 가입자가 다시 로그인하는 경우를 흉내 낸다)
+export function mockEndSession() {
+  signedIn = false
+}
+
+// 앱을 열 때 화면을 바로 정하기 위한 동기 확인 (실서버의 '기기에 토큰이 있는지'에 해당)
+export function mockHasSession() {
+  return signedIn
+}
+
+// 앱을 다시 열었을 때 저장된 세션으로 내 계정을 불러온다 (GET /me)
+export async function mockRestoreSession(): Promise<ApiResponse<Me>> {
+  if (!signedIn) throw fail(401, 'AUTHENTICATION_REQUIRED', '로그인이 필요해요.')
+  return mockFetchMe()
+}
+
+export async function mockCompleteOnboarding(body: OnboardingRequest): Promise<ApiResponse<Me>> {
+  const nickname = body.nickname.trim()
+  if (!nickname || nickname.length > MAX_NAME) throw fail(422, 'VALIDATION_FAILED', '닉네임은 1~20자로 입력해 주세요.')
+  const agreed = (type: string) => body.consents.some((consent) => consent.type === type && consent.agreed)
+  if (!agreed('TERMS') || !agreed('PRIVACY')) {
+    throw fail(422, 'REQUIRED_CONSENT_MISSING', '이용약관과 개인정보 처리방침에 동의해 주세요.')
+  }
+  if (body.birthDate !== null && !isValidPastDate(body.birthDate)) {
+    throw fail(422, 'INVALID_BIRTH_DATE', '생일을 다시 확인해 주세요.')
+  }
+  if (body.coupleStartDate && !isValidPastDate(body.coupleStartDate)) {
+    throw fail(422, 'VALIDATION_FAILED', '만난 날을 다시 확인해 주세요.')
+  }
+
+  me = { ...me, nickname, birthDate: body.birthDate, gender: body.gender ?? null, onboardingCompleted: true }
+  coupleDefaults = { startDate: body.coupleStartDate ?? null, mascotName: body.mascotName?.trim() || null }
+  return { data: structuredClone(me), meta: meta() }
 }
