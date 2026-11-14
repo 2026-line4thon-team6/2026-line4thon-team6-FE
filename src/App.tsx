@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 're
 import { logout } from '@/api/auth'
 import { fetchCardShare } from '@/api/cards'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
+import useCoupleInvite from '@/hooks/useCoupleInvite'
 import useCouplePage from '@/hooks/useCouplePage'
 import useFavorites from '@/hooks/useFavorites'
 import useLegalDocument from '@/hooks/useLegalDocument'
@@ -26,6 +27,7 @@ import FavoritesPage from '@/pages/Archive/FavoritesPage'
 import PlaylistsPage from '@/pages/Archive/PlaylistsPage'
 import RadioStoriesPage from '@/pages/Archive/RadioStoriesPage'
 import CouplePage from '@/pages/Couple/CouplePage'
+import CoupleInvitePage from '@/pages/CoupleInvite/CoupleInvitePage'
 import DrivePage from '@/pages/Drive/DrivePage'
 import DriveCardPage from '@/pages/DriveCard/DriveCardPage'
 import HomePage from '@/pages/Home/HomePage'
@@ -45,7 +47,7 @@ import type { RecordSummary } from '@/types/record'
 import type { Category, SpotSummary } from '@/types/spot'
 import { todayInSeoul } from '@/utils/calendar'
 import { formatDate } from '@/utils/formatDate'
-import { copyText, createIdempotencyKey, type ShareChannel, type ShareLink, shareTo } from '@/utils/share'
+import { copyText, createIdempotencyKey, type ShareChannel, shareInviteCode, type ShareLink, shareTo } from '@/utils/share'
 import { shareStory } from '@/utils/storyImage'
 
 // 화면 주소
@@ -132,6 +134,7 @@ interface PlaceDetailRouteProps {
 }
 
 function PlaceDetailRoute({ placeId, couple, mascotName, onFavoriteChange }: PlaceDetailRouteProps) {
+  const navigate = useNavigate()
   const goBack = useGoBack()
   const drive = useStartDrive(couple)
   const { status, detail, retry, toggleFavorite, getShareUrl, sendToPartner } = usePlaceDetail(placeId)
@@ -164,8 +167,7 @@ function PlaceDetailRoute({ placeId, couple, mascotName, onFavoriteChange }: Pla
         onCopyLink={(url) => void copyText(url)}
         onShareChannel={(channel, url) => void shareTo(channel, { url, title: detail?.place.name ?? '' })}
         onSendToPartner={handleSend}
-        // TODO: 커플 코드 입력 화면이 생기면 이동한다
-        onConnectRequired={() => {}}
+        onConnectRequired={() => navigate('/couple/invite')}
       />
       <DriveNameSheet
         open={drive.sheetOpen}
@@ -403,7 +405,8 @@ function MyRoute() {
     <MyPage
       status={status}
       couple={couple}
-      onProfileClick={() => navigate('/my/couple')}
+      // 연결 전이면 커플 페이지 대신 연인 초대 화면으로 보낸다
+      onProfileClick={() => navigate(status === 'ready' && !couple ? '/couple/invite' : '/my/couple')}
       onMenuClick={handleMenuClick}
       onLogout={() => void handleLogout()}
       onTabChange={goTab}
@@ -475,6 +478,27 @@ function RadioStoriesRoute() {
   // TODO: 라디오 사연 상세(방송 문구 · 다시 듣기) 화면이 생기면 이동한다
   return (
     <RadioStoriesPage {...state} onBack={goBack} onRetry={retry} onQueryChange={setQuery} onStoryClick={() => {}} />
+  )
+}
+
+// 연인 초대 · 코드 연결. 연결하거나 건너뛰면 메인 홈으로 간다 (기능명세서 L9)
+function CoupleInviteRoute() {
+  const navigate = useNavigate()
+  const goBack = useGoBack('/')
+  const { retry, connect, ...state } = useCoupleInvite()
+  const goHome = () => navigate('/', { replace: true })
+
+  return (
+    <CoupleInvitePage
+      {...state}
+      onBack={goBack}
+      onRetry={retry}
+      onCopy={(code) => copyText(code).catch(() => undefined)}
+      onShare={shareInviteCode}
+      onConnect={connect}
+      onConnected={goHome}
+      onSkip={goHome}
+    />
   )
 }
 
@@ -623,6 +647,7 @@ function App() {
       <Route path="/drive/route" element={<RouteSettingRoute />} />
       <Route path="/my" element={<MyRoute />} />
       <Route path="/my/couple" element={<CoupleRoute />} />
+      <Route path="/couple/invite" element={<CoupleInviteRoute />} />
       <Route
         path="/my/favorites"
         element={<FavoritesRoute onFavoriteChange={(placeId, favorite) => setSpotLiked(Number(placeId), favorite)} />}

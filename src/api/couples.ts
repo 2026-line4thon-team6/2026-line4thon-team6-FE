@@ -1,7 +1,9 @@
 import {
+  mockCreateInvite,
   mockDisconnectCouple,
   mockFetchMyCouple,
   mockFetchMyInvite,
+  mockJoinCouple,
   mockRenameMascot,
   mockUpdateStartDate,
 } from '@/mocks/couples'
@@ -63,4 +65,24 @@ export function fetchMyInvite(): Promise<ApiResponse<CoupleInvite>> {
   if (USE_MOCK) return mockFetchMyInvite()
 
   return apiFetch<CoupleInvite>('/couple-invites/me')
+}
+
+// POST /couple-invites — 내 초대 코드 발급. 유효한 코드가 있으면 그대로 돌려준다(24시간 유효). 이미 연결돼 있으면 409 ALREADY_COUPLED
+export function createCoupleInvite(idempotencyKey: string): Promise<ApiResponse<CoupleInvite>> {
+  if (USE_MOCK) return mockCreateInvite()
+
+  return apiFetch<CoupleInvite>('/couple-invites', { method: 'POST', headers: { 'Idempotency-Key': idempotencyKey } })
+}
+
+// POST /couples — 연인의 초대 코드로 연결. 코드는 길이 · 형식을 검증하지 않고 앞뒤 공백만 지워 보낸다
+// 422 INVALID_INVITE · SELF_INVITE, 409 INVITE_CONSUMED · ALREADY_COUPLED · COUPLE_RESTORE_REQUIRED
+export function joinCouple(code: string, idempotencyKey: string): Promise<ApiResponse<Couple>> {
+  const trimmed = code.trim()
+  if (USE_MOCK) return mockJoinCouple({ code: trimmed })
+
+  return apiFetch<Couple>('/couples', {
+    method: 'POST',
+    headers: { 'Idempotency-Key': idempotencyKey },
+    body: JSON.stringify({ code: trimmed }),
+  })
 }

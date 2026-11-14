@@ -1,0 +1,175 @@
+// Figma 기준 390 x 844 (Onboarding_UI > 연인 초대)
+$gutter: 25px;
+
+.page {
+  display: flex;
+  flex-direction: column;
+  max-width: var(--app-max-width);
+  min-height: 100vh; // dvh 미지원 웹뷰 대비
+  min-height: 100dvh;
+  margin: 0 auto;
+  background-color: color('coral-bg');
+}
+
+// 뒤로가기(36px) 왼쪽 + 가운데 정렬 제목
+.header {
+  display: grid;
+  grid-template-columns: 36px 1fr 36px;
+  align-items: center;
+  padding: calc(max(env(safe-area-inset-top, 0px), 12px) + 5px) $gutter 0;
+}
+
+.title {
+  @include typo('body-l-bold');
+  color: color('black');
+  text-align: center;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 46px;
+  padding: 41px $gutter 24px;
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  text-align: center;
+}
+
+.heading {
+  @include typo('title-s-bold');
+  color: color('brown');
+}
+
+.description {
+  @include typo('body-m-medium');
+  color: color('gray-800');
+}
+
+// 흰 카드 (Figma 340 x 333)
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  padding: 23px 17px;
+  border: 1px solid color('gray-100');
+  border-radius: 20px;
+  @include typo('body-m-medium');
+  color: color('gray-800');
+  background-color: color('white');
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.sectionTitle {
+  @include typo('body-l-bold');
+  color: color('black');
+}
+
+.label {
+  @include typo('body-m-medium');
+  color: color('black');
+}
+
+// 코드 칸 · 입력칸 공통 (Figma 306 x 48)
+.box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  height: 48px;
+  padding: 0 14px 0 13px;
+  border: 4px solid color('divider');
+  border-radius: 20px;
+  @include typo('body-m-15');
+  color: color('black');
+  background-color: color('white');
+}
+
+input.box {
+  outline: none;
+  caret-color: color('coral');
+
+  &::placeholder {
+    color: color('gray-400');
+  }
+
+  &:focus-visible {
+    border-color: color('coral-stroke');
+  }
+
+  &[aria-invalid='true'] {
+    border-color: color('coral-2');
+  }
+}
+
+.code {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.copy {
+  flex-shrink: 0;
+  padding: 4px 0 4px 8px;
+  @include typo('body-s-bold');
+  color: color('coral-pressed-2');
+
+  &:disabled {
+    color: color('gray-400');
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}
+
+// Figma 306 x 42, 코랄stroke 배경
+.send {
+  height: 42px;
+  background-color: color('coral-stroke');
+}
+
+.divider {
+  height: 0;
+  margin: 0;
+  border: 0;
+  border-top: 1.3px solid color('divider');
+}
+
+.error {
+  margin-top: -15px;
+  padding-left: 4px;
+  @include typo('caption');
+  color: color('coral-pressed');
+}
+
+.loadError {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  @include typo('body-s');
+  color: color('gray-600');
+}
+
+.retry {
+  @include typo('body-s-bold');
+  color: color('coral-pressed');
+}
+
+// 완료 버튼은 화면 맨 아래 (Figma 340 x 48, 홈 인디케이터 위)
+.footer {
+  margin-top: auto;
+  padding: 0 $gutter max(env(safe-area-inset-bottom, 0px), 24px);
+}

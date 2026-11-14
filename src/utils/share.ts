@@ -47,6 +47,18 @@ export async function shareTo(channel: ShareChannel, { url, title }: ShareConten
   await copyText(url)
 }
 
+// 내 커플 코드를 연인에게 보낸다. 기기 공유 화면이 없으면 코드를 복사하고 'copied'를 돌려준다
+export async function shareInviteCode(code: string): Promise<'shared' | 'copied'> {
+  const text = `붕붕어스에서 같이 드라이브 기록을 남겨요! 내 커플 코드: ${code}`
+  if (navigator.share) {
+    // 사용자가 공유 시트를 닫으면 AbortError가 난다. 오류로 다루지 않는다
+    await navigator.share({ title: '붕붕어스 커플 코드', text }).catch(() => undefined)
+    return 'shared'
+  }
+  await copyText(code)
+  return 'copied'
+}
+
 // 멱등 키. crypto.randomUUID는 HTTPS에서만 쓸 수 있어 없으면 직접 만든다
 export function createIdempotencyKey() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
