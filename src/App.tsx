@@ -14,6 +14,7 @@ import useCardDetail from '@/hooks/useCardDetail'
 import useDrive from '@/hooks/useDrive'
 import useActiveDrive from '@/hooks/useActiveDrive'
 import useArrival from '@/hooks/useArrival'
+import useDriveRestAreas from '@/hooks/useDriveRestAreas'
 import useDriveMap from '@/hooks/useDriveMap'
 import useDriveCard from '@/hooks/useDriveCard'
 import useNotifications from '@/hooks/useNotifications'
@@ -25,6 +26,8 @@ import useRadioEpisode from '@/hooks/useRadioEpisode'
 import useRadioStories from '@/hooks/useRadioStories'
 import useRecordMap from '@/hooks/useRecordMap'
 import useRecords from '@/hooks/useRecords'
+import useRestAreaAlert from '@/hooks/useRestAreaAlert'
+import useRestAreaDetail from '@/hooks/useRestAreaDetail'
 import useRouteSetting from '@/hooks/useRouteSetting'
 import useStartDrive, { type DriveLocationState } from '@/hooks/useStartDrive'
 import useTimeOfDay from '@/hooks/useTimeOfDay'
@@ -35,6 +38,7 @@ import RadioStoriesPage from '@/pages/Archive/RadioStoriesPage'
 import CouplePage from '@/pages/Couple/CouplePage'
 import CoupleInvitePage from '@/pages/CoupleInvite/CoupleInvitePage'
 import DrivePage from '@/pages/Drive/DrivePage'
+import RestAreaDetailModal from '@/pages/Drive/RestAreaDetailModal'
 import StampsTab from '@/pages/Drive/StampsTab'
 import DriveCardPage from '@/pages/DriveCard/DriveCardPage'
 import HomePage from '@/pages/Home/HomePage'
@@ -208,6 +212,10 @@ function DriveRoute() {
   const location = useLocation()
   const { status, drive, rename, pause, resume, end } = useDrive()
   const map = useDriveMap(drive?.routeId ?? null)
+  const driving = drive?.status === 'ACTIVE'
+  const restAreas = useDriveRestAreas(drive?.id ?? null, drive?.routeId ?? null, driving)
+  const { alert: restAreaAlert, dismiss: dismissRestAreaAlert } = useRestAreaAlert(restAreas, map.current, driving)
+  const restAreaDetail = useRestAreaDetail()
   const [arrivedDriveId, setArrivedDriveId] = useState<string | null>(null)
 
   useArrival({
@@ -241,6 +249,10 @@ function DriveRoute() {
         routePath={map.path}
         origin={map.origin}
         destination={map.destination}
+        restAreas={restAreas}
+        onRestAreaClick={(restAreaId) => void restAreaDetail.open(restAreaId)}
+        restAreaAlert={restAreaAlert && { name: restAreaAlert.restArea.name, meters: restAreaAlert.meters }}
+        onRestAreaAlertClose={() => restAreaAlert && dismissRestAreaAlert(restAreaAlert.restArea.id)}
         onLocate={() => void map.locate()}
         onRename={rename}
         // 경로를 정했으면 장소 상세에서 넘어온 목적지 대신 정해 둔 목적지를 채운다 (기능명세 04 상단바)
@@ -256,6 +268,7 @@ function DriveRoute() {
         onLocationRetry={map.retryLocation}
         stamps={<StampsTab drive={drive} currentCoordinate={map.current} />}
       />
+      {restAreaDetail.detail && <RestAreaDetailModal detail={restAreaDetail.detail} onClose={restAreaDetail.close} />}
       {arrivedDriveId && (
         <CardPromptModal
           variant="arrived"

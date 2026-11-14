@@ -4,6 +4,7 @@ import currentLocationIcon from '@/assets/icons/current-location.svg'
 import mapPinIcon from '@/assets/icons/map-pin.svg'
 import originDotIcon from '@/assets/icons/origin-dot.svg'
 import carImage from '@/assets/images/drive/map-car.webp'
+import restAreaImage from '@/assets/images/stamp/rest-area.webp'
 import type { Coordinate } from '@/types/route'
 import styles from './DriveMap.module.scss'
 
@@ -32,6 +33,9 @@ interface DriveMapProps {
   path?: Coordinate[]
   origin?: Coordinate | null
   destination?: Coordinate | null
+  // 경로 위 휴게소 (Figma 휴게소 1~3). 누르면 상세를 연다
+  restAreas?: { id: string; name: string; coordinate: Coordinate }[]
+  onRestAreaClick?: (restAreaId: string) => void
   // [위, 오른쪽, 아래, 왼쪽]
   fitPadding?: [number, number, number, number]
   // 바뀔 때마다 현재 위치로 옮긴다
@@ -44,6 +48,8 @@ function KakaoDriveMap({
   path = [],
   origin,
   destination,
+  restAreas = [],
+  onRestAreaClick,
   fitPadding = [40, 40, 40, 40],
   locateKey = 0,
 }: DriveMapProps) {
@@ -80,6 +86,18 @@ function KakaoDriveMap({
           <img className={styles.origin} src={originDotIcon} alt="" />
         </CustomOverlayMap>
       )}
+      {restAreas.map((area) => (
+        <CustomOverlayMap key={area.id} position={toLatLng(area.coordinate)} clickable>
+          <button
+            type="button"
+            className={styles.restArea}
+            onClick={() => onRestAreaClick?.(area.id)}
+            aria-label={`${area.name} 상세 보기`}
+          >
+            <img src={restAreaImage} alt="" />
+          </button>
+        </CustomOverlayMap>
+      ))}
       {destination && (
         <CustomOverlayMap position={toLatLng(destination)} yAnchor={PIN_Y_ANCHOR}>
           <img className={styles.pin} src={mapPinIcon} alt="" />

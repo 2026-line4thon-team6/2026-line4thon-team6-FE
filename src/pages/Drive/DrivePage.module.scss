@@ -92,11 +92,23 @@ $panel-height: 268px;
   }
 }
 
+// 휴게소 알림은 현재 위치 버튼과 같은 줄 왼쪽 (Figma 드라이브 마치기 289:27390)
+.controlRow {
+  display: flex;
+  gap: 19px;
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+.alert {
+  min-width: 0;
+  margin-right: auto;
+}
+
 .controls {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  align-self: flex-end;
 }
 
 .panel {

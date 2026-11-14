@@ -13,6 +13,7 @@ import type { Coordinate } from '@/types/route'
 import { getDriveStats } from '@/utils/driveStats'
 import styles from './DrivePage.module.scss'
 import DriveConfirmModal from './DriveConfirmModal'
+import RestAreaAlert from './RestAreaAlert'
 
 type PanelTab = 'contents' | 'stamps'
 
@@ -28,6 +29,11 @@ interface DrivePageProps {
   routePath?: Coordinate[]
   origin?: Coordinate | null
   destination?: Coordinate | null
+  restAreas?: { id: string; name: string; coordinate: Coordinate }[]
+  onRestAreaClick?: (restAreaId: string) => void
+  // 앞쪽 휴게소 접근 알림. 없으면 null
+  restAreaAlert?: { name: string; meters: number } | null
+  onRestAreaAlertClose?: () => void
   onRename: (title: string) => Promise<boolean>
   onRouteSearch: () => void
   onLocate?: () => void
@@ -66,6 +72,10 @@ function DrivePage({
   routePath,
   origin,
   destination,
+  restAreas,
+  onRestAreaClick,
+  restAreaAlert = null,
+  onRestAreaAlertClose,
   onRename,
   onRouteSearch,
   onLocate,
@@ -144,6 +154,8 @@ function DrivePage({
           path={routePath}
           origin={origin}
           destination={destination}
+          restAreas={restAreas}
+          onRestAreaClick={onRestAreaClick}
           fitPadding={FIT_PADDING}
           locateKey={locateKey}
         />
@@ -171,19 +183,29 @@ function DrivePage({
 
       <div className={[styles.bottom, expanded && styles.expanded].filter(Boolean).join(' ')}>
         <div className={styles.overlay} hidden={expanded}>
-          <div className={styles.controls}>
-            {driving && (
-              <>
-                <GlassIconButton icon="exit" aria-label="드라이브 마치기" onClick={() => setConfirmingEnd(true)} />
-                <GlassIconButton
-                  icon="pause"
-                  aria-label="주행 기록 일시정지"
-                  aria-pressed={paused}
-                  onClick={paused ? onResume : onPause}
-                />
-              </>
+          <div className={styles.controlRow}>
+            {restAreaAlert && (
+              <RestAreaAlert
+                className={styles.alert}
+                name={restAreaAlert.name}
+                meters={restAreaAlert.meters}
+                onClose={() => onRestAreaAlertClose?.()}
+              />
             )}
-            <GlassIconButton icon="locate" aria-label="현재 위치로 이동" onClick={locate} />
+            <div className={styles.controls}>
+              {driving && (
+                <>
+                  <GlassIconButton icon="exit" aria-label="드라이브 마치기" onClick={() => setConfirmingEnd(true)} />
+                  <GlassIconButton
+                    icon="pause"
+                    aria-label="주행 기록 일시정지"
+                    aria-pressed={paused}
+                    onClick={paused ? onResume : onPause}
+                  />
+                </>
+              )}
+              <GlassIconButton icon="locate" aria-label="현재 위치로 이동" onClick={locate} />
+            </div>
           </div>
           <DriveStats items={getDriveStats(drive, runningSeconds)} />
         </div>

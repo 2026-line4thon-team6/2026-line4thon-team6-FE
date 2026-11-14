@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { searchRestAreas } from '@/api/restAreas'
 import Toast from '@/components/Toast/Toast'
+import useRestAreaDetail from '@/hooks/useRestAreaDetail'
 import useRestAreaSearch from '@/hooks/useRestAreaSearch'
 import useStamps from '@/hooks/useStamps'
 import RestAreaSearchPage from '@/pages/RestAreaSearch/RestAreaSearchPage'
@@ -29,6 +30,7 @@ const claimMessage = (claim: StampClaim | null) => {
 function StampsTab({ drive, currentCoordinate }: StampsTabProps) {
   const stamps = useStamps(drive)
   const search = useRestAreaSearch(currentCoordinate)
+  const detail = useRestAreaDetail()
   const [claiming, setClaiming] = useState(false)
   const [searching, setSearching] = useState(false)
   const [selected, setSelected] = useState<Selected | null>(null)
@@ -75,7 +77,7 @@ function StampsTab({ drive, currentCoordinate }: StampsTabProps) {
     <>
       <StampBoard
         book={stamps.book}
-        onStampClick={(area) => void stamps.openDetail(area.id)}
+        onStampClick={(area) => void detail.open(area.id)}
         onEmptyClick={() => setClaiming(true)}
       />
 
@@ -104,7 +106,7 @@ function StampsTab({ drive, currentCoordinate }: StampsTabProps) {
         />
       )}
 
-      {stamps.detail && <RestAreaDetailModal detail={stamps.detail} onClose={stamps.closeDetail} />}
+      {detail.detail && <RestAreaDetailModal detail={detail.detail} onClose={detail.close} />}
 
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}
     </>

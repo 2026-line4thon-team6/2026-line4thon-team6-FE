@@ -94,6 +94,12 @@ export const Driving: Story = {
   },
 }
 
+// 경로 위 휴게소에 2km 안으로 가까워졌을 때 (Figma 289:27390)
+export const RestAreaAlert: Story = {
+  ...Driving,
+  args: { drive: DRIVING, restAreaAlert: { name: '시흥하늘휴게소', meters: 2000 }, onRestAreaAlertClose: fn() },
+}
+
 export const LocationDenied: Story = {
   ...Driving,
   args: { drive: DRIVING, locationDenied: true, onLocationRetry: async () => false },

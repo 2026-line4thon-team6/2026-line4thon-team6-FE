@@ -21,6 +21,12 @@ export function formatDistance(meters: number) {
   return `${(meters / 1000).toFixed(1)}km`
 }
 
+// 휴게소 접근 알림. 1km 이상은 소수 한 자리 km(2.0 → 2km), 미만은 100m 단위
+export function formatApproachDistance(meters: number) {
+  if (meters >= 1000) return `${Number((meters / 1000).toFixed(1))}km`
+  return `${Math.max(100, Math.round(meters / 100) * 100)}m`
+}
+
 export function formatArrival(iso: string) {
   const date = new Date(iso)
   return `${date.getHours()}시 ${date.getMinutes()}분`

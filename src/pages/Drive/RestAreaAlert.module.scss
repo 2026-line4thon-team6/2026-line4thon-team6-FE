@@ -1,0 +1,40 @@
+// Figma 285 x 36 글래스 알약. 글자와 닫기 사이 24
+.alert {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  height: 36px;
+  padding: 7px 15px 8px 16px;
+  border-radius: 100px;
+  @include typo('body-s');
+  color: color('gray-800');
+  white-space: nowrap;
+  background: gradient('glass');
+  box-shadow: shadow('icon');
+  backdrop-filter: blur(3px);
+}
+
+// 9px 아이콘 주변 24px까지 누를 수 있게 하고, 음수 여백으로 배치는 9px 그대로 둔다
+.close {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin: -7.5px;
+  padding: 0;
+  border: 0;
+  background: none;
+
+  img {
+    width: 10.5px;
+    max-width: none;
+    height: 10.5px;
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: -4px;
+  }
+}

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { claimStamp, getRestArea, getStampBook } from '@/api/restAreas'
+import { claimStamp, getStampBook } from '@/api/restAreas'
 import type { Drive } from '@/types/drive'
-import type { RestArea, RestAreaDetail, StampBook, StampClaim } from '@/types/restArea'
+import type { RestArea, StampBook, StampClaim } from '@/types/restArea'
 import type { Coordinate } from '@/types/route'
 
 // 도장판 전체(카탈로그)를 모든 페이지에 걸쳐 불러온다
@@ -16,10 +16,9 @@ async function loadStampBook(): Promise<StampBook> {
   return { ...first, items, nextCursor: null, hasMore: false }
 }
 
-// 휴게소 스탬프 탭: 도장판 · 휴게소 상세 · 도장 찍기
+// 휴게소 스탬프 탭: 도장판 · 도장 찍기
 function useStamps(drive: Drive | null) {
   const [book, setBook] = useState<StampBook | null>(null)
-  const [detail, setDetail] = useState<RestAreaDetail | null>(null)
 
   const reload = useCallback(() => {
     loadStampBook()
@@ -28,14 +27,6 @@ function useStamps(drive: Drive | null) {
   }, [])
 
   useEffect(reload, [reload])
-
-  const openDetail = async (restAreaId: string) => {
-    try {
-      setDetail((await getRestArea(restAreaId)).data)
-    } catch {
-      setDetail(null)
-    }
-  }
 
   // GPS: 현재 위치로 찾은 휴게소 · MANUAL: 이름으로 검색한 휴게소
   const claim = async (
@@ -61,7 +52,7 @@ function useStamps(drive: Drive | null) {
     }
   }
 
-  return { book, detail, openDetail, closeDetail: () => setDetail(null), claim }
+  return { book, claim }
 }
 
 export default useStamps
