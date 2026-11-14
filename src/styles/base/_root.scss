@@ -2,6 +2,9 @@
 @use '../abstracts' as *;
 
 :root {
+  // 기기가 다크 모드여도 입력칸 · 스크롤바 등 기본 UI를 라이트로 그린다
+  color-scheme: light;
+
   @each $name, $value in $colors {
     --color-#{$name}: #{$value};
   }

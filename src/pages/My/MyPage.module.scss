@@ -1,0 +1,154 @@
+// Figma 기준 390 x 844 (My_UI > 마이). 좌우 여백은 고정, 가운데 영역이 화면 폭에 맞춰 늘어난다
+$gutter: 25px;
+// 상태바(노치) 영역. PWA 전체화면에서는 safe-area, 브라우저에서는 최소 여백
+$top-inset: max(env(safe-area-inset-top, 0px), 12px);
+
+.page {
+  @include app-page;
+  padding-top: 0;
+}
+
+.hidden {
+  @include visually-hidden;
+}
+
+.content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  padding: calc(#{$top-inset} + 42px) $gutter 0;
+
+  // 상단 분홍 배경. 프로필 카드 위쪽 72px까지 깔린다 (Figma 390 x 161)
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: calc(#{$top-inset} + 42px + 72px);
+    border-radius: 0 0 15px 15px;
+    background-color: color('coral-stroke');
+  }
+}
+
+// 상단 프로필 카드 (340 x 102)
+.profile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 102px;
+  padding: 14px 18px 15px 13px;
+  border-radius: 20px;
+  text-align: left;
+  background-color: color('white');
+  filter: drop-shadow(0 0 5px rgb(0 0 0 / 5%));
+
+  &:active {
+    background-color: color('divider');
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}
+
+.selfie {
+  flex-shrink: 0;
+  width: 116px;
+  height: 73px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.profileText {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.profileTitle {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+}
+
+// ♥는 김정철명조에 없는 글자라 기기 기본 폰트로 대체되면 아이폰 · 갤럭시 모양이 달라진다.
+// ♥가 들어 있는 Pretendard(웹폰트)로 고정해 어느 기기에서나 같게 보이게 한다
+.heart {
+  flex-shrink: 0;
+  font-family: var(--font-family-base);
+  font-size: 22px;
+  font-weight: 300;
+  line-height: 1.5;
+  color: color('coral'); // background-clip 미지원 시 대비
+  background-image: gradient('gradient-2');
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.mascot {
+  overflow: hidden;
+  @include typo('card-myungjo-l');
+  color: color('black');
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.summary {
+  @include typo('body-s');
+  color: color('gray-600');
+}
+
+// 시안의 화살표는 왼쪽을 향해 있어 뒤집어 쓴다
+.chevron {
+  flex-shrink: 0;
+  transform: scaleX(-1);
+}
+
+// 메뉴 묶음 카드. 행 사이 간격 12px + 0.7px 구분선 (Figma 340 x 153)
+.group {
+  padding: 6px 13px;
+  border: 1px solid color('gray-100');
+  border-radius: 20px;
+  background-color: color('white');
+
+  li + li {
+    border-top: 0.7px solid color('gray-100');
+  }
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 6px 12px 0;
+  @include typo('body-m-15');
+  color: color('black');
+  text-align: left;
+
+  &:active {
+    background-color: color('divider');
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: -2px;
+  }
+}
+
+.rowIcon {
+  flex-shrink: 0;
+}
+
+.rowLabel {
+  flex: 1 1 auto;
+  min-width: 0;
+}

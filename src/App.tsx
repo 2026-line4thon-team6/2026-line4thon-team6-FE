@@ -1,7 +1,10 @@
 import { useRef, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router'
+import { logout } from '@/api/auth'
 import { fetchCardShare } from '@/api/cards'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
+import useLegalDocument from '@/hooks/useLegalDocument'
+import useMyCouple from '@/hooks/useMyCouple'
 import CardPromptModal from '@/components/CardPromptModal/CardPromptModal'
 import DriveNameSheet from '@/components/DriveNameSheet/DriveNameSheet'
 import useCardDetail from '@/hooks/useCardDetail'
@@ -18,6 +21,8 @@ import { MOCK_CATEGORIES, MOCK_HOME, MOCK_SPOTS } from '@/mocks/home'
 import DrivePage from '@/pages/Drive/DrivePage'
 import DriveCardPage from '@/pages/DriveCard/DriveCardPage'
 import HomePage from '@/pages/Home/HomePage'
+import LegalDocumentPage from '@/pages/LegalDocument/LegalDocumentPage'
+import MyPage, { type MyMenu } from '@/pages/My/MyPage'
 import NotificationsPage from '@/pages/Notifications/NotificationsPage'
 import PlaceDetailPage from '@/pages/PlaceDetail/PlaceDetailPage'
 import RecordDetailPage from '@/pages/RecordDetail/RecordDetailPage'
@@ -26,6 +31,7 @@ import RecordMapPage, { type RecordView } from '@/pages/RecordMap/RecordMapPage'
 import RecordShareSheet from '@/pages/RecordMap/RecordShareSheet'
 import RouteSettingPage from '@/pages/RouteSetting/RouteSettingPage'
 import type { HomeSummary } from '@/types/home'
+import type { LegalDocumentType } from '@/types/legal'
 import type { Notification } from '@/types/notification'
 import type { RecordSummary } from '@/types/record'
 import type { Category, SpotSummary } from '@/types/spot'
@@ -34,10 +40,24 @@ import { formatDate } from '@/utils/formatDate'
 import { copyText, createIdempotencyKey, type ShareChannel, type ShareLink, shareTo } from '@/utils/share'
 import { shareStory } from '@/utils/storyImage'
 
-// 화면 주소. 마이 화면은 아직 없어 탭을 눌러도 이동하지 않는다
+// 화면 주소
 const TAB_PATHS: Partial<Record<NavTab, string>> = {
   home: '/',
   map: '/map',
+  my: '/my',
+}
+
+// 마이 화면 메뉴 → 문서 화면 주소
+const LEGAL_PATHS: Record<LegalDocumentType, string> = {
+  PRIVACY: '/my/privacy',
+  TERMS: '/my/terms',
+  OPEN_SOURCE: '/my/open-source',
+}
+
+const LEGAL_MENUS: Partial<Record<MyMenu, LegalDocumentType>> = {
+  privacy: 'PRIVACY',
+  terms: 'TERMS',
+  openSource: 'OPEN_SOURCE',
 }
 
 function useTabNavigate() {
@@ -345,6 +365,44 @@ function PlaceDetailRouteByParam(props: Omit<PlaceDetailRouteProps, 'placeId'>) 
   return <PlaceDetailRoute key={placeId} placeId={placeId} {...props} />
 }
 
+// 마이 화면에 들어올 때마다 커플 요약을 새로 불러온다
+function MyRoute() {
+  const navigate = useNavigate()
+  const goTab = useTabNavigate()
+  const { status, couple } = useMyCouple()
+
+  const handleMenuClick = (menu: MyMenu) => {
+    const legal = LEGAL_MENUS[menu]
+    if (legal) navigate(LEGAL_PATHS[legal])
+    // TODO: 보관함(찜한 드라이브 · 플레이리스트 · 라디오 사연) · FAQ 화면이 생기면 이동한다
+  }
+
+  // TODO: 로그인 화면이 생기면 로그인 화면으로 보낸다. 지금은 세션이 없어 홈으로 이동한다
+  const handleLogout = async () => {
+    await logout(null, createIdempotencyKey()).catch(() => undefined)
+    navigate('/', { replace: true })
+  }
+
+  return (
+    <MyPage
+      status={status}
+      couple={couple}
+      // TODO: 커플 페이지가 생기면 이동한다
+      onProfileClick={() => {}}
+      onMenuClick={handleMenuClick}
+      onLogout={() => void handleLogout()}
+      onTabChange={goTab}
+    />
+  )
+}
+
+function LegalDocumentRoute({ type }: { type: LegalDocumentType }) {
+  const goBack = useGoBack()
+  const { status, document, retry } = useLegalDocument(type)
+
+  return <LegalDocumentPage type={type} status={status} document={document} onBack={goBack} onRetry={retry} />
+}
+
 const cardPath = (driveId: string) => `/drives/${encodeURIComponent(driveId)}/card`
 
 interface HomeRouteProps {
@@ -481,6 +539,14 @@ function App() {
       <Route path="/notifications" element={<NotificationsRoute onRead={handleNotificationRead} />} />
       <Route path="/drive" element={<DriveRoute />} />
       <Route path="/drive/route" element={<RouteSettingRoute />} />
+      <Route path="/my" element={<MyRoute />} />
+      {Object.entries(LEGAL_PATHS).map(([type, path]) => (
+        <Route
+          key={type}
+          path={path}
+          element={<LegalDocumentRoute key={type} type={type as LegalDocumentType} />}
+        />
+      ))}
       <Route path="/drives/:driveId/card" element={<DriveCardRouteByParam userId={home.userId} />} />
       <Route
         path="/places/:placeId"

@@ -136,6 +136,45 @@ describe('홈 · 알림 → 장소 상세 이동', () => {
   })
 })
 
+describe('마이 화면', () => {
+  it('하단 마이 탭을 누르면 마이 화면으로 이동하고, 커플 요약을 표시한다', async () => {
+    const user = renderApp()
+
+    await user.click(screen.getByRole('button', { name: '마이' }))
+
+    expect(await screen.findByRole('button', { name: /누적 330km · D\+23/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '마이' })).toHaveAttribute('aria-current', 'page')
+
+    await user.click(screen.getByRole('button', { name: '홈' }))
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('오늘은 어디로 떠나볼까요?')
+  })
+
+  it.each([
+    ['개인정보 처리 방침', '개인정보 처리방침', '제1조 개인정보의 수집 항목 및 방법'],
+    ['이용 약관', '이용 약관', '제1조 목적'],
+    ['오픈소스 라이선스', '오픈소스 라이선스', '[라이선스 전문]'],
+  ])("'%s'를 누르면 문서 화면으로 이동하고, 뒤로가면 마이 화면으로 돌아온다", async (menu, title, text) => {
+    const user = renderApp('/my')
+
+    await user.click(await screen.findByRole('button', { name: menu }))
+
+    expect(screen.getByRole('heading', { level: 1, name: title })).toBeInTheDocument()
+    expect(await screen.findByText(text)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '뒤로가기' }))
+    expect(await screen.findByRole('button', { name: /누적 330km/ })).toBeInTheDocument()
+  })
+
+  it('로그아웃 → 확인하면 홈으로 이동한다', async () => {
+    const user = renderApp('/my')
+
+    await user.click(await screen.findByRole('button', { name: '로그아웃' }))
+    await user.click(screen.getAllByRole('button', { name: '로그아웃' }).at(-1)!)
+
+    expect(await screen.findByRole('heading', { level: 1, name: /오늘은 어디로 떠나볼까요/ })).toBeInTheDocument()
+  })
+})
+
 describe('홈 ↔ 기록 지도 이동', () => {
   it('하단 네비바의 기록 지도 탭을 누르면 함께한 드라이브 횟수가 보이고, 홈 탭으로 돌아올 수 있다', async () => {
     const user = renderApp()
