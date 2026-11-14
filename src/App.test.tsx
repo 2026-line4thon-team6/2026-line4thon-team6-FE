@@ -278,6 +278,24 @@ describe('보관함', () => {
     )
     expect(screen.getByRole('button', { name: /^배가 너무 고파서/ })).toBeInTheDocument()
   })
+
+  it('라디오 사연 보관함: 사연을 누르면 방송 문구 상세로 가고, 뒤로가면 보관함으로 돌아온다', async () => {
+    const user = renderApp('/my/stories')
+
+    await user.click(await screen.findByRole('button', { name: /^오늘 날씨가 너무 좋아서/ }))
+
+    expect(screen.getByRole('heading', { level: 1, name: '라디오' })).toBeInTheDocument()
+    expect(await screen.findByText(/붕붕이 DJ입니다/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '뒤로가기' }))
+    expect(await screen.findByRole('heading', { level: 1, name: '라디오 사연 보관함' })).toBeInTheDocument()
+  })
+
+  it('없는 사연 주소로 들어오면 볼 수 없는 사연이라고 안내한다', async () => {
+    renderApp('/my/stories/rad_none')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('삭제되었거나 볼 수 없는 사연이에요.')
+  })
 })
 
 describe('연인 초대', () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mockFetchRadioHistory } from './radio'
+import { mockFetchRadioEpisode, mockFetchRadioHistory } from './radio'
 
 // API 명세 GET /radio/episodes 규칙(본인 USER_STORY만 최신순, q는 원사연 · 방송문구 검색)을 목 서버가 지키는지 확인한다
 describe('보낸 사연 보관함', () => {
@@ -25,5 +25,19 @@ describe('보낸 사연 보관함', () => {
 
     expect(trimmed.items.length).toBeGreaterThan(0)
     expect(none.items).toEqual([])
+  })
+})
+
+// API 명세 GET /radio/episodes/{episodeId}: 생성자 본인의 사연 한 개 (방송 문구 · 임시 음성 URL)
+describe('보낸 사연 상세', () => {
+  it('사연 하나를 방송 문구와 함께 돌려준다', async () => {
+    const { data } = await mockFetchRadioEpisode('rad_01')
+
+    expect(data.id).toBe('rad_01')
+    expect(data.broadcastText).toContain('붕붕이 DJ입니다')
+  })
+
+  it('없는 사연이면 404', async () => {
+    await expect(mockFetchRadioEpisode('rad_none')).rejects.toMatchObject({ status: 404 })
   })
 })
