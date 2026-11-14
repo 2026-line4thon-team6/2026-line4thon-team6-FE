@@ -1,6 +1,7 @@
 import { ApiError } from '@/api/client'
 import type { ApiMeta, ApiResponse } from '@/types/api'
-import type { Card, CardAuthor, CardDraftPatch, PendingCard, Reflection, ReflectionPut } from '@/types/card'
+import type { Card, CardAuthor, CardDraftPatch, CardShare, PendingCard, Reflection, ReflectionPut } from '@/types/card'
+import { createMockRecords, markMockRecordDeleted } from './records'
 
 // 백엔드 연동 전(VITE_API_BASE_URL 미설정)에 쓰는 드라이브 카드 목 서버.
 // API 명세 D02 규칙(사진 2장 · 소감 70자 · 버전 충돌 · 완료 조건)을 같이 흉내 낸다
@@ -25,7 +26,7 @@ const fail = (status: number, code: string, message: string) =>
 // Figma '카드 작성' 화면(우리의 첫 바다 드라이브)의 내용. 드라이브가 6시간 전에 끝나 18시간이 남은 상태
 function createCard(now = Date.now()): Card {
   return {
-    id: 'crd_01',
+    id: 'crd_writing', // 기록 지도 목 기록(crd_01 …)과 겹치지 않게 한다
     driveId: MOCK_CARD_DRIVE_ID,
     coupleId: 'cpl_01',
     status: 'UNWRITTEN',
@@ -185,4 +186,89 @@ export async function mockCompleteCard(cardId: string, body: { expectedVersion: 
     version: current.version + 1,
   }
   return { data: copy(card), meta: meta() }
+}
+
+// ── 기록 상세 (GET /cards/{cardId} · DELETE /cards/{cardId}) ──
+// 기록 목록의 완료한 기록을 카드 상세로 펼친다. 사진 · 플레이리스트 · 소감은 기록마다 조금씩 다르게 채운다
+
+const recordAuthor = (id: string, nickname: string): CardAuthor => ({
+  id,
+  nickname,
+  birthDate: null,
+  profileImageUrl: null,
+  provider: 'KAKAO',
+})
+
+const RECORD_ME = recordAuthor('usr_mock_me', '동민')
+const RECORD_PARTNER = recordAuthor('usr_mock_partner', '서연')
+
+const submittedReflection = (who: CardAuthor, text: string, submittedAt: string): Reflection => ({
+  author: who,
+  text,
+  submitted: true,
+  submittedAt,
+  updatedAt: submittedAt,
+  version: 1,
+})
+
+const recordNotFound = () => fail(404, 'RESOURCE_NOT_FOUND', '카드를 찾을 수 없어요.')
+
+export async function mockFetchCard(cardId: string): Promise<ApiResponse<Card>> {
+  // 아직 수정 기간(24시간) 안인 작성 중 카드
+  if (cardId === card.id) return { data: copy(card), meta: meta() }
+
+  const records = createMockRecords()
+  const index = records.findIndex((record) => record.cardId === cardId)
+  const record = records[index]
+  if (!record) throw recordNotFound()
+
+  const submittedAt = record.completedAt ?? `${record.driveDate}T09:00:00Z`
+  const photos = [record.thumbnailUrl, ...(index % 3 === 2 ? [] : [records[(index + 1) % records.length]!.thumbnailUrl])].map(
+    (url, order) => ({ mediaId: `med_${cardId}_${order}`, url, urlExpiresAt: '2099-01-01T00:00:00Z', order }),
+  )
+  const reflections = [
+    submittedReflection(RECORD_ME, '운전하느라 조금 힘들었지만 노을은 진짜 예뻤다 ㅎㅎ', submittedAt),
+    ...(index % 2 === 0
+      ? [submittedReflection(RECORD_PARTNER, '바다도 예쁘고 사진도 잘 나와서 만족 💗 다음에 또 가자!', submittedAt)]
+      : []),
+  ]
+
+  return {
+    data: {
+      id: record.cardId,
+      driveId: record.driveId,
+      coupleId: 'cpl_mock',
+      status: 'COMPLETED',
+      title: record.title,
+      driveDate: record.driveDate,
+      region: record.destination?.address ?? '',
+      destination: record.destination,
+      distanceMeters: record.distanceMeters,
+      activeDurationSeconds: record.activeDurationSeconds,
+      stampCount: index % 4,
+      playlist:
+        index % 3 === 1
+          ? null
+          : { id: `ply_${cardId}`, title: '노을처럼 따뜻한 우리', trackCount: 13, durationSeconds: 3_600, thumbnailUrl: null },
+      photos,
+      reflections,
+      editableUntil: `${record.driveDate}T23:59:59Z`,
+      completedAt: record.completedAt,
+      canEdit: false,
+      canDelete: true,
+      version: 1,
+      driverUserId: null,
+    },
+    meta: meta(),
+  }
+}
+
+export async function mockDeleteCard(cardId: string): Promise<void> {
+  if (!createMockRecords().some((record) => record.cardId === cardId)) throw recordNotFound()
+  markMockRecordDeleted(cardId)
+}
+
+export async function mockFetchCardShare(cardId: string): Promise<ApiResponse<CardShare>> {
+  if (!createMockRecords().some((record) => record.cardId === cardId)) throw recordNotFound()
+  return { data: { url: `https://bunbungus.app/cards/${cardId}`, access: 'COUPLE_ONLY', expiresAt: null }, meta: meta() }
 }

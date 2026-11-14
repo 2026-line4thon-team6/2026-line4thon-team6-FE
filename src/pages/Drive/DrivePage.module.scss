@@ -1,0 +1,118 @@
+// Figma 기준 390 x 844
+$gutter: 25px;
+$panel-height: 268px;
+
+.page {
+  position: relative;
+  max-width: var(--app-max-width);
+  height: 100vh; // dvh 미지원 웹뷰 대비
+  height: 100dvh;
+  margin: 0 auto;
+  overflow: hidden;
+  background-color: color('coral-bg');
+}
+
+.map {
+  position: absolute;
+  inset: 0;
+  background-color: color('gray-100');
+}
+
+// 지도 중 패널 위로 보이는 영역의 가운데
+.marker {
+  position: absolute;
+  top: calc((100% - #{$panel-height}) / 2);
+  left: 50%;
+  width: 30px;
+  height: 30px;
+  transform: translate(-50%, -50%);
+}
+
+.header {
+  position: absolute;
+  top: max(env(safe-area-inset-top, 0px), 12px);
+  right: $gutter;
+  left: $gutter;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+}
+
+.routeButton {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.error {
+  position: absolute;
+  top: calc(max(env(safe-area-inset-top, 0px), 12px) + 60px);
+  right: $gutter;
+  left: $gutter;
+  @include typo('body-s');
+  color: color('gray-600');
+  text-align: center;
+}
+
+.bottom {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.overlay {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 0 $gutter 19px;
+}
+
+.locate {
+  align-self: flex-end;
+}
+
+.panel {
+  height: $panel-height;
+  padding: 15px $gutter 0;
+  overflow-y: auto;
+  border-radius: 30px 30px 0 0;
+  background-color: color('coral-bg');
+  box-shadow: 0 1px 10px rgb(0 0 0 / 10%);
+}
+
+.handle {
+  width: 49px;
+  height: 6px;
+  margin: 0 auto 17px;
+  border-radius: 100px;
+  background-color: color('coral-2');
+}
+
+.tabPanel {
+  padding: 16px 0 calc(24px + env(safe-area-inset-bottom, 0px));
+}
+
+.eyebrow {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.eyebrowText {
+  @include typo('body-s');
+  color: transparent;
+  background: gradient('gradient-2');
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.heading {
+  margin-top: 3px;
+  @include typo('body-l-bold');
+  color: color('black');
+}

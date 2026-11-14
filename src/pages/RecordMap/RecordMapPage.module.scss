@@ -1,0 +1,236 @@
+// Figma 기록 지도 - 지도형 (284:14400). 기준 390 x 844, 지도가 화면 전체를 채우고 나머지가 그 위에 뜬다
+$gutter: 25px;
+
+.page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  max-width: var(--app-max-width);
+  height: 100vh; // dvh 미지원 웹뷰 대비
+  height: 100dvh;
+  margin: 0 auto;
+  overflow: hidden;
+  background-color: color('coral-bg');
+}
+
+.map {
+  position: absolute;
+  inset: 0;
+}
+
+// 지도 위에 뜨는 상단 영역. 빈 곳은 지도를 그대로 만질 수 있게 한다.
+// z-index를 두지 않아, 미리보기(z-index 3)가 검색창은 덮고 헤더는 덮지 않게 한다
+.top {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
+}
+
+// 목록형: 상단 영역은 제자리에 두고, 그 아래 목록만 스크롤한다 (Figma 284:14758)
+.listPage {
+  background-color: color('divider');
+
+  .top {
+    position: relative;
+    flex-shrink: 0;
+  }
+}
+
+.list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  // 하단 네비바 + 보기 전환 버튼에 마지막 기록이 가려지지 않게 한다
+  padding: 21px $gutter calc(min(#{$nav-height}, #{$nav-visible-height} + env(safe-area-inset-bottom, 0px)) + 34px + 33px + 16px);
+}
+
+.records {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.loadMore {
+  height: 1px;
+}
+
+.empty {
+  padding-top: 80px;
+  color: color('gray-600');
+  text-align: center;
+  @include typo('body-s');
+}
+
+.header {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  // 노치·상태바 영역(PWA 전체화면)만큼 내리고, 브라우저에서는 최소 여백을 둔다
+  padding: max(env(safe-area-inset-top, 0px), 12px) 17px 0 $gutter;
+  border-radius: 0 0 30px 30px;
+  background-color: color('coral-bg');
+  box-shadow: 0 1px 10px rgb(0 0 0 / 10%); // 하단바 그림자
+}
+
+.titles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding-bottom: 20px;
+  word-break: keep-all; // 줄이 바뀌어도 단어 중간에서 끊지 않는다
+}
+
+.count {
+  @include typo('body-m-medium');
+  color: color('coral'); // background-clip 미지원 시 대비
+  background-image: gradient('gradient-2');
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.title {
+  @include typo('title-s-bold');
+  color: color('brown');
+}
+
+// 360px 미만(iPhone SE 1세대 등)에서는 글자를 조금 줄여 한 줄을 지킨다
+@media (max-width: 359px) {
+  .count {
+    font-size: 15px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+}
+
+// 마스코트는 헤더 아래로 9px 걸쳐 내려온다.
+// 갤럭시(360px) 등 좁은 화면에서는 제목 자리(205px)가 남도록 줄어든다
+.mascot {
+  flex-shrink: 0;
+  width: clamp(76px, calc(100vw - 255px), 117px);
+  height: auto;
+  aspect-ratio: 117 / 78;
+  margin-bottom: -9px;
+  object-fit: cover;
+}
+
+.search {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 39px;
+  margin: 13px $gutter 0;
+  padding: 0 11px 0 17px;
+  border-radius: 100px;
+  background: gradient('glass');
+  box-shadow: shadow('icon');
+  backdrop-filter: blur(3px);
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  appearance: none; // 사파리의 기본 검색창 모양(둥근 테두리 · 안쪽 여백)을 없앤다
+  color: color('black');
+  @include typo('body-s');
+
+  &::placeholder {
+    color: color('gray-600');
+  }
+
+  &::-webkit-search-cancel-button,
+  &::-webkit-search-decoration {
+    display: none;
+  }
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.searchButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+  }
+}
+
+.notice {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 100px;
+  background: gradient('glass');
+  box-shadow: shadow('icon');
+  backdrop-filter: blur(3px);
+  color: color('gray-800');
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+  @include typo('body-s');
+}
+
+.retry {
+  color: color('coral');
+  @include typo('body-s-medium');
+  text-decoration: underline;
+}
+
+// 하단 네비바에서 34px 위 (Figma: 화면 아래에서 167px)
+.viewToggle {
+  position: absolute;
+  bottom: calc(min(#{$nav-height}, #{$nav-visible-height} + env(safe-area-inset-bottom, 0px)) + 34px);
+  left: 50%;
+  z-index: 2;
+  display: flex;
+  padding: 2px;
+  border-radius: 100px;
+  background-color: color('coral-bg');
+  filter: drop-shadow(0 0 5px rgb(0 0 0 / 5%));
+  transform: translateX(-50%);
+}
+
+.viewButton {
+  width: 70px;
+  height: 29px;
+  border-radius: 100px;
+  color: color('gray-400');
+  @include typo('body-s');
+
+  &.selected {
+    background-color: color('coral');
+    color: color('white');
+    @include typo('body-s-medium');
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}
