@@ -27,7 +27,8 @@ function renderPage(props: Partial<Props> = {}) {
     onSearch: vi.fn(),
     onCalendarClick: vi.fn(),
     onViewChange: vi.fn(),
-    onMarkerClick: vi.fn(),
+    onCardClick: vi.fn(),
+    onShare: vi.fn(),
     onRetry: vi.fn(),
     onTabChange: vi.fn(),
   }
@@ -93,14 +94,40 @@ describe('RecordMapPage', () => {
   })
 
   describe('4. 드라이브 기록 미리보기', () => {
-    it('지도 위에 기록마다 사진 마커를 보여주고, 누르면 해당 기록을 알려준다', async () => {
-      const { user, onMarkerClick } = renderPage()
+    it('지도 위에 기록마다 사진 마커를 보여준다', () => {
+      renderPage()
 
       expect(screen.getAllByRole('button', { name: /기록 보기$/ })).toHaveLength(MARKERS.length)
+    })
+
+    it('사진 마커를 누르면 그 목적지의 최신 기록 카드를 띄우고, 카드를 누르면 상세로 이동을 요청한다', async () => {
+      const { user, onCardClick } = renderPage()
+      const { latestCard } = MARKERS[0]
+
+      await user.click(screen.getByRole('button', { name: `${latestCard.title} 기록 보기` }))
+
+      expect(screen.getByRole('dialog', { name: '드라이브 기록 미리보기' })).toHaveTextContent(latestCard.title)
+      await user.click(screen.getByRole('button', { name: `${latestCard.title} 기록 자세히 보기` }))
+
+      expect(onCardClick).toHaveBeenCalledWith(latestCard)
+    })
+
+    it('미리보기의 공유 버튼을 누르면 그 기록의 공유를 요청한다', async () => {
+      const { user, onShare } = renderPage()
 
       await user.click(screen.getByRole('button', { name: `${MARKERS[0].latestCard.title} 기록 보기` }))
+      await user.click(screen.getByRole('button', { name: '공유하기' }))
 
-      expect(onMarkerClick).toHaveBeenCalledWith(MARKERS[0])
+      expect(onShare).toHaveBeenCalledWith(MARKERS[0].latestCard)
+    })
+
+    it('미리보기를 닫으면 다시 지도를 볼 수 있다', async () => {
+      const { user } = renderPage()
+
+      await user.click(screen.getByRole('button', { name: `${MARKERS[0].latestCard.title} 기록 보기` }))
+      await user.keyboard('{Escape}')
+
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     })
   })
 
