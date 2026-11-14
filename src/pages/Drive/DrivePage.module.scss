@@ -13,18 +13,35 @@ $panel-height: 268px;
 
 .map {
   position: absolute;
-  inset: 0;
-  background-color: color('gray-100');
+  inset: 0 0 calc(#{$panel-height} - 30px); // 패널 둥근 모서리 뒤까지
+  isolation: isolate; // 카카오 지도 안의 z-index가 위 버튼들을 덮지 않게
 }
 
-// 지도 중 패널 위로 보이는 영역의 가운데
-.marker {
+.pausedLayer {
   position: absolute;
-  top: calc((100% - #{$panel-height}) / 2);
-  left: 50%;
-  width: 30px;
-  height: 30px;
-  transform: translate(-50%, -50%);
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background-color: rgb(0 0 0 / 20%);
+  backdrop-filter: blur(5px);
+  cursor: pointer;
+}
+
+.pausedText {
+  position: absolute;
+  top: calc(max(var(--safe-top), 12px) + 211px);
+  right: $gutter;
+  left: $gutter;
+  display: flex;
+  flex-direction: column;
+  @include typo('body-l');
+  color: color('white');
+  text-align: center;
+  text-shadow: 0 2px 8px rgb(0 0 0 / 20%);
+}
+
+.pausedTitle {
+  @include typo('title-m-bold');
 }
 
 .header {
@@ -71,7 +88,10 @@ $panel-height: 268px;
   padding: 0 $gutter 19px;
 }
 
-.locate {
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   align-self: flex-end;
 }
 

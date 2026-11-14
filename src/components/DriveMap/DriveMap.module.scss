@@ -1,0 +1,56 @@
+.map {
+  width: 100%;
+  height: 100%;
+  background-color: color('blue');
+}
+
+.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: color('gray-100');
+}
+
+.fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: color('blue');
+  color: color('gray-600');
+  @include typo('body-s');
+}
+
+// 카카오 오버레이 상자는 폭이 0이라 전역 img max-width: 100%에 걸리면 크기가 0이 된다
+.current,
+.origin,
+.pin,
+.car {
+  display: block;
+  max-width: none;
+}
+
+.current {
+  width: 30px;
+  height: 30px;
+}
+
+.origin {
+  width: 22px;
+  height: 22px;
+}
+
+.pin {
+  width: 64px;
+  height: 74px;
+}
+
+// Figma 붕붕 53 x 49, 경로 선 그림자
+.car {
+  width: 53px;
+  height: 49px;
+  filter: drop-shadow(0 0 10px rgb(255 133 133 / 30%)) drop-shadow(0 3px 4px rgb(255 158 133 / 50%));
+}

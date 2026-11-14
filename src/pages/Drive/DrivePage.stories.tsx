@@ -44,10 +44,12 @@ const meta = {
     onRename: async () => true,
     onRouteSearch: fn(),
     onLocate: fn(),
+    onEnd: async () => true,
   },
-  // 드라이브명 수정이 실제로 반영되도록 상태로 관리
+  // 드라이브명 수정 · 일시정지 · 재개가 실제로 반영되도록 상태로 관리
   render: function Render(args) {
     const [drive, setDrive] = useState(args.drive)
+    const setStatus = (status: Drive['status']) => setDrive((prev) => (prev ? { ...prev, status } : prev))
     return (
       <DrivePage
         {...args}
@@ -56,6 +58,8 @@ const meta = {
           setDrive((prev) => (prev ? { ...prev, title } : prev))
           return true
         }}
+        onPause={() => setStatus('PAUSED')}
+        onResume={() => setStatus('ACTIVE')}
       />
     )
   },
@@ -67,19 +71,36 @@ type Story = StoryObj<typeof meta>
 // 목적지 설정 전
 export const FirstEntry: Story = {}
 
-export const Driving: Story = {
-  args: {
-    drive: {
-      ...PREPARING,
-      status: 'ACTIVE',
-      metrics: {
-        ...PREPARING.metrics,
-        distanceMeters: 24600,
-        activeDurationSeconds: 1938,
-        estimatedArrivalAt: '2026-11-15T10:47:00Z',
-      },
-    },
+const DRIVING: Drive = {
+  ...PREPARING,
+  status: 'ACTIVE',
+  metrics: {
+    ...PREPARING.metrics,
+    distanceMeters: 24600,
+    activeDurationSeconds: 1938,
+    estimatedArrivalAt: '2026-11-15T10:47:00Z',
   },
+}
+
+export const Driving: Story = {
+  args: { drive: DRIVING },
+  // 주행 시간이 1초마다 올라가 Chromatic 스냅샷이 빌드마다 달라지지 않게 멈춘다
+  beforeEach: () => {
+    const setInterval = window.setInterval
+    window.setInterval = (() => 0) as unknown as typeof window.setInterval
+    return () => {
+      window.setInterval = setInterval
+    }
+  },
+}
+
+export const LocationDenied: Story = {
+  ...Driving,
+  args: { drive: DRIVING, locationDenied: true, onLocationRetry: async () => false },
+}
+
+export const Paused: Story = {
+  args: { drive: { ...DRIVING, status: 'PAUSED' } },
 }
 
 export const LoadError: Story = {

@@ -12,6 +12,8 @@ import CardPromptModal from '@/components/CardPromptModal/CardPromptModal'
 import DriveNameSheet from '@/components/DriveNameSheet/DriveNameSheet'
 import useCardDetail from '@/hooks/useCardDetail'
 import useDrive from '@/hooks/useDrive'
+import useArrival from '@/hooks/useArrival'
+import useDriveMap from '@/hooks/useDriveMap'
 import useDriveCard from '@/hooks/useDriveCard'
 import useNotifications from '@/hooks/useNotifications'
 import usePendingCards from '@/hooks/usePendingCards'
@@ -202,27 +204,72 @@ function PlaceDetailRoute({ placeId, couple, mascotName, onFavoriteChange }: Pla
 function DriveRoute() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { status, drive, rename } = useDrive()
+  const { status, drive, rename, pause, resume, end } = useDrive()
+  const map = useDriveMap(drive?.routeId ?? null)
+  const [arrivedDriveId, setArrivedDriveId] = useState<string | null>(null)
+
+  useArrival({
+    active: drive?.status === 'ACTIVE',
+    current: map.current,
+    accuracyMeters: map.accuracyMeters,
+    destination: map.destination,
+    onArrive: async () => {
+      const ended = await end('ARRIVED')
+      if (ended) setArrivedDriveId(ended.id)
+      return ended !== null
+    },
+  })
 
   if (status === 'empty') return <Navigate to="/" replace />
 
+  // 직접 마치면 도착 팝업 없이 홈으로 간다. 미작성 카드는 홈의 팝업 · 배너가 안내한다 (기능명세 04 · 19)
+  // TODO: 실패 토스트
+  const handleEnd = async () => {
+    const ended = await end('USER_ENDED')
+    if (ended) navigate('/', { replace: true })
+    return ended !== null
+  }
+
   return (
-    <DrivePage
-      status={status}
-      drive={drive}
-      onRename={rename}
-      // 경로를 이미 정했으면 장소 상세에서 넘어온 목적지는 다시 쓰지 않는다
-      onRouteSearch={() => navigate('/drive/route', { state: drive?.routeId ? null : location.state })}
-    />
+    <>
+      <DrivePage
+        status={status}
+        drive={drive}
+        currentCoordinate={map.current}
+        routePath={map.path}
+        origin={map.origin}
+        destination={map.destination}
+        onLocate={() => void map.locate()}
+        onRename={rename}
+        // 경로를 정했으면 장소 상세에서 넘어온 목적지 대신 정해 둔 목적지를 채운다 (기능명세 04 상단바)
+        onRouteSearch={() =>
+          navigate('/drive/route', {
+            state: drive?.destination ? { destinationName: drive.destination.name } : location.state,
+          })
+        }
+        onPause={() => void pause()}
+        onResume={() => void resume()}
+        onEnd={handleEnd}
+        locationDenied={map.locationDenied}
+        onLocationRetry={map.retryLocation}
+      />
+      {arrivedDriveId && (
+        <CardPromptModal
+          variant="arrived"
+          onConfirm={() => navigate(cardPath(arrivedDriveId), { replace: true })}
+          onClose={() => navigate('/', { replace: true })}
+        />
+      )}
+    </>
   )
 }
 
 function RouteSettingRoute() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { status, setRoute } = useDrive()
-  const { destinationPlaceId } = (location.state ?? {}) as DriveLocationState
-  const routeSetting = useRouteSetting(destinationPlaceId)
+  const { status, drive, setRoute, start } = useDrive()
+  const { destinationPlaceId, destinationName } = (location.state ?? {}) as DriveLocationState
+  const routeSetting = useRouteSetting(destinationPlaceId, destinationName)
   const [confirming, setConfirming] = useState(false)
 
   if (status === 'empty') return <Navigate to="/" replace />
@@ -234,6 +281,8 @@ function RouteSettingRoute() {
     if (!routeSetting.route) return
     setConfirming(true)
     const saved = await setRoute(routeSetting.route.id)
+    // Figma에 출발 버튼이 없어 처음 경로를 정하면 바로 출발한다
+    if (saved && drive?.status === 'PREPARING') await start()
     setConfirming(false)
     // TODO: 실패 토스트
     if (saved) backToDrive()

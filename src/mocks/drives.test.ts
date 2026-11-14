@@ -1,6 +1,15 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { ApiError } from '@/api/client'
-import { cancelPreparedDrive, getActiveDrive, prepareDrive, startDrive, updateDrive } from '@/api/drives'
+import {
+  cancelPreparedDrive,
+  endDrive,
+  getActiveDrive,
+  pauseDrive,
+  prepareDrive,
+  resumeDrive,
+  startDrive,
+  updateDrive,
+} from '@/api/drives'
 import { createRoute } from '@/api/routes'
 import { deleteSearchHistory, getSearchHistory, saveSearchHistory, searchPlaces } from '@/api/search'
 import type { RoutePoint } from '@/types/route'
@@ -79,6 +88,41 @@ describe('드라이브 목 API', () => {
     expect(await errorCode(cancelPreparedDrive(drive.id, { expectedVersion: started.controlVersion }, options))).toBe(
       'CONFLICT',
     )
+  })
+
+  it('주행을 일시중단 · 재개하고, 마치면 ENDED가 되어 카드를 만들 수 있다', async () => {
+    const { data: drive } = await prepareDrive(members, options)
+    const { data: route } = await createRoute({ origin, destination }, 'test-idempotency-key-0005')
+    const { data: withRoute } = await updateDrive(drive.id, { routeId: route.id, expectedVersion: 1 }, options)
+    const { data: started } = await startDrive(
+      drive.id,
+      { expectedVersion: withRoute.controlVersion, initialCoordinate: MOCK_CURRENT_COORDINATE },
+      options,
+    )
+
+    const { data: paused } = await pauseDrive(drive.id, { expectedVersion: started.controlVersion }, options)
+    expect(paused.status).toBe('PAUSED')
+    expect(paused.pausedAt).not.toBeNull()
+    expect(await errorCode(pauseDrive(drive.id, { expectedVersion: paused.controlVersion }, options))).toBe('CONFLICT')
+
+    const { data: resumed } = await resumeDrive(drive.id, { expectedVersion: paused.controlVersion }, options)
+    expect(resumed.status).toBe('ACTIVE')
+    expect(resumed.pausedAt).toBeNull()
+
+    const { data: ended } = await endDrive(
+      drive.id,
+      { expectedVersion: resumed.controlVersion, reason: 'USER_ENDED', lastRecordedSequence: 0 },
+      options,
+    )
+    expect(ended).toMatchObject({ status: 'ENDED', endReason: 'USER_ENDED', canCreateCard: true })
+    expect((await getActiveDrive()).data.drive).toBeNull()
+  })
+
+  it('준비 중인 드라이브는 마칠 수 없다', async () => {
+    const { data: drive } = await prepareDrive(members, options)
+    const body = { expectedVersion: 1, reason: 'USER_ENDED' as const, lastRecordedSequence: 0 }
+
+    expect(await errorCode(endDrive(drive.id, body, options))).toBe('CONFLICT')
   })
 
   it('준비 중인 드라이브를 취소하면 진행 중인 드라이브가 없어진다', async () => {

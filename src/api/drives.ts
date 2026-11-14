@@ -1,8 +1,11 @@
 import {
   mockCancelPreparedDrive,
+  mockEndDrive,
   mockGetActiveDrive,
   mockGetDrive,
+  mockPauseDrive,
   mockPrepareDrive,
+  mockResumeDrive,
   mockStartDrive,
   mockUpdateDrive,
 } from '@/mocks/drives'
@@ -12,6 +15,8 @@ import type {
   CancelPreparedDriveRequest,
   Drive,
   DriveRequestOptions,
+  DriveVersionRequest,
+  EndDriveRequest,
   IdempotentDriveRequestOptions,
   PrepareDriveRequest,
   StartDriveRequest,
@@ -70,6 +75,51 @@ export function startDrive(
   if (USE_MOCK) return mockStartDrive(driveId, body)
 
   return apiFetch<Drive>(`${path(driveId)}/start`, {
+    method: 'POST',
+    headers: writeHeaders(options),
+    body: JSON.stringify(body),
+  })
+}
+
+// POST /drives/{driveId}/pause — 주행 기록 일시중단
+export function pauseDrive(
+  driveId: string,
+  body: DriveVersionRequest,
+  options: IdempotentDriveRequestOptions,
+): Promise<ApiResponse<Drive>> {
+  if (USE_MOCK) return mockPauseDrive(driveId, body)
+
+  return apiFetch<Drive>(`${path(driveId)}/pause`, {
+    method: 'POST',
+    headers: writeHeaders(options),
+    body: JSON.stringify(body),
+  })
+}
+
+// POST /drives/{driveId}/resume — 주행 기록 재개
+export function resumeDrive(
+  driveId: string,
+  body: DriveVersionRequest,
+  options: IdempotentDriveRequestOptions,
+): Promise<ApiResponse<Drive>> {
+  if (USE_MOCK) return mockResumeDrive(driveId, body)
+
+  return apiFetch<Drive>(`${path(driveId)}/resume`, {
+    method: 'POST',
+    headers: writeHeaders(options),
+    body: JSON.stringify(body),
+  })
+}
+
+// POST /drives/{driveId}/end — 도착 · 수동 종료
+export function endDrive(
+  driveId: string,
+  body: EndDriveRequest,
+  options: IdempotentDriveRequestOptions,
+): Promise<ApiResponse<Drive>> {
+  if (USE_MOCK) return mockEndDrive(driveId, body)
+
+  return apiFetch<Drive>(`${path(driveId)}/end`, {
     method: 'POST',
     headers: writeHeaders(options),
     body: JSON.stringify(body),

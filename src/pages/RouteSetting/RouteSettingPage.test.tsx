@@ -3,6 +3,9 @@ import type { ComponentProps } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import RouteSettingPage from './RouteSettingPage'
 
+// 카카오 지도 SDK는 jsdom에서 동작하지 않는다
+vi.mock('@/components/DriveMap/DriveMap', () => ({ default: () => <div data-testid="drive-map" /> }))
+
 type Props = ComponentProps<typeof RouteSettingPage>
 
 function renderPage(props: Partial<Props> = {}) {

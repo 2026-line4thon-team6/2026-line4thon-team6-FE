@@ -27,12 +27,15 @@ export function formatArrival(iso: string) {
 }
 
 // 주행 전에는 값 대신 '-분 -초' 같은 자리 표시를 보여준다 (Figma 첫 진입 화면)
-export function getDriveStats(drive: Drive | null): DriveStat[] {
+export function getDriveStats(drive: Drive | null, extraSeconds = 0): DriveStat[] {
   const started = drive !== null && drive.status !== 'PREPARING'
   const arrival = drive?.metrics.estimatedArrivalAt ?? null
 
   return [
-    { label: '주행 시간', value: started ? formatElapsed(drive.metrics.activeDurationSeconds) : '-분 -초' },
+    {
+      label: '주행 시간',
+      value: started ? formatElapsed(drive.metrics.activeDurationSeconds + extraSeconds) : '-분 -초',
+    },
     { label: '이동 거리', value: started ? formatDistance(drive.metrics.distanceMeters) : '-km' },
     { label: '예상 도착 시간', value: arrival ? formatArrival(arrival) : '-시 -분' },
   ]

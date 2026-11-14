@@ -1,4 +1,6 @@
+import { useMemo } from 'react'
 import BottomCTAButton from '@/components/BottomCTAButton/BottomCTAButton'
+import DriveMap from '@/components/DriveMap/DriveMap'
 import DriveStats from '@/components/DriveStats/DriveStats'
 import GlassIconButton from '@/components/GlassIconButton/GlassIconButton'
 import RecentSearchItem from '@/components/RecentSearchItem/RecentSearchItem'
@@ -8,6 +10,7 @@ import type { PlaceSummary } from '@/types/place'
 import type { Route } from '@/types/route'
 import type { SearchHistoryItem } from '@/types/search'
 import { formatArrival, formatDistance, formatEstimatedDuration } from '@/utils/driveStats'
+import { decodePolyline } from '@/utils/polyline'
 import styles from './RouteSettingPage.module.scss'
 
 interface RouteSettingPageProps {
@@ -37,6 +40,9 @@ const formatDate = (iso: string) => {
   return `${date.getMonth() + 1}.${String(date.getDate()).padStart(2, '0')}`
 }
 
+// 검색창 · 주행 정보 · 버튼에 가리지 않게
+const FIT_PADDING: [number, number, number, number] = [150, 40, 230, 40]
+
 // 경로 설정 (Figma 검색 289:20769 · 289:20830 · 289:20892, 경로 설정하기 289:21024)
 function RouteSettingPage({
   originAddress,
@@ -55,6 +61,8 @@ function RouteSettingPage({
   onConfirm,
   onClose,
 }: RouteSettingPageProps) {
+  const path = useMemo(() => (route ? decodePolyline(route.polyline) : []), [route])
+
   return (
     <div className={[styles.page, route && styles.preview].filter(Boolean).join(' ')}>
       <h1 className={styles.srOnly}>경로 설정</h1>
@@ -90,8 +98,14 @@ function RouteSettingPage({
         </p>
       ) : route ? (
         <>
-          {/* TODO: 카카오맵에 route.polyline 그리기 */}
-          <div className={styles.map} aria-hidden="true" />
+          <div className={styles.map}>
+            <DriveMap
+              path={path}
+              origin={route.origin.coordinate}
+              destination={route.destination.coordinate}
+              fitPadding={FIT_PADDING}
+            />
+          </div>
           <div className={styles.bottom}>
             <DriveStats
               className={styles.stats}

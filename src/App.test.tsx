@@ -14,6 +14,9 @@ import { resetMockRecordDeletions } from './mocks/records'
 import App from './App'
 import type { RecordMapMarker } from './types/record'
 
+// 드라이브 지도도 SDK를 쓰므로 빈 지도로 바꾼다
+vi.mock('./components/DriveMap/DriveMap', () => ({ default: () => <div data-testid="drive-map" /> }))
+
 // 카카오 지도 SDK는 jsdom에서 동작하지 않으므로 마커 버튼만 그리는 가짜 지도로 바꾼다
 vi.mock('./pages/RecordMap/RecordMapView', async () => {
   const { default: RecordMarker } = await import('./pages/RecordMap/RecordMarker')
@@ -697,6 +700,67 @@ describe('경로 설정', () => {
     await user.click(screen.getByRole('button', { name: '닫기' }))
 
     expect(await screen.findByRole('button', { name: '경로 탐색' })).toBeInTheDocument()
+  })
+})
+
+describe('드라이브 주행 · 마치기', () => {
+  beforeEach(() => {
+    resetMockDrives()
+    resetMockRoutes()
+    resetMockSearchHistory()
+  })
+
+  async function startDriving() {
+    const user = renderApp()
+    await startDriveFromHome(user)
+    await user.click(await screen.findByRole('button', { name: '붕붕! 붕붕이가 출발' }))
+    await user.click(await screen.findByRole('button', { name: '경로 탐색' }))
+    await user.type(await screen.findByRole('textbox', { name: '도착지' }), '한강 공원')
+    const results = await screen.findByRole('list', { name: '검색 결과' })
+    await user.click(within(results).getByRole('button', { name: /서울 반포 한강공원/ }))
+    await user.click(await screen.findByRole('button', { name: '경로 설정하기' }))
+    await screen.findByRole('button', { name: '드라이브 마치기' })
+    return user
+  }
+
+  it('일시정지하면 기록 중단 안내가 뜨고, 화면을 누르면 주행을 재개한다', async () => {
+    const user = await startDriving()
+    expect(screen.queryByText('-분 -초')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '주행 기록 일시정지' }))
+    expect(await screen.findByText('기록이 중단되었어요.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /주행 재개/ }))
+    await waitFor(() => expect(screen.queryByText('기록이 중단되었어요.')).not.toBeInTheDocument())
+  })
+
+  it('나가기 → 드라이브 종료를 누르면 도착 팝업 없이 홈으로 간다', async () => {
+    const user = await startDriving()
+
+    await user.click(screen.getByRole('button', { name: '드라이브 마치기' }))
+    const confirm = await screen.findByRole('dialog', { name: '드라이브를 마치시겠어요?' })
+    await user.click(within(confirm).getByRole('button', { name: '드라이브 종료' }))
+
+    expect(await screen.findByRole('button', { name: '드라이브 시작하기' })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: /목적지에 도착했어요!/ })).not.toBeInTheDocument()
+  })
+
+  it('주행 중 경로 탐색을 누르면 정해 둔 목적지로 검색한 결과를 보여 준다', async () => {
+    const user = await startDriving()
+
+    await user.click(screen.getByRole('button', { name: '경로 탐색' }))
+
+    expect(await screen.findByRole('textbox', { name: '도착지' })).toHaveValue('서울 반포 한강공원')
+    expect(await screen.findByRole('list', { name: '검색 결과' })).toBeInTheDocument()
+  })
+
+  it('드라이브 마치기 팝업에서 경로 수정을 누르면 경로 설정 화면으로 간다', async () => {
+    const user = await startDriving()
+
+    await user.click(screen.getByRole('button', { name: '드라이브 마치기' }))
+    await user.click(await screen.findByRole('button', { name: '경로 수정' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: '경로 설정' })).toBeInTheDocument()
   })
 })
 
