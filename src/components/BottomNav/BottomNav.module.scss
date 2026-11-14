@@ -1,18 +1,22 @@
-// Figma 기준 393 x 155 (하단 홈 인디케이터 영역 34px 포함)
+// Figma 기준 391 x 155 (Navigation 뉴홈 · 뉴지도 · 뉴마이, 63:1377). 하단 홈 인디케이터 영역 34px 포함
+$side-tab-width: 110px;
+// 양쪽 탭 중심이 가장자리에서 86px (볼록한 배경의 중심과 같은 위치)
+$side-inset: 86px - $side-tab-width * 0.5;
+
 .nav {
   position: relative;
   width: 100%;
   height: 155px;
 }
 
-// 선택된 탭 위치가 볼록한 흰 배경 + 그림자. SVG(416 x 183)에 그림자 여백이 포함되어 있어 바깥으로 확장한다
+// 선택된 탭 위치가 볼록한 흰 배경 + 그림자. SVG(416 x 159)에 그림자 여백이 포함되어 있어 바깥으로 확장한다
 // 화면 폭이 달라져도 볼록한 부분이 찌그러지지 않게, SVG의 평평한 구간만 가로로 늘린다 (border-image)
 .background {
   position: absolute;
-  top: -6.5px;
+  top: 17.5px;
   right: -11.5px;
   left: -11.5px;
-  height: 183px;
+  height: 159px;
   pointer-events: none;
 
   span {
@@ -20,11 +24,11 @@
   }
 }
 
-// 왼쪽 150px(볼록한 부분)과 오른쪽 40px(모서리)은 원래 크기로 두고 가운데만 늘린다
+// 왼쪽 160px(볼록한 부분)과 오른쪽 40px(모서리)은 원래 크기로 두고 가운데만 늘린다
 .home {
   border: solid transparent;
-  border-width: 0 40px 0 150px;
-  border-image: url('@/assets/icons/nav-bg-home.svg') 0 40 0 150 fill stretch;
+  border-width: 0 40px 0 160px;
+  border-image: url('@/assets/icons/nav-bg-home.svg') 0 40 0 160 fill stretch;
 }
 
 .my {
@@ -33,7 +37,7 @@
   border-image: url('@/assets/icons/nav-bg-my.svg') 0 160 0 40 fill stretch;
 }
 
-// 볼록한 부분이 가운데라 좌우 절반으로 나눠 그린다. 각 절반은 SVG 중심(208px)이 네비바 중앙에 오도록 맞춘다
+// 볼록한 부분이 가운데라 좌우 절반으로 나눠 그린다. 각 절반은 SVG의 볼록한 중심(207px)이 네비바 중앙에 오도록 맞춘다
 .map span {
   position: absolute;
   top: 0;
@@ -54,7 +58,7 @@
     left: 0;
 
     &::before {
-      right: -208px;
+      right: -209px;
       left: 0;
       border-width: 0 298px 0 40px;
       border-image: url('@/assets/icons/nav-bg-map.svg') 0 298 0 40 fill stretch;
@@ -66,7 +70,7 @@
 
     &::before {
       right: 0;
-      left: -208px;
+      left: -207px;
       border-width: 0 40px 0 298px;
       border-image: url('@/assets/icons/nav-bg-map.svg') 0 40 0 298 fill stretch;
     }
@@ -77,16 +81,18 @@
   position: relative;
   display: grid;
   // 양쪽 탭은 폭을 고정해 볼록한 배경과 항상 같은 위치에 오게 하고, 가운데 탭이 남는 폭을 쓴다
-  grid-template-columns: 131px 1fr 131px;
+  grid-template-columns: $side-tab-width 1fr $side-tab-width;
   height: 100%;
+  padding: 0 $side-inset;
 }
 
+// 아이콘 칸(42px)은 y 70부터, 라벨은 모든 탭이 y 110
 .tab {
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 100%;
-  padding-top: 62px;
+  padding-top: 70px;
   @include typo('body-m');
   color: color('black');
   white-space: nowrap;
@@ -102,12 +108,12 @@
   align-items: center;
   justify-content: center;
   height: 42px;
-  margin-bottom: -3px;
+  margin-bottom: -2px;
 }
 
-// 선택된 탭: 볼록한 영역 안의 그라데이션 원 아이콘 + 코랄 라벨
+// 선택된 탭: 볼록한 영역 안의 그라데이션 원 아이콘(y 38) + 코랄 라벨
 .active {
-  padding-top: 14px;
+  padding-top: 38px;
   @include typo('body-m-bold');
   color: color('coral');
 
