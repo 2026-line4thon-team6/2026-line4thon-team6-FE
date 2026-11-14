@@ -725,5 +725,7 @@ describe('드라이브 카드 작성', () => {
     renderApp('/drives/drv_01/card')
 
     expect(await screen.findByText('우리의 첫 바다 드라이브')).toBeInTheDocument()
+    // 소감 칸은 운전자 · 동승자 대신 닉네임으로 표시한다 (목: 나 민준=동승자, 연인 민지=운전자)
+    expect(screen.getAllByRole('group').map((group) => group.getAttribute('aria-label'))).toEqual(['민준', '민지'])
   })
 })

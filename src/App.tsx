@@ -584,9 +584,12 @@ function HomeRoute({ home, categories, spots, pendingPromptSeen, onPendingPrompt
 interface DriveCardRouteProps {
   driveId: string
   userId: string
+  // 소감 칸에 운전자 · 동승자 대신 보여 줄 닉네임
+  myNickname: string
+  partnerNickname: string | null
 }
 
-function DriveCardRoute({ driveId, userId }: DriveCardRouteProps) {
+function DriveCardRoute({ driveId, userId, myNickname, partnerNickname }: DriveCardRouteProps) {
   const navigate = useNavigate()
   const goBack = useGoBack()
   const { setMyText, save, saveDraft, retry, addPhotos, removePhoto, swapPhotos, ...card } = useDriveCard(
@@ -609,6 +612,8 @@ function DriveCardRoute({ driveId, userId }: DriveCardRouteProps) {
   return (
     <DriveCardPage
       {...card}
+      myNickname={myNickname}
+      partnerNickname={partnerNickname}
       onMyTextChange={setMyText}
       onLeave={() => void handleLeave()}
       onRetry={retry}
@@ -621,9 +626,9 @@ function DriveCardRoute({ driveId, userId }: DriveCardRouteProps) {
 }
 
 // 드라이브가 바뀌면 카드 화면을 새로 마운트해 이전 카드의 상태가 남지 않게 한다
-function DriveCardRouteByParam({ userId }: { userId: string }) {
+function DriveCardRouteByParam(props: Omit<DriveCardRouteProps, 'driveId'>) {
   const { driveId = '' } = useParams()
-  return <DriveCardRoute key={driveId} driveId={driveId} userId={userId} />
+  return <DriveCardRoute key={driveId} driveId={driveId} {...props} />
 }
 
 // 홈 데이터는 API 연동 전까지 목 데이터를 쓴다 (GET /home 연동 시 교체)
@@ -691,7 +696,11 @@ function App() {
         />
         <Route path="/my/playlists" element={<PlaylistsRoute />} />
         <Route path="/my/stories" element={<RadioStoriesRoute />} />
-        <Route path="/drives/:driveId/card" element={<DriveCardRouteByParam userId={home.userId} />} />
+        <Route path="/drives/:driveId/card" element={<DriveCardRouteByParam
+                userId={home.userId}
+                myNickname={home.nickname}
+                partnerNickname={home.couple?.partnerNickname ?? null}
+              />} />
         <Route
           path="/places/:placeId"
           element={
