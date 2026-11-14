@@ -37,7 +37,7 @@ const meta = {
     onPlaceClick: fn(),
   },
   render: function Render(args) {
-    const [category, setCategory] = useState<PlaceCategory | null>(args.category)
+    const [category, setCategory] = useState<PlaceCategory>(args.category)
     const [places, setPlaces] = useState(args.places)
     return (
       <FavoritesPage
@@ -46,7 +46,7 @@ const meta = {
         places={places}
         onSelectCategory={(next) => {
           args.onSelectCategory(next)
-          setCategory((prev) => (prev === next ? null : next))
+          setCategory(next)
         }}
         onFavoriteToggle={(placeId, favorite) => {
           args.onFavoriteToggle(placeId, favorite)
@@ -64,7 +64,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {}
 
 export const Empty: Story = {
-  args: { places: [], category: null },
+  args: { places: [], category: 'SEA' },
 }
 
 export const EmptyCategory: Story = {

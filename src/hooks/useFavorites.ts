@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { fetchFavorites, setPlaceFavorite } from '@/api/places'
+import { PLACE_CATEGORIES } from '@/pages/Archive/placeCategories'
 import type { PlaceCategory, PlaceSummary } from '@/types/place'
 
 interface State {
@@ -7,16 +8,17 @@ interface State {
   places: PlaceSummary[]
 }
 
-// 찜한 드라이브 코스 보관함 (GET /me/favorite-places). 카테고리를 고르지 않으면 전체를 보여 준다
+// 찜한 드라이브 코스 보관함 (GET /me/favorite-places).
+// 홈 카테고리 칩처럼 항상 칩 하나가 골라져 있고, 처음에는 첫 칩(바다)을 보여 준다
 function useFavorites() {
-  const [category, setCategory] = useState<PlaceCategory | null>(null)
+  const [category, setCategory] = useState<PlaceCategory>(PLACE_CATEGORIES[0].value)
   const [state, setState] = useState<State>({ status: 'loading', places: [] })
   const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     let ignore = false
 
-    fetchFavorites(category ?? undefined)
+    fetchFavorites(category)
       .then(({ data }) => {
         if (!ignore) setState({ status: 'ready', places: data.items })
       })
@@ -29,10 +31,11 @@ function useFavorites() {
     }
   }, [category, attempt])
 
-  // 이미 고른 칩을 다시 누르면 필터를 푼다
+  // 이미 고른 칩을 다시 누르면 그대로 둔다
   const selectCategory = (next: PlaceCategory) => {
+    if (next === category) return
     setState((prev) => ({ ...prev, status: 'loading' }))
-    setCategory((prev) => (prev === next ? null : next))
+    setCategory(next)
   }
 
   const retry = () => {
