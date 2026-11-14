@@ -1,5 +1,4 @@
 $gutter: 25px;
-$panel-height: 268px;
 
 .page {
   position: relative;
@@ -12,7 +11,7 @@ $panel-height: 268px;
 
 .map {
   position: absolute;
-  inset: 0 0 calc(#{$panel-height} - 30px);
+  inset: 0 0 64px;
   isolation: isolate;
 }
 
@@ -110,7 +109,6 @@ $panel-height: 268px;
 }
 
 .panel {
-  height: $panel-height;
   padding: 0 $gutter;
   overflow-y: auto;
   border-radius: 30px 30px 0 0;
@@ -118,12 +116,31 @@ $panel-height: 268px;
   box-shadow: 0 1px 10px rgb(0 0 0 / 10%);
 }
 
+.settling {
+  transition: height 0.25s ease-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+// 안전 영역 크기를 재기 위한 보이지 않는 요소 (높이 = 위, 폭 = 아래)
+.insetProbe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--safe-bottom);
+  height: var(--safe-top);
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .handle {
   display: block;
-  width: 109px;
+  width: calc(100% + #{$gutter * 2});
   height: 38px;
-  margin: 0 auto;
-  padding: 15px 30px 17px;
+  margin: 0 (-$gutter);
+  padding: 15px 0 17px;
   border: 0;
   background: none;
   touch-action: none;
@@ -132,7 +149,9 @@ $panel-height: 268px;
   &::before {
     content: '';
     display: block;
+    width: 49px;
     height: 6px;
+    margin: 0 auto;
     border-radius: 100px;
     background-color: color('coral-2');
   }
@@ -143,13 +162,6 @@ $panel-height: 268px;
   }
 }
 
-.expanded {
-  top: var(--safe-top);
-
-  .panel {
-    height: 100%;
-  }
-}
 
 .tabPanel {
   padding: 16px 0 calc(24px + var(--safe-bottom));

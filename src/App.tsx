@@ -37,6 +37,7 @@ import PlaylistsPage from '@/pages/Archive/PlaylistsPage'
 import RadioStoriesPage from '@/pages/Archive/RadioStoriesPage'
 import CouplePage from '@/pages/Couple/CouplePage'
 import CoupleInvitePage from '@/pages/CoupleInvite/CoupleInvitePage'
+import ContentCards from '@/pages/Drive/ContentCards'
 import DrivePage from '@/pages/Drive/DrivePage'
 import RestAreaDetailModal from '@/pages/Drive/RestAreaDetailModal'
 import StampsTab from '@/pages/Drive/StampsTab'
@@ -263,6 +264,8 @@ function DriveRoute() {
         onEnd={handleEnd}
         locationDenied={map.locationDenied}
         onLocationRetry={map.retryLocation}
+        // TODO: DJ 플레이리스트 · 라디오 · 게임 화면 연결
+        contents={<ContentCards />}
         stamps={<StampsTab drive={drive} currentCoordinate={map.current} />}
       />
       {restAreaDetail.detail && <RestAreaDetailModal detail={restAreaDetail.detail} onClose={restAreaDetail.close} />}

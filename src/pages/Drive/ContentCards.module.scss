@@ -1,0 +1,103 @@
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.playlist {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  height: 96px;
+  padding: 14px 16px 14px 17px;
+  border: 1px solid color('coral-2');
+  border-radius: 20px;
+  text-align: left;
+  background-color: color('coral-3');
+
+  &:active .arrow {
+    background-color: color('coral-pressed');
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}
+
+.playlistLabel {
+  @include typo('caption-bold');
+  color: color('coral');
+}
+
+.playlistRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.playlistText {
+  @include typo('body-m-medium');
+  color: color('black');
+  white-space: nowrap;
+}
+
+.arrow {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 0.5px solid color('coral');
+  border-radius: 18px;
+  background-color: color('coral');
+  filter: drop-shadow(0 0 5px rgb(0 0 0 / 5%));
+
+  img {
+    transform: scaleX(-1);
+  }
+}
+
+.games {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.game {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  height: 76px;
+  padding: 11px 0 0 11px;
+  border: 1px solid color('gray-100');
+  border-radius: 20px;
+  text-align: left;
+  background-color: color('white');
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}
+
+.gameTitle {
+  @include typo('body-l-bold');
+  color: color('black');
+}
+
+.gameDescription {
+  @include typo('caption');
+  color: color('gray-600');
+  white-space: nowrap;
+}
+
+.gameImage {
+  position: absolute;
+  max-width: none;
+}
