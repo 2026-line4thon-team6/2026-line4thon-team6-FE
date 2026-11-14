@@ -38,6 +38,8 @@ function renderPage(props: Partial<Props> = {}) {
       status="ready"
       card={EMPTY_CARD}
       myRole="PASSENGER"
+      myNickname="민준"
+      partnerNickname="민지"
       myText=""
       partnerText={null}
       canSave={false}
@@ -148,11 +150,14 @@ describe('사진', () => {
   })
 })
 
+// 소감 칸 이름은 운전자 · 동승자 대신 각자의 닉네임으로 표시한다 (역할은 캐릭터 그림으로 구분)
 describe('한 줄 소감', () => {
-  it('내가 동승자면 동승자 칸에 입력하고, 운전자 칸에는 연인이 아직 안 썼다고 안내한다', async () => {
+  it('내가 동승자면 동승자 칸(내 닉네임)에 입력하고, 운전자 칸(연인 닉네임)에는 아직 안 썼다고 안내한다', async () => {
     const { user, onMyTextChange } = renderPage({ myRole: 'PASSENGER' })
 
-    const passenger = within(screen.getByRole('group', { name: '동승자' }))
+    expect(screen.queryByText('동승자')).not.toBeInTheDocument()
+    expect(screen.queryByText('운전자')).not.toBeInTheDocument()
+    const passenger = within(screen.getByRole('group', { name: '민준' }))
     const input = passenger.getByRole('textbox', { name: '내 한 줄 소감' })
     expect(input).toHaveAttribute('placeholder', '드라이브의 한줄 소감을 작성해주세요 :)')
     expect(input).toHaveAttribute('maxLength', '70')
@@ -160,25 +165,25 @@ describe('한 줄 소감', () => {
     await user.type(input, '좋')
     expect(onMyTextChange).toHaveBeenCalledWith('좋')
 
-    const driver = within(screen.getByRole('group', { name: '운전자' }))
+    const driver = within(screen.getByRole('group', { name: '민지' }))
     expect(driver.queryByRole('textbox')).not.toBeInTheDocument()
     expect(driver.getByText('상대방이 아직 소감을 입력하지 않았어요 :)')).toBeInTheDocument()
   })
 
-  it('내가 운전자면 운전자 칸에 입력하고, 연인이 쓴 소감은 동승자 칸에 보여 준다', () => {
+  it('내가 운전자면 운전자 칸(내 닉네임)에 입력하고, 연인이 쓴 소감은 동승자 칸(연인 닉네임)에 보여 준다', () => {
     renderPage({ myRole: 'DRIVER', myText: '운전하느라 힘들었지만', partnerText: '노을은 진짜 예뻤다 ㅎㅎ' })
 
-    const driver = within(screen.getByRole('group', { name: '운전자' }))
+    const driver = within(screen.getByRole('group', { name: '민준' }))
     expect(driver.getByRole('textbox', { name: '내 한 줄 소감' })).toHaveValue('운전하느라 힘들었지만')
 
-    const passenger = within(screen.getByRole('group', { name: '동승자' }))
+    const passenger = within(screen.getByRole('group', { name: '민지' }))
     expect(passenger.getByText('노을은 진짜 예뻤다 ㅎㅎ')).toBeInTheDocument()
   })
 
-  it('저장된 카드는 동승자 · 운전자 순서로 표시한다', () => {
+  it('동승자 · 운전자 순서로 표시한다', () => {
     renderPage({ myRole: 'DRIVER' })
 
-    expect(screen.getAllByRole('group').map((group) => group.getAttribute('aria-label'))).toEqual(['동승자', '운전자'])
+    expect(screen.getAllByRole('group').map((group) => group.getAttribute('aria-label'))).toEqual(['민지', '민준'])
   })
 })
 

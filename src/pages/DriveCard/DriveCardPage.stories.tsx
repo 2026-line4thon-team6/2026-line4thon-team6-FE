@@ -29,6 +29,8 @@ const meta = {
     status: 'ready',
     card: EMPTY_CARD,
     myRole: 'PASSENGER',
+    myNickname: '민준',
+    partnerNickname: '민지',
     myText: '',
     partnerText: null,
     canSave: false,

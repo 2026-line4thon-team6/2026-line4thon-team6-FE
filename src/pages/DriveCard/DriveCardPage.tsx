@@ -23,6 +23,9 @@ interface DriveCardPageProps {
   card: Card | null
   // 이 드라이브에서 나의 역할. 내 역할 칸에 소감을 쓰고, 다른 칸에는 연인의 소감을 보여 준다
   myRole: DriveRole | null
+  // 소감 칸 이름. 운전자 · 동승자 대신 각자의 닉네임을 보여 준다 (없으면 역할 이름)
+  myNickname: string | null
+  partnerNickname: string | null
   myText: string
   // 연인이 제출한 소감. 아직 없으면 null
   partnerText: string | null
@@ -44,6 +47,8 @@ function DriveCardPage({
   status,
   card,
   myRole,
+  myNickname,
+  partnerNickname,
   myText,
   partnerText,
   canSave,
@@ -155,13 +160,14 @@ function DriveCardPage({
         <div className={styles.reflections}>
           {ROLES.map(({ role, label, image }) => {
             const mine = role === myRole
+            const name = (myRole && (mine ? myNickname : partnerNickname)) || label
             return (
-              <div key={role} className={styles.reflection} role="group" aria-label={label}>
+              <div key={role} className={styles.reflection} role="group" aria-label={name}>
                 <p className={styles.roleLabel} aria-hidden>
                   <span className={styles.roleImage}>
                     <img src={image} alt="" />
                   </span>
-                  {label}
+                  {name}
                 </p>
                 {mine ? (
                   <textarea
