@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { prepareDrive } from '@/api/drives'
+import { resetMockCards } from '@/mocks/cards'
 import { resetMockDrives } from '@/mocks/drives'
 import { resetMockRoutes } from '@/mocks/routes'
 import { resetMockSearchHistory } from '@/mocks/search'
@@ -17,6 +18,16 @@ function renderApp(path = '/') {
   )
   return userEvent.setup()
 }
+
+// 홈에 들어오면 미작성 카드 팝업이 먼저 뜬다. '나중에'로 닫은 뒤 드라이브를 시작한다
+async function startDriveFromHome(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('button', { name: '나중에' }))
+  await user.click(screen.getByRole('button', { name: '드라이브 시작하기' }))
+}
+
+beforeEach(() => {
+  resetMockCards()
+})
 
 describe('홈 ↔ 알림 화면 이동', () => {
   it('홈의 알림 버튼 → 알림 목록 → 알림을 탭하면 읽음 처리되고, 홈으로 돌아오면 새 알림 표시가 사라진다', async () => {
@@ -112,7 +123,7 @@ describe('드라이브 모드 진입', () => {
   it('홈의 드라이브 시작하기 → 드라이브명 시트 → 출발하면 드라이브 모드로 이동한다', async () => {
     const user = renderApp()
 
-    await user.click(screen.getByRole('button', { name: '드라이브 시작하기' }))
+    await startDriveFromHome(user)
     const sheet = await screen.findByRole('dialog', { name: '드라이브 준비 완료!' })
 
     await user.type(within(sheet).getByRole('textbox', { name: '드라이브명' }), '우리의 첫 바다 드라이브')
@@ -124,7 +135,7 @@ describe('드라이브 모드 진입', () => {
   it('시트 바깥을 누르면 드라이브를 만들지 않고 시트가 닫힌다', async () => {
     const user = renderApp()
 
-    await user.click(screen.getByRole('button', { name: '드라이브 시작하기' }))
+    await startDriveFromHome(user)
     const sheet = await screen.findByRole('dialog', { name: '드라이브 준비 완료!' })
     // 시트를 감싼 어두운 배경
     await user.click(sheet.parentElement!)
@@ -138,7 +149,7 @@ describe('드라이브 모드 진입', () => {
     await prepareDrive(members, { coupleId: 'cpl_01', idempotencyKey: 'test-idempotency-key-0001' })
     const user = renderApp()
 
-    await user.click(screen.getByRole('button', { name: '드라이브 시작하기' }))
+    await startDriveFromHome(user)
 
     expect(await screen.findByRole('button', { name: '경로 탐색' })).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -159,7 +170,7 @@ describe('드라이브 모드 첫 진입 화면', () => {
 
   async function enterDrive(title = '') {
     const user = renderApp()
-    await user.click(screen.getByRole('button', { name: '드라이브 시작하기' }))
+    await startDriveFromHome(user)
     const sheet = await screen.findByRole('dialog', { name: '드라이브 준비 완료!' })
     if (title) await user.type(within(sheet).getByRole('textbox', { name: '드라이브명' }), title)
     await user.click(within(sheet).getByRole('button', { name: '붕붕! 붕붕이가 출발' }))
@@ -212,7 +223,7 @@ describe('경로 설정', () => {
 
   async function openRouteSetting() {
     const user = renderApp()
-    await user.click(screen.getByRole('button', { name: '드라이브 시작하기' }))
+    await startDriveFromHome(user)
     await user.click(await screen.findByRole('button', { name: '붕붕! 붕붕이가 출발' }))
     await user.click(await screen.findByRole('button', { name: '경로 탐색' }))
     await screen.findByRole('heading', { level: 1, name: '경로 설정' })
@@ -259,5 +270,59 @@ describe('경로 설정', () => {
     await user.click(screen.getByRole('button', { name: '닫기' }))
 
     expect(await screen.findByRole('button', { name: '경로 탐색' })).toBeInTheDocument()
+  })
+})
+
+describe('드라이브 카드 작성', () => {
+  const pendingBanner = () => screen.queryByRole('button', { name: /미작성 드라이브 카드/ })
+
+  it("홈에 들어오면 미작성 카드 팝업을 띄우고, '나중에'를 누르면 배너만 남는다. 팝업은 다시 띄우지 않는다", async () => {
+    const user = renderApp()
+
+    await screen.findByRole('dialog', { name: '아직 작성하지 않은 드라이브 카드가 있어요' })
+    await user.click(screen.getByRole('button', { name: '나중에' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(pendingBanner()).toHaveTextContent('미작성 드라이브 카드 1개')
+
+    // 다른 화면에 갔다가 돌아와도 팝업은 다시 뜨지 않는다
+    await user.click(screen.getByRole('button', { name: '알림 (새 알림 있음)' }))
+    await user.click(screen.getByRole('button', { name: '뒤로가기' }))
+    expect(await screen.findByRole('button', { name: /미작성 드라이브 카드 1개/ })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it("팝업의 '카드 작성하러 가기' → 소감 작성 → 저장하면 홈으로 돌아오고 배너가 사라진다", async () => {
+    const user = renderApp()
+
+    await screen.findByRole('dialog', { name: '아직 작성하지 않은 드라이브 카드가 있어요' })
+    await user.click(screen.getByRole('button', { name: '카드 작성하러 가기' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: '2026년 11월 3일' })).toBeInTheDocument()
+    await user.type(screen.getByRole('textbox', { name: '내 한 줄 소감' }), '노을이 진짜 예뻤다')
+    await user.click(screen.getByRole('button', { name: '저장하기' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: /오늘은 어디로 떠나볼까요/ })).toBeInTheDocument()
+    expect(pendingBanner()).not.toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('배너로 들어가 저장하지 않고 나가면 작성 중단 팝업을 거쳐 홈으로 돌아오고, 배너는 남는다', async () => {
+    const user = renderApp()
+
+    await user.click(await screen.findByRole('button', { name: '나중에' }))
+    await user.click(screen.getByRole('button', { name: /미작성 드라이브 카드 1개/ }))
+    await screen.findByRole('heading', { level: 1, name: '2026년 11월 3일' })
+
+    await user.click(screen.getByRole('button', { name: '뒤로가기' }))
+    await user.click(screen.getByRole('button', { name: '나가기' }))
+
+    expect(await screen.findByRole('button', { name: /미작성 드라이브 카드 1개/ })).toBeInTheDocument()
+  })
+
+  it('카드 작성 주소로 바로 들어올 수 있다', async () => {
+    renderApp('/drives/drv_01/card')
+
+    expect(await screen.findByText('우리의 첫 바다 드라이브')).toBeInTheDocument()
   })
 })
