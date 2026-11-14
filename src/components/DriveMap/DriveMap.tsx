@@ -2,36 +2,51 @@ import { useEffect, useState } from 'react'
 import { CustomOverlayMap, Map, Polyline, useKakaoLoader } from 'react-kakao-maps-sdk'
 import currentLocationIcon from '@/assets/icons/current-location.svg'
 import mapPinIcon from '@/assets/icons/map-pin.svg'
+import originDotIcon from '@/assets/icons/origin-dot.svg'
+import carImage from '@/assets/images/drive/map-car.webp'
 import type { Coordinate } from '@/types/route'
 import styles from './DriveMap.module.scss'
 
 const APP_KEY: string = import.meta.env.VITE_KAKAO_MAP_KEY ?? ''
 
-// 위치를 아직 모를 때 (서울시청)
+// 위치를 모를 때 (서울시청)
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 }
 const DEFAULT_LEVEL = 4
 
-// map-pin.svg는 그림자 여백을 포함한 64 x 74. 핀 끝(그림자 타원 가운데)이 좌표에 오게 한다
+// map-pin.svg는 그림자 여백을 포함한 64 x 74. 핀 끝이 좌표에 오게 한다
 const PIN_Y_ANCHOR = 47.5 / 74
 
-// Figma 경로 선: 흰 테두리 12px 위에 코랄 그라데이션 7px. 카카오 선은 단색이라 가운데 색을 쓴다
-const ROUTE_BORDER = { strokeWeight: 12, strokeColor: '#FFFBFB', strokeOpacity: 1 }
-const ROUTE_LINE = { strokeWeight: 7, strokeColor: '#FF7F6A', strokeOpacity: 1 }
+// 카카오 선은 그림자 · 그라데이션이 없어서 흐린 넓은 선 · 흰 테두리 · 단색 선을 겹친다
+const ROUTE_LINES = [
+  { strokeWeight: 20, strokeColor: '#FF8585', strokeOpacity: 0.3 },
+  { strokeWeight: 12, strokeColor: '#FFFBFB', strokeOpacity: 1 },
+  { strokeWeight: 7, strokeColor: '#FF7F6A', strokeOpacity: 1 },
+]
 
 const toLatLng = ({ latitude, longitude }: Coordinate) => ({ lat: latitude, lng: longitude })
 
 interface DriveMapProps {
-  className?: string
-  current: Coordinate | null
+  current?: Coordinate | null
+  // dot: 경로 전 현재 위치 / car: 주행 중 현재 위치
+  currentMarker?: 'dot' | 'car'
   path?: Coordinate[]
+  origin?: Coordinate | null
   destination?: Coordinate | null
-  // 경로 전체를 맞춰 보일 때 화면 가장자리에서 띄울 여백 [위, 오른쪽, 아래, 왼쪽]
+  // [위, 오른쪽, 아래, 왼쪽]
   fitPadding?: [number, number, number, number]
-  // 바뀔 때마다 현재 위치로 지도를 옮긴다
+  // 바뀔 때마다 현재 위치로 옮긴다
   locateKey?: number
 }
 
-function KakaoDriveMap({ className, current, path = [], destination, fitPadding = [40, 40, 40, 40], locateKey = 0 }: DriveMapProps) {
+function KakaoDriveMap({
+  current = null,
+  currentMarker = 'dot',
+  path = [],
+  origin,
+  destination,
+  fitPadding = [40, 40, 40, 40],
+  locateKey = 0,
+}: DriveMapProps) {
   const [loading, error] = useKakaoLoader({ appkey: APP_KEY })
   const [map, setMap] = useState<kakao.maps.Map | null>(null)
   const [initialCenter] = useState(() => (current ? toLatLng(current) : DEFAULT_CENTER))
@@ -45,7 +60,7 @@ function KakaoDriveMap({ className, current, path = [], destination, fitPadding 
     map.setBounds(bounds, top, right, bottom, left)
   }, [map, path, hasPath, top, right, bottom, left])
 
-  // 경로를 보여 줄 때는 현재 위치 버튼을 눌렀을 때만 옮긴다
+  // 경로가 있으면 전체 경로를 보여 주다가 현재 위치 버튼을 눌렀을 때만 옮긴다
   const lat = current?.latitude
   const lng = current?.longitude
   useEffect(() => {
@@ -54,16 +69,16 @@ function KakaoDriveMap({ className, current, path = [], destination, fitPadding 
     map.panTo(new kakao.maps.LatLng(lat, lng))
   }, [map, lat, lng, hasPath, locateKey])
 
-  if (error) return <div className={[styles.fallback, className].filter(Boolean).join(' ')}>지도를 불러오지 못했어요.</div>
-  if (loading) return <div className={[styles.map, className].filter(Boolean).join(' ')} aria-busy="true" />
+  if (error) return <div className={styles.fallback}>지도를 불러오지 못했어요.</div>
+  if (loading) return <div className={styles.map} aria-busy="true" />
 
   return (
-    <Map className={[styles.map, className].filter(Boolean).join(' ')} center={initialCenter} level={DEFAULT_LEVEL} onCreate={setMap}>
-      {hasPath && (
-        <>
-          <Polyline path={path.map(toLatLng)} {...ROUTE_BORDER} />
-          <Polyline path={path.map(toLatLng)} {...ROUTE_LINE} />
-        </>
+    <Map className={styles.map} center={initialCenter} level={DEFAULT_LEVEL} onCreate={setMap}>
+      {hasPath && ROUTE_LINES.map((line) => <Polyline key={line.strokeWeight} path={path.map(toLatLng)} {...line} />)}
+      {origin && (
+        <CustomOverlayMap position={toLatLng(origin)}>
+          <img className={styles.origin} src={originDotIcon} alt="" />
+        </CustomOverlayMap>
       )}
       {destination && (
         <CustomOverlayMap position={toLatLng(destination)} yAnchor={PIN_Y_ANCHOR}>
@@ -72,18 +87,22 @@ function KakaoDriveMap({ className, current, path = [], destination, fitPadding 
       )}
       {current && (
         <CustomOverlayMap position={toLatLng(current)}>
-          <img className={styles.current} src={currentLocationIcon} alt="" />
+          {currentMarker === 'car' ? (
+            <img className={styles.car} src={carImage} alt="" />
+          ) : (
+            <img className={styles.current} src={currentLocationIcon} alt="" />
+          )}
         </CustomOverlayMap>
       )}
     </Map>
   )
 }
 
-// 드라이브 모드 지도. 키가 없으면 SDK를 부르지 않고 현재 위치 점만 있는 빈 지도를 보여 준다
+// 키가 없으면 SDK를 부르지 않는다
 function DriveMap(props: DriveMapProps) {
   if (!APP_KEY) {
     return (
-      <div className={[styles.placeholder, props.className].filter(Boolean).join(' ')}>
+      <div className={styles.placeholder}>
         <img className={styles.current} src={currentLocationIcon} alt="" />
       </div>
     )

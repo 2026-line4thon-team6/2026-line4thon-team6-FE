@@ -7,11 +7,12 @@ import DriveTitleBar from '@/components/DriveTitleBar/DriveTitleBar'
 import GlassIconButton from '@/components/GlassIconButton/GlassIconButton'
 import RouteSearchButton from '@/components/RouteSearchButton/RouteSearchButton'
 import SegmentedControl from '@/components/SegmentedControl/SegmentedControl'
+import Toast from '@/components/Toast/Toast'
 import type { Drive } from '@/types/drive'
 import type { Coordinate } from '@/types/route'
 import { getDriveStats } from '@/utils/driveStats'
 import styles from './DrivePage.module.scss'
-import EndDriveModal from './EndDriveModal'
+import DriveConfirmModal from './DriveConfirmModal'
 
 type PanelTab = 'contents' | 'stamps'
 
@@ -25,24 +26,28 @@ interface DrivePageProps {
   drive: Drive | null
   currentCoordinate?: Coordinate | null
   routePath?: Coordinate[]
+  origin?: Coordinate | null
   destination?: Coordinate | null
   onRename: (title: string) => Promise<boolean>
   onRouteSearch: () => void
   onLocate?: () => void
   onPause?: () => void
   onResume?: () => void
-  // 성공하면 true. 팝업은 실패했을 때만 남는다
+  // 실패하면 false. 마치기 팝업이 그대로 남는다
   onEnd?: () => Promise<boolean>
+  locationDenied?: boolean
+  // 위치를 다시 요청한다. 허용되면 true
+  onLocationRetry?: () => Promise<boolean>
   // 콘텐츠 탭 카드 (DJ 플레이리스트 · 라디오 · 게임)
   contents?: ReactNode
   // 휴게소 스탬프 탭
   stamps?: ReactNode
 }
 
-// 경로 전체를 맞출 때 제목 · 버튼 · 주행 정보에 가리지 않게 띄운다
+// 제목 · 버튼 · 주행 정보에 가리지 않게
 const FIT_PADDING: [number, number, number, number] = [90, 70, 140, 40]
 
-// 주행 중에는 마지막으로 받은 주행 시간에 화면에서 흐른 초를 더해 보여 준다
+// 서버 주행 시간은 요청할 때만 오므로 그 뒤 흐른 초를 화면에서 더한다
 function useRunningSeconds(drive: Drive | null) {
   const [tick, setTick] = useState({ drive, seconds: 0 })
 
@@ -56,12 +61,13 @@ function useRunningSeconds(drive: Drive | null) {
   return tick.drive === drive ? tick.seconds : 0
 }
 
-// 드라이브 모드 (Figma 첫 진입 화면 289:20959, 드라이브 289:20284, 주행 중단 289:19560)
+// 드라이브 모드 (Figma 첫 진입 화면 289:20959, 드라이브 289:20284, 주행 중단 289:19560, 위치권한 팝업창 592:10100)
 function DrivePage({
   status,
   drive,
   currentCoordinate = null,
   routePath,
+  origin,
   destination,
   onRename,
   onRouteSearch,
@@ -69,6 +75,8 @@ function DrivePage({
   onPause,
   onResume,
   onEnd,
+  locationDenied = false,
+  onLocationRetry,
   contents,
   stamps,
 }: DrivePageProps) {
@@ -77,10 +85,20 @@ function DrivePage({
   const [ending, setEnding] = useState(false)
   const [tab, setTab] = useState<PanelTab>('contents')
   const [locateKey, setLocateKey] = useState(0)
+  const [toast, setToast] = useState<string | null>(null)
   const runningSeconds = useRunningSeconds(drive)
+
+  // X로 닫은 위치 권한 팝업은 권한이 다시 켜졌다가 꺼질 때 다시 띄운다
+  const [locationDismissed, setLocationDismissed] = useState(false)
+  const [prevLocationDenied, setPrevLocationDenied] = useState(locationDenied)
+  if (locationDenied !== prevLocationDenied) {
+    setPrevLocationDenied(locationDenied)
+    if (!locationDenied) setLocationDismissed(false)
+  }
 
   const driving = drive?.status === 'ACTIVE' || drive?.status === 'PAUSED'
   const paused = drive?.status === 'PAUSED'
+  const askLocation = locationDenied && drive?.status === 'ACTIVE' && !locationDismissed && !confirmingEnd
 
   const handleRename = async (title: string) => {
     if (await onRename(title)) setRenaming(false)
@@ -99,6 +117,12 @@ function DrivePage({
     onLocate?.()
   }
 
+  // 웹은 기기 설정을 직접 열 수 없어서 권한을 다시 요청하고, 막혀 있으면 안내한다
+  const retryLocation = async () => {
+    setLocationDismissed(true)
+    if (!(await onLocationRetry?.())) setToast('브라우저 설정에서 위치 권한을 허용해 주세요.')
+  }
+
   const editRoute = () => {
     setConfirmingEnd(false)
     onRouteSearch()
@@ -109,7 +133,9 @@ function DrivePage({
       <div className={styles.map}>
         <DriveMap
           current={currentCoordinate}
+          currentMarker={driving ? 'car' : 'dot'}
           path={routePath}
+          origin={origin}
           destination={destination}
           fitPadding={FIT_PADDING}
           locateKey={locateKey}
@@ -187,13 +213,33 @@ function DrivePage({
       )}
 
       {confirmingEnd && (
-        <EndDriveModal
-          ending={ending}
-          onEditRoute={editRoute}
-          onEnd={() => void handleEnd()}
+        <DriveConfirmModal
+          title="드라이브를 마치시겠어요?"
+          description="조금 더 달리고 싶다면 경로를 수정해 보세요."
+          cancelLabel="경로 수정"
+          confirmLabel="드라이브 종료"
+          cancelWidth={117}
+          confirmDisabled={ending}
+          onCancel={editRoute}
+          onConfirm={() => void handleEnd()}
           onClose={() => setConfirmingEnd(false)}
         />
       )}
+
+      {askLocation && (
+        <DriveConfirmModal
+          title="위치 권한이 꺼져있어요."
+          description="위치 권한 허용이 안될 시 드라이브 주행 기록이 불가해요."
+          cancelLabel="주행 중단하기"
+          confirmLabel="설정으로 이동하기"
+          cancelWidth={136}
+          onCancel={() => onPause?.()}
+          onConfirm={() => void retryLocation()}
+          onClose={() => setLocationDismissed(true)}
+        />
+      )}
+
+      {toast && <Toast message={toast} onDone={() => setToast(null)} />}
     </div>
   )
 }

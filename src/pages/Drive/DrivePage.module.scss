@@ -17,7 +17,6 @@ $panel-height: 268px;
   isolation: isolate; // 카카오 지도 안의 z-index가 위 버튼들을 덮지 않게
 }
 
-// 주행 중단 (Figma 289:19560). 화면 어디를 눌러도 주행을 재개한다
 .pausedLayer {
   position: absolute;
   inset: 0;
@@ -30,7 +29,7 @@ $panel-height: 268px;
 
 .pausedText {
   position: absolute;
-  top: calc(max(env(safe-area-inset-top, 0px), 12px) + 211px);
+  top: calc(max(var(--safe-top), 12px) + 211px);
   right: $gutter;
   left: $gutter;
   display: flex;

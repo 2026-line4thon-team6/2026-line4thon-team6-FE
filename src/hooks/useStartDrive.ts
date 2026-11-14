@@ -8,6 +8,8 @@ import { createIdempotencyKey } from '@/utils/share'
 // /drive 로 넘기기
 export interface DriveLocationState {
   destinationPlaceId?: string
+  // 주행 중 경로 수정: 정해 둔 목적지 이름으로 검색해 둔다
+  destinationName?: string
 }
 
 // TODO: GET /home 연동 시 실제 id로 교체

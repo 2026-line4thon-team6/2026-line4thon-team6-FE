@@ -710,7 +710,6 @@ describe('드라이브 주행 · 마치기', () => {
     resetMockSearchHistory()
   })
 
-  // 경로를 처음 정하면 주행이 시작된다
   async function startDriving() {
     const user = renderApp()
     await startDriveFromHome(user)
@@ -735,16 +734,24 @@ describe('드라이브 주행 · 마치기', () => {
     await waitFor(() => expect(screen.queryByText('기록이 중단되었어요.')).not.toBeInTheDocument())
   })
 
-  it('나가기 → 드라이브 종료를 누르면 카드 작성 팝업이 뜨고, 아니요를 누르면 홈으로 간다', async () => {
+  it('나가기 → 드라이브 종료를 누르면 도착 팝업 없이 홈으로 간다', async () => {
     const user = await startDriving()
 
     await user.click(screen.getByRole('button', { name: '드라이브 마치기' }))
     const confirm = await screen.findByRole('dialog', { name: '드라이브를 마치시겠어요?' })
     await user.click(within(confirm).getByRole('button', { name: '드라이브 종료' }))
 
-    const prompt = await screen.findByRole('dialog', { name: /목적지에 도착했어요!/ })
-    await user.click(within(prompt).getByRole('button', { name: '아니요' }))
     expect(await screen.findByRole('button', { name: '드라이브 시작하기' })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: /목적지에 도착했어요!/ })).not.toBeInTheDocument()
+  })
+
+  it('주행 중 경로 탐색을 누르면 정해 둔 목적지로 검색한 결과를 보여 준다', async () => {
+    const user = await startDriving()
+
+    await user.click(screen.getByRole('button', { name: '경로 탐색' }))
+
+    expect(await screen.findByRole('textbox', { name: '도착지' })).toHaveValue('서울 반포 한강공원')
+    expect(await screen.findByRole('list', { name: '검색 결과' })).toBeInTheDocument()
   })
 
   it('드라이브 마치기 팝업에서 경로 수정을 누르면 경로 설정 화면으로 간다', async () => {

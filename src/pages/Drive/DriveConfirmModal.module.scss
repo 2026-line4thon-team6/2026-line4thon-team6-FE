@@ -1,4 +1,4 @@
-// Figma 기준 340 x 202. 닫기 버튼(28px) 아래로 제목이 온다
+// 닫기 버튼(28px) 아래로 제목이 온다
 .content {
   display: flex;
   flex-direction: column;
@@ -12,8 +12,9 @@
   color: color('black');
 }
 
+// 위치 권한 문구는 Figma에서도 내용 폭(300)보다 1px 넓게 양옆으로 넘친다
 .description {
-  margin-top: 9px;
+  margin: 9px -1px 0;
   @include typo('body-s');
   color: color('gray-400');
 }
@@ -25,6 +26,8 @@
   margin-top: 22px;
 }
 
-.editRoute {
-  flex: 0 0 117px;
+// 폭은 화면마다 달라서 flex-basis로 받는다
+.cancel {
+  flex-grow: 0;
+  flex-shrink: 0;
 }

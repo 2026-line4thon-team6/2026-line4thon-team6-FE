@@ -40,7 +40,7 @@ const formatDate = (iso: string) => {
   return `${date.getMonth() + 1}.${String(date.getDate()).padStart(2, '0')}`
 }
 
-// 경로 전체를 맞출 때 위 검색창 · 아래 주행 정보와 버튼에 가리지 않게 띄운다
+// 검색창 · 주행 정보 · 버튼에 가리지 않게
 const FIT_PADDING: [number, number, number, number] = [150, 40, 230, 40]
 
 // 경로 설정 (Figma 검색 289:20769 · 289:20830 · 289:20892, 경로 설정하기 289:21024)
@@ -100,8 +100,8 @@ function RouteSettingPage({
         <>
           <div className={styles.map}>
             <DriveMap
-              current={route.origin.coordinate}
               path={path}
+              origin={route.origin.coordinate}
               destination={route.destination.coordinate}
               fitPadding={FIT_PADDING}
             />

@@ -27,7 +27,6 @@ export function formatArrival(iso: string) {
 }
 
 // 주행 전에는 값 대신 '-분 -초' 같은 자리 표시를 보여준다 (Figma 첫 진입 화면)
-// extraSeconds: 마지막으로 받은 뒤 화면에서 흐른 주행 시간
 export function getDriveStats(drive: Drive | null, extraSeconds = 0): DriveStat[] {
   const started = drive !== null && drive.status !== 'PREPARING'
   const arrival = drive?.metrics.estimatedArrivalAt ?? null

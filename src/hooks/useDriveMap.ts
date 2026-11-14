@@ -1,28 +1,41 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getRoute } from '@/api/routes'
-import type { Coordinate, Route } from '@/types/route'
-import { getCurrentCoordinate } from '@/utils/location'
+import type { Route } from '@/types/route'
+import { getCurrentCoordinate, type Position, requestPosition, watchPosition } from '@/utils/location'
 import { decodePolyline } from '@/utils/polyline'
 
-// 드라이브 지도에 그릴 현재 위치와 저장된 경로
-// TODO: 주행 중 GPS 전송을 붙이면 watchPosition으로 현재 위치를 계속 갱신한다
 function useDriveMap(routeId: string | null) {
-  const [current, setCurrent] = useState<Coordinate | null>(null)
+  const [position, setPosition] = useState<Position | null>(null)
   const [route, setRoute] = useState<{ id: string; data: Route } | null>(null)
+  const [locationDenied, setLocationDenied] = useState(false)
+  // 권한이 거부되면 브라우저가 watch를 멈추므로, 다시 허용되면 새로 건다
+  const [watchKey, setWatchKey] = useState(0)
 
   const locate = useCallback(async () => {
     const coordinate = await getCurrentCoordinate()
-    if (coordinate) setCurrent(coordinate)
+    if (coordinate) setPosition((prev) => ({ coordinate, accuracyMeters: prev?.accuracyMeters ?? Infinity }))
   }, [])
 
-  useEffect(() => {
-    let ignore = false
-    void getCurrentCoordinate().then((coordinate) => {
-      if (!ignore && coordinate) setCurrent(coordinate)
-    })
-    return () => {
-      ignore = true
-    }
+  useEffect(
+    () =>
+      watchPosition(
+        (next) => {
+          setPosition(next)
+          setLocationDenied(false)
+        },
+        () => setLocationDenied(true),
+      ),
+    [watchKey],
+  )
+
+  // 허용되면 true
+  const retryLocation = useCallback(async () => {
+    const next = await requestPosition()
+    if (!next) return false
+    setPosition(next)
+    setLocationDenied(false)
+    setWatchKey((key) => key + 1)
+    return true
   }, [])
 
   useEffect(() => {
@@ -41,7 +54,16 @@ function useDriveMap(routeId: string | null) {
   const loaded = route && route.id === routeId ? route.data : null
   const path = useMemo(() => (loaded ? decodePolyline(loaded.polyline) : []), [loaded])
 
-  return { current, path, destination: loaded?.destination.coordinate ?? null, locate }
+  return {
+    current: position?.coordinate ?? null,
+    accuracyMeters: position?.accuracyMeters ?? null,
+    path,
+    origin: loaded?.origin.coordinate ?? null,
+    destination: loaded?.destination.coordinate ?? null,
+    locationDenied,
+    locate,
+    retryLocation,
+  }
 }
 
 export default useDriveMap

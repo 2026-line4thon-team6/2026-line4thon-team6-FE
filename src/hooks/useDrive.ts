@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { endDrive, getActiveDrive, pauseDrive, resumeDrive, startDrive, updateDrive } from '@/api/drives'
-import type { Drive } from '@/types/drive'
+import type { Drive, DriveEndReason } from '@/types/drive'
 import { getCurrentCoordinate } from '@/utils/location'
 
 interface State {
@@ -8,10 +8,10 @@ interface State {
   drive: Drive | null
 }
 
-// 진행 중인 드라이브를 불러오고 바꾼다. 없으면 status='empty'
+// 진행 중인 드라이브가 없으면 status='empty'
 function useDrive() {
   const [state, setState] = useState<State>({ status: 'loading', drive: null })
-  // 경로 저장 뒤 바로 출발할 때처럼 이어서 부르면 화면 상태가 아직 옛 버전이라 따로 들고 있는다
+  // 경로 저장 뒤 바로 출발처럼 이어서 부를 때 state는 아직 옛 controlVersion이다
   const latest = useRef<Drive | null>(null)
 
   useEffect(() => {
@@ -32,7 +32,6 @@ function useDrive() {
     }
   }, [])
 
-  // 성공하면 바뀐 드라이브를, 실패하면 null을 돌려준다
   const run = async (request: (drive: Drive) => Promise<{ data: Drive }>) => {
     const drive = latest.current
     if (!drive) return null
@@ -68,11 +67,11 @@ function useDrive() {
   const resume = () => run((drive) => resumeDrive(drive.id, { expectedVersion: drive.controlVersion }, options(drive)))
 
   // TODO: GPS 전송을 붙이면 마지막으로 보낸 묶음 번호를 넣는다
-  const end = () =>
+  const end = (reason: DriveEndReason) =>
     run((drive) =>
       endDrive(
         drive.id,
-        { expectedVersion: drive.controlVersion, reason: 'USER_ENDED', lastRecordedSequence: 0 },
+        { expectedVersion: drive.controlVersion, reason, lastRecordedSequence: 0 },
         options(drive),
       ),
     )

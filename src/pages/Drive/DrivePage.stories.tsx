@@ -82,9 +82,21 @@ const DRIVING: Drive = {
   },
 }
 
-// 나가기 → 드라이브 마치기 팝업, 일시정지 → 주행 중단 화면
 export const Driving: Story = {
   args: { drive: DRIVING },
+  // 주행 시간이 1초마다 올라가 Chromatic 스냅샷이 빌드마다 달라지지 않게 멈춘다
+  beforeEach: () => {
+    const setInterval = window.setInterval
+    window.setInterval = (() => 0) as unknown as typeof window.setInterval
+    return () => {
+      window.setInterval = setInterval
+    }
+  },
+}
+
+export const LocationDenied: Story = {
+  ...Driving,
+  args: { drive: DRIVING, locationDenied: true, onLocationRetry: async () => false },
 }
 
 export const Paused: Story = {

@@ -1,7 +1,7 @@
 .map {
   width: 100%;
   height: 100%;
-  background-color: color('blue'); // 지도 타일이 오기 전 바다색
+  background-color: color('blue');
 }
 
 .placeholder {
@@ -24,20 +24,33 @@
   @include typo('body-s');
 }
 
-// 카카오 오버레이 상자는 폭이 0이라 전역 img max-width: 100%에 걸리지 않게 한다
+// 카카오 오버레이 상자는 폭이 0이라 전역 img max-width: 100%에 걸리면 크기가 0이 된다
 .current,
-.pin {
+.origin,
+.pin,
+.car {
+  display: block;
   max-width: none;
 }
 
 .current {
-  display: block;
   width: 30px;
   height: 30px;
 }
 
+.origin {
+  width: 22px;
+  height: 22px;
+}
+
 .pin {
-  display: block;
   width: 64px;
   height: 74px;
+}
+
+// Figma 붕붕 53 x 49, 경로 선 그림자
+.car {
+  width: 53px;
+  height: 49px;
+  filter: drop-shadow(0 0 10px rgb(255 133 133 / 30%)) drop-shadow(0 3px 4px rgb(255 158 133 / 50%));
 }

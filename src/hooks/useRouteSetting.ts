@@ -18,10 +18,10 @@ const toPoint = ({ id, name, address, coordinate }: PlaceSummary): RoutePoint =>
 })
 
 // 출발지(현재 위치) · 장소 검색 · 최근 검색 · 경로 미리보기
-function useRouteSetting(destinationPlaceId?: string) {
+function useRouteSetting(destinationPlaceId?: string, initialQuery = '') {
   const [origin, setOrigin] = useState<RoutePoint | null>(null)
   const [history, setHistory] = useState<SearchHistoryItem[]>([])
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useState(initialQuery)
   const [results, setResults] = useState<PlaceSummary[] | null>(null)
   const [route, setRoute] = useState<Route | null>(null)
   const [routeStatus, setRouteStatus] = useState<'idle' | 'loading' | 'error'>('idle')
