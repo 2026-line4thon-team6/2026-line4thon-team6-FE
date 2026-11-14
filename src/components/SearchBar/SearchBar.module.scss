@@ -1,0 +1,49 @@
+// Figma: 검색창 310 x 42
+.bar {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 42px;
+  padding-left: 14px;
+  border: 1px solid color('gray-100');
+  border-radius: 5px;
+  background-color: color('white');
+  box-shadow: shadow('icon');
+}
+
+// 입력한 글자는 SemiBold, 안내 문구는 Regular
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  @include typo('body-m-15-bold');
+  color: color('black');
+  background: none;
+  outline: none;
+  caret-color: color('coral');
+
+  &::placeholder {
+    @include typo('body-m-15');
+    color: color('gray-400');
+  }
+}
+
+// 아이콘은 15px이지만 누르기 쉽게 터치 영역을 넓힌다
+.submit {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 40px;
+
+  &:active {
+    opacity: 0.7;
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: -4px;
+  }
+}

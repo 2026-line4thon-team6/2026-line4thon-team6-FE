@@ -1,14 +1,37 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { logout } from '@/api/auth'
+import { prepareDrive } from '@/api/drives'
 import { MOCK_PARTNER_INVITE_CODE, mockEndSession, mockFetchMe, resetMockCouple } from '@/mocks/couples'
 import { resetMockPlaces } from '@/mocks/places'
 import { resetMockCards } from '@/mocks/cards'
+import { resetMockDrives } from '@/mocks/drives'
+import { resetMockRoutes } from '@/mocks/routes'
+import { resetMockSearchHistory } from '@/mocks/search'
+import { resetMockRecordDeletions } from './mocks/records'
 import App from './App'
+import type { RecordMapMarker } from './types/record'
 
-// 백엔드 주소가 없는 테스트 환경에서는 API 함수가 목 데이터로 응답한다
+// 카카오 지도 SDK는 jsdom에서 동작하지 않으므로 마커 버튼만 그리는 가짜 지도로 바꾼다
+vi.mock('./pages/RecordMap/RecordMapView', async () => {
+  const { default: RecordMarker } = await import('./pages/RecordMap/RecordMarker')
+  return {
+    default: ({ markers, onMarkerClick }: { markers: RecordMapMarker[]; onMarkerClick: (marker: RecordMapMarker) => void }) => (
+      <div data-testid="map">
+        {markers.map((marker) => (
+          <RecordMarker key={marker.groupKey} marker={marker} onClick={onMarkerClick} />
+        ))}
+      </div>
+    ),
+  }
+})
+
+// 목 서버에서 지운 기록이 다른 테스트에 남지 않게 한다
+afterEach(() => resetMockRecordDeletions())
+
+// 백엔드 주소가 없는 테스트 환경에서는 목 데이터로 응답한다
 function renderApp(path = '/') {
   render(
     <MemoryRouter initialEntries={[path]}>
@@ -16,6 +39,12 @@ function renderApp(path = '/') {
     </MemoryRouter>,
   )
   return userEvent.setup()
+}
+
+// 홈에 들어오면 미작성 카드 팝업이 먼저 뜬다. '나중에'로 닫은 뒤 드라이브를 시작한다
+async function startDriveFromHome(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('button', { name: '나중에' }))
+  await user.click(screen.getByRole('button', { name: '드라이브 시작하기' }))
 }
 
 beforeEach(() => {
@@ -365,6 +394,281 @@ describe('로그인 · 가입 (기능명세서 L1~L9)', () => {
     await user.click(await screen.findByRole('button', { name: '카카오로 3초 만에 시작하기' }))
 
     expect(await screen.findByRole('heading', { level: 1, name: /오늘은 어디로 떠나볼까요/ })).toBeInTheDocument()
+  })
+})
+
+describe('홈 ↔ 기록 지도 이동', () => {
+  it('하단 네비바의 기록 지도 탭을 누르면 함께한 드라이브 횟수가 보이고, 홈 탭으로 돌아올 수 있다', async () => {
+    const user = renderApp()
+
+    await user.click(screen.getByRole('button', { name: '기록 지도' }))
+
+    expect(screen.getByRole('heading', { level: 1, name: '우리 어디까지 가봤지?' })).toBeInTheDocument()
+    expect(await screen.findByText('총 12번의 드라이브를 함께했어요')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '홈' }))
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('오늘은 어디로 떠나볼까요?')
+  })
+
+  it('목록형으로 바꾸면 최신순 기록 목록을 보여주고, 검색하면 맞는 기록만 남는다 (전체 횟수는 그대로)', async () => {
+    const user = renderApp('/map')
+    await screen.findByText('총 12번의 드라이브를 함께했어요')
+
+    await user.click(screen.getByRole('button', { name: '목록형' }))
+    const list = await screen.findByRole('list', { name: '드라이브 기록 목록' })
+    expect(within(list).getAllByRole('listitem')[0]).toHaveTextContent('자라섬 캠핑 드라이브')
+
+    await user.type(screen.getByRole('searchbox', { name: '기록 검색' }), '오이도{Enter}')
+
+    await waitFor(() =>
+      expect(within(screen.getByRole('list', { name: '드라이브 기록 목록' })).getAllByRole('listitem')).toHaveLength(2),
+    )
+    expect(screen.getByText('총 12번의 드라이브를 함께했어요')).toBeInTheDocument()
+  })
+
+  it('캘린더에서 날짜를 고르면 그날의 기록만 남고, 검색창에 날짜가 보인다', async () => {
+    // 달력은 서울 기준 오늘이 있는 달(2026년 11월)부터 띄운다
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-11-13T03:00:00Z'))
+    const user = renderApp('/map')
+    await screen.findByText('총 12번의 드라이브를 함께했어요')
+    await user.click(screen.getByRole('button', { name: '목록형' }))
+    await screen.findByRole('list', { name: '드라이브 기록 목록' })
+
+    await user.click(screen.getByRole('button', { name: '날짜로 검색' }))
+    const calendar = screen.getByRole('dialog', { name: '날짜로 기록 검색' })
+    expect(within(calendar).getByRole('heading', { name: '2026년 11월' })).toBeInTheDocument()
+    await user.click(within(calendar).getByRole('button', { name: '이전 달' }))
+    await user.click(await within(calendar).findByRole('button', { name: '2026년 10월 24일' }))
+
+    expect(screen.queryByRole('dialog', { name: '날짜로 기록 검색' })).not.toBeInTheDocument()
+    expect(screen.getByRole('searchbox', { name: '기록 검색' })).toHaveValue('2026년 10월 24일')
+    await waitFor(() => {
+      const items = within(screen.getByRole('list', { name: '드라이브 기록 목록' })).getAllByRole('listitem')
+      expect(items).toHaveLength(1)
+      expect(items[0]).toHaveTextContent('몽산포 해변 산책')
+    })
+    vi.useRealTimers()
+  })
+})
+
+describe('기록 지도 → 기록 상세', () => {
+  it('목록의 기록을 누르면 상세로 이동하고, 삭제하면 목록으로 돌아와 그 기록이 사라진다', async () => {
+    const user = renderApp('/map')
+    await screen.findByText('총 12번의 드라이브를 함께했어요')
+    await user.click(screen.getByRole('button', { name: '목록형' }))
+    const list = await screen.findByRole('list', { name: '드라이브 기록 목록' })
+
+    await user.click(within(list).getByRole('button', { name: /자라섬 캠핑 드라이브/ }))
+    expect(await screen.findByRole('heading', { name: '2026년 11월 8일' })).toBeInTheDocument()
+    expect(screen.getByText('가평 자라섬')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '카드 삭제' }))
+    await user.click(screen.getByRole('button', { name: '삭제하기' }))
+
+    expect(await screen.findByText('총 11번의 드라이브를 함께했어요')).toBeInTheDocument()
+    expect(screen.queryByText('자라섬 캠핑 드라이브')).not.toBeInTheDocument()
+  })
+
+  it('없는 기록 주소로 들어오면 볼 수 없는 기록이라고 안내한다', async () => {
+    renderApp('/cards/crd_none')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('삭제되었거나 볼 수 없는 기록이에요')
+  })
+
+  // 기능명세서 18: 도착 후 24시간 안에는 카드를 작성 · 수정할 수 있다 → 상세 대신 작성 화면을 연다
+  it('수정 기간 안의 기록을 열면 카드 작성 화면으로 이동한다', async () => {
+    renderApp('/cards/crd_writing')
+
+    expect(await screen.findByRole('heading', { level: 1, name: '2026년 11월 3일' })).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: '내 한 줄 소감' })).toBeInTheDocument()
+  })
+
+  it('작성 화면에서 나가면 기록 상세를 거치지 않고 이전 화면으로 돌아간다', async () => {
+    render(
+      <MemoryRouter initialEntries={['/map', '/cards/crd_writing']}>
+        <App />
+      </MemoryRouter>,
+    )
+    const user = userEvent.setup()
+    await screen.findByRole('textbox', { name: '내 한 줄 소감' })
+
+    await user.click(screen.getByRole('button', { name: '뒤로가기' }))
+    await user.click(screen.getByRole('button', { name: '나가기' }))
+
+    expect(await screen.findByText('총 12번의 드라이브를 함께했어요')).toBeInTheDocument()
+  })
+})
+
+describe('기록 지도 → 기록 공유', () => {
+  it('미리보기 카드의 공유 버튼을 누르면 커플 전용 링크가 담긴 공유 시트가 뜨고, 링크를 복사할 수 있다', async () => {
+    const user = renderApp('/map')
+
+    await user.click(await screen.findByRole('button', { name: '자라섬 캠핑 드라이브 기록 보기' }))
+    await user.click(screen.getByRole('button', { name: '공유하기' }))
+
+    const sheet = screen.getByRole('dialog', { name: '드라이브 기록 카드 공유하기' })
+    expect(await within(sheet).findByText('https://bunbungus.app/cards/crd_01')).toBeInTheDocument()
+
+    await user.click(within(sheet).getByRole('button', { name: '링크 복사' }))
+    // userEvent가 클립보드를 대신하므로 복사된 내용을 읽어 확인한다
+    expect(await navigator.clipboard.readText()).toBe('https://bunbungus.app/cards/crd_01')
+  })
+})
+
+describe('드라이브 모드 진입', () => {
+  beforeEach(() => resetMockDrives())
+
+  it('홈의 드라이브 시작하기 → 드라이브명 시트 → 출발하면 드라이브 모드로 이동한다', async () => {
+    const user = renderApp()
+
+    await startDriveFromHome(user)
+    const sheet = await screen.findByRole('dialog', { name: '드라이브 준비 완료!' })
+
+    await user.type(within(sheet).getByRole('textbox', { name: '드라이브명' }), '우리의 첫 바다 드라이브')
+    await user.click(within(sheet).getByRole('button', { name: '붕붕! 붕붕이가 출발' }))
+
+    expect(await screen.findByRole('button', { name: '경로 탐색' })).toBeInTheDocument()
+  })
+
+  it('시트 바깥을 누르면 드라이브를 만들지 않고 시트가 닫힌다', async () => {
+    const user = renderApp()
+
+    await startDriveFromHome(user)
+    const sheet = await screen.findByRole('dialog', { name: '드라이브 준비 완료!' })
+    // 시트를 감싼 어두운 배경
+    await user.click(sheet.parentElement!)
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('오늘은 어디로 떠나볼까요?')
+  })
+
+  it('진행 중인 드라이브가 있으면 시트 없이 바로 드라이브 모드로 이어간다', async () => {
+    const members = { driverUserId: 'usr_me', passengerUserId: 'usr_partner', recorderUserId: 'usr_me' }
+    await prepareDrive(members, { coupleId: 'cpl_01', idempotencyKey: 'test-idempotency-key-0001' })
+    const user = renderApp()
+
+    await startDriveFromHome(user)
+
+    expect(await screen.findByRole('button', { name: '경로 탐색' })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('장소 상세의 드라이브 시작하기에서도 드라이브명 시트가 열린다', async () => {
+    const user = renderApp('/places/1')
+    await screen.findByRole('heading', { level: 1, name: '시흥 오이도' })
+
+    await user.click(screen.getByRole('button', { name: '드라이브 시작하기' }))
+
+    expect(await screen.findByRole('dialog', { name: '드라이브 준비 완료!' })).toBeInTheDocument()
+  })
+})
+
+describe('드라이브 모드 첫 진입 화면', () => {
+  beforeEach(() => resetMockDrives())
+
+  async function enterDrive(title = '') {
+    const user = renderApp()
+    await startDriveFromHome(user)
+    const sheet = await screen.findByRole('dialog', { name: '드라이브 준비 완료!' })
+    if (title) await user.type(within(sheet).getByRole('textbox', { name: '드라이브명' }), title)
+    await user.click(within(sheet).getByRole('button', { name: '붕붕! 붕붕이가 출발' }))
+    return user
+  }
+
+  it('입력한 드라이브명과 출발 전 정보를 보여준다', async () => {
+    await enterDrive('우리의 첫 바다 드라이브')
+
+    expect(await screen.findByRole('button', { name: '우리의 첫 바다 드라이브, 드라이브명 수정' })).toBeInTheDocument()
+    expect(screen.getByText('-분 -초')).toBeInTheDocument()
+    expect(screen.getByText('-km')).toBeInTheDocument()
+    expect(screen.getByText('-시 -분')).toBeInTheDocument()
+  })
+
+  it('드라이브명을 누르면 수정 시트가 열리고, 수정하면 바로 반영된다', async () => {
+    const user = await enterDrive('우리의 첫 바다 드라이브')
+    await user.click(await screen.findByRole('button', { name: /드라이브명 수정$/ }))
+
+    const sheet = await screen.findByRole('dialog', { name: '드라이브명 수정하기' })
+    const input = within(sheet).getByRole('textbox', { name: '드라이브명' })
+    await user.clear(input)
+    await user.type(input, '노을 보러 가는 길')
+    await user.click(within(sheet).getByRole('button', { name: '수정 완료' }))
+
+    expect(await screen.findByRole('button', { name: '노을 보러 가는 길, 드라이브명 수정' })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('경로 탐색 버튼을 누르면 경로 설정 화면으로 이동한다', async () => {
+    const user = await enterDrive()
+    await user.click(await screen.findByRole('button', { name: '경로 탐색' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: '경로 설정' })).toBeInTheDocument()
+  })
+
+  it('진행 중인 드라이브 없이 /drive 로 들어오면 홈으로 돌아간다', async () => {
+    renderApp('/drive')
+
+    expect(await screen.findByText('오늘은 어디로 떠나볼까요?')).toBeInTheDocument()
+  })
+})
+
+describe('경로 설정', () => {
+  beforeEach(() => {
+    resetMockDrives()
+    resetMockRoutes()
+    resetMockSearchHistory()
+  })
+
+  async function openRouteSetting() {
+    const user = renderApp()
+    await startDriveFromHome(user)
+    await user.click(await screen.findByRole('button', { name: '붕붕! 붕붕이가 출발' }))
+    await user.click(await screen.findByRole('button', { name: '경로 탐색' }))
+    await screen.findByRole('heading', { level: 1, name: '경로 설정' })
+    return user
+  }
+
+  it('처음에는 출발지(내 위치)와 최근 검색을 보여주고, 최근 검색어를 지울 수 있다', async () => {
+    const user = await openRouteSetting()
+
+    expect(await screen.findByText('(서초구 서초동)')).toBeInTheDocument()
+    const recent = await screen.findByRole('list', { name: '최근 검색' })
+    expect(within(recent).getAllByRole('listitem')).toHaveLength(5)
+
+    await user.click(screen.getByRole('button', { name: '강릉 헌화로 최근 검색어 삭제' }))
+    expect(within(recent).getAllByRole('listitem')).toHaveLength(4)
+  })
+
+  it('검색 → 결과 선택 → 경로 미리보기 → 경로 설정하기를 누르면 드라이브 화면에 도착 예정 시간이 생긴다', async () => {
+    const user = await openRouteSetting()
+
+    await user.type(screen.getByRole('textbox', { name: '도착지' }), '한강 공원')
+    const results = await screen.findByRole('list', { name: '검색 결과' })
+    expect(within(results).getAllByRole('listitem')).toHaveLength(6)
+
+    await user.click(within(results).getByRole('button', { name: /서울 반포 한강공원/ }))
+    expect(await screen.findByText('예상 주행 시간')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '경로 설정하기' }))
+    await screen.findByRole('button', { name: '경로 탐색' })
+    await waitFor(() => expect(screen.queryByText('-시 -분')).not.toBeInTheDocument())
+  })
+
+  it('검색 결과가 없으면 안내를 보여준다', async () => {
+    const user = await openRouteSetting()
+
+    await user.type(screen.getByRole('textbox', { name: '도착지' }), '없는장소')
+
+    expect(await screen.findByText('검색 결과가 없어요.')).toBeInTheDocument()
+  })
+
+  it('닫기를 누르면 드라이브 화면으로 돌아간다', async () => {
+    const user = await openRouteSetting()
+
+    await user.click(screen.getByRole('button', { name: '닫기' }))
+
+    expect(await screen.findByRole('button', { name: '경로 탐색' })).toBeInTheDocument()
   })
 })
 

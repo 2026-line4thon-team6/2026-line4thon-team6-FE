@@ -1,0 +1,37 @@
+// Figma 기준 340 x 202. 닫기 버튼(28px) 아래에 제목이 온다
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 19px 27px 21px;
+  text-align: center;
+}
+
+.title {
+  color: color('black');
+  @include typo('body-l-bold');
+}
+
+.description {
+  margin-top: 9px;
+  color: color('gray-400');
+  @include typo('body-s');
+}
+
+.error {
+  margin-top: 8px;
+  color: color('red');
+  @include typo('caption');
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  margin-top: 22px;
+}
+
+// 취소 96px, 삭제하기가 남는 폭을 쓴다
+.cancel {
+  flex: 0 0 96px;
+}
