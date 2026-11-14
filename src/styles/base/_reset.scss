@@ -18,8 +18,7 @@ html {
 }
 
 body {
-  min-height: 100vh; // dvh 미지원 웹뷰 대비
-  min-height: 100dvh;
+  min-height: var(--app-height);
   font-family: var(--font-family-base);
   color: color('black');
   background-color: color('white');

@@ -16,5 +16,18 @@
   // 모바일 전용 화면 폭. 태블릿·데스크톱에서는 이 폭으로 가운데 정렬한다
   --app-max-width: 430px;
 
+  // 화면 크기 · 안전 영역. 데스크톱 기기 프레임(DeviceFrame) 안에서는 아이폰 16 값(393 x 852, 59 · 34)으로 바뀐다.
+  // 높이 · 폭은 100vh · 100vw 대신 이 값을 쓴다 (프레임 안에서는 브라우저 창이 아니라 프레임 기준이어야 해서)
+  --app-height: 100vh; // dvh 미지원 웹뷰 대비
+  --app-width: 100vw;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
   --font-family-base: #{meta.inspect($font-family-base)};
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --app-height: 100dvh;
+  }
 }

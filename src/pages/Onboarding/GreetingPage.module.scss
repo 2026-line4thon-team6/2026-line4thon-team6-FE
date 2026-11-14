@@ -7,20 +7,19 @@ $gutter: 25px;
   align-items: center;
   justify-content: center;
   max-width: var(--app-max-width);
-  min-height: 100vh; // dvh 미지원 웹뷰 대비
-  min-height: 100dvh;
+  min-height: var(--app-height);
   margin: 0 auto;
-  padding: max(env(safe-area-inset-top, 0px), 24px) $gutter max(env(safe-area-inset-bottom, 0px), 24px);
+  padding: max(var(--safe-top), 24px) $gutter max(var(--safe-bottom), 24px);
   background-color: color('coral-bg');
 }
 
 .mascot {
-  width: min(216px, 56vw);
+  width: min(216px, calc(var(--app-width) * 0.56));
   height: auto;
 }
 
 .mascotWide {
-  width: min(228px, 59vw);
+  width: min(228px, calc(var(--app-width) * 0.59));
 }
 
 .message {

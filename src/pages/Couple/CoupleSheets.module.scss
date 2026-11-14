@@ -22,7 +22,7 @@
   @include typo('title-m-bold');
   // 28px로는 폭 390(내용 340px)에서 딱 한 줄이라, 그보다 좁은 기기(iPhone SE 375, 갤럭시 360)에서는
   // 화면 폭에 맞춰 글자를 줄여 한 줄을 유지한다
-  font-size: clamp(22px, calc((100vw - 50px) / 12.2), 28px);
+  font-size: clamp(22px, calc((var(--app-width) - 50px) / 12.2), 28px);
   color: color('black');
   word-break: keep-all;
 }

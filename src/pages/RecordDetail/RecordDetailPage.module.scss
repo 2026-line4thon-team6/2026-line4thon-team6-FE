@@ -3,10 +3,9 @@ $gutter: 25px;
 
 .page {
   max-width: var(--app-max-width);
-  min-height: 100vh; // dvh 미지원 웹뷰 대비
-  min-height: 100dvh;
+  min-height: var(--app-height);
   margin: 0 auto;
-  padding: calc(max(env(safe-area-inset-top, 0px), 12px) + 5px) $gutter calc(max(env(safe-area-inset-bottom, 0px), 12px) + 24px);
+  padding: calc(max(var(--safe-top), 12px) + 5px) $gutter calc(max(var(--safe-bottom), 12px) + 24px);
   overflow-x: hidden;
   background-color: color('coral-bg');
 }

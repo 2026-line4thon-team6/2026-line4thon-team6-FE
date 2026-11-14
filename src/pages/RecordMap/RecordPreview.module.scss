@@ -8,8 +8,8 @@
   flex-direction: column;
   justify-content: center;
   // 헤더 높이(상단 여백 + 제목 82px) · 하단 네비바 높이만큼 비운다
-  padding: calc(max(env(safe-area-inset-top, 0px), 12px) + 82px + 12px) 0
-    calc(min(#{$nav-height}, #{$nav-visible-height} + env(safe-area-inset-bottom, 0px)) + 12px);
+  padding: calc(max(var(--safe-top), 12px) + 82px + 12px) 0
+    calc(min(#{$nav-height}, #{$nav-visible-height} + var(--safe-bottom)) + 12px);
 
   &:focus {
     outline: none;

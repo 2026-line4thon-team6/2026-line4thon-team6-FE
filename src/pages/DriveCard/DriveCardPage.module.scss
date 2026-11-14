@@ -4,11 +4,10 @@ $gutter: 25px;
 .page {
   position: relative;
   max-width: var(--app-max-width);
-  min-height: 100vh; // dvh 미지원 웹뷰 대비
-  min-height: 100dvh;
+  min-height: var(--app-height);
   margin: 0 auto;
   // 노치·상태바 영역(PWA 전체화면)만큼 내리고, 브라우저에서는 최소 여백을 둔다
-  padding-top: max(env(safe-area-inset-top, 0px), 12px);
+  padding-top: max(var(--safe-top), 12px);
   overflow-x: hidden;
   background-color: color('coral-bg');
 }
@@ -32,7 +31,7 @@ $gutter: 25px;
 .content {
   display: flex;
   flex-direction: column;
-  padding: 8px $gutter max(34px, calc(env(safe-area-inset-bottom, 0px) + 20px));
+  padding: 8px $gutter max(34px, calc(var(--safe-bottom) + 20px));
 }
 
 // 드라이브명 바 (Figma 284 x 44)

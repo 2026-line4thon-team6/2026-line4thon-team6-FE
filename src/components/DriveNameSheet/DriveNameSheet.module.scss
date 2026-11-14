@@ -1,7 +1,7 @@
 // Figma: 시트 위쪽 52px 아래부터 내용, 내용 아래 32px + 홈 인디케이터. 좌우 25px은 BottomSheet 기본값
 .sheet {
   padding-top: 52px;
-  padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(32px + var(--safe-bottom));
 }
 
 .form {
