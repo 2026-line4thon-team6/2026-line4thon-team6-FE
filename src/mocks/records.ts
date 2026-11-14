@@ -50,8 +50,24 @@ const SEEDS: Seed[] = [
 const byLatest = (a: RecordSummary, b: RecordSummary) =>
   b.driveDate.localeCompare(a.driveDate) || b.cardId.localeCompare(a.cardId)
 
+// 목 서버에서 삭제한 카드. 지운 기록은 목록 · 지도 · 달력에서 빠진다
+const deletedCardIds = new Set<string>()
+
+export function markMockRecordDeleted(cardId: string) {
+  deletedCardIds.add(cardId)
+}
+
+// 테스트끼리 삭제 상태가 섞이지 않게 되돌린다
+export function resetMockRecordDeletions() {
+  deletedCardIds.clear()
+}
+
 // 완료한 드라이브 기록 전체 (최신순)
 export function createMockRecords(): RecordSummary[] {
+  return createAllMockRecords().filter((record) => !deletedCardIds.has(record.cardId))
+}
+
+function createAllMockRecords(): RecordSummary[] {
   return SEEDS.flatMap((seed, seedIndex) => {
     const placeId = `plc_${String(seedIndex + 1).padStart(2, '0')}`
     const coordinate = { latitude: seed.latitude, longitude: seed.longitude }

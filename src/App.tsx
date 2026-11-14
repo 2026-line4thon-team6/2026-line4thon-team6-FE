@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 're
 import type { NavTab } from '@/components/BottomNav/BottomNav'
 import CardPromptModal from '@/components/CardPromptModal/CardPromptModal'
 import DriveNameSheet from '@/components/DriveNameSheet/DriveNameSheet'
+import useCardDetail from '@/hooks/useCardDetail'
 import useDrive from '@/hooks/useDrive'
 import useDriveCard from '@/hooks/useDriveCard'
 import useNotifications from '@/hooks/useNotifications'
@@ -18,6 +19,7 @@ import DriveCardPage from '@/pages/DriveCard/DriveCardPage'
 import HomePage from '@/pages/Home/HomePage'
 import NotificationsPage from '@/pages/Notifications/NotificationsPage'
 import PlaceDetailPage from '@/pages/PlaceDetail/PlaceDetailPage'
+import RecordDetailPage from '@/pages/RecordDetail/RecordDetailPage'
 import RecordCalendarSheet from '@/pages/RecordMap/RecordCalendarSheet'
 import RecordMapPage, { type RecordView } from '@/pages/RecordMap/RecordMapPage'
 import RouteSettingPage from '@/pages/RouteSetting/RouteSettingPage'
@@ -201,6 +203,7 @@ function RouteSettingRoute() {
 // 기록 지도. 검색어나 날짜가 바뀌면 지도 마커와 기록 목록을 그 조건으로 다시 불러온다.
 // 검색어와 날짜는 함께 쓰지 않는다. 상단의 '총 N번'은 조건과 관계없는 목록 API의 totalCount를 쓴다
 function RecordMapRoute() {
+  const navigate = useNavigate()
   const goTab = useTabNavigate()
   const [view, setView] = useState<RecordView>('map')
   const [query, setQuery] = useState('')
@@ -244,8 +247,8 @@ function RecordMapRoute() {
         onTabChange={goTab}
         onCalendarClick={() => setCalendarOpen(true)}
         onDateClear={() => setDate(null)}
-        // TODO: 기록 상세 · 기록 지도 공유 화면이 생기면 연결한다
-        onCardClick={() => {}}
+        onCardClick={(card) => navigate(`/cards/${encodeURIComponent(card.cardId)}`)}
+        // TODO: 기록 지도 공유 화면이 생기면 연결한다
         onShare={() => {}}
       />
       {calendarOpen && (
@@ -258,6 +261,43 @@ function RecordMapRoute() {
       )}
     </>
   )
+}
+
+// 기록 상세. 삭제하면 이전 화면(기록 지도)으로 돌아가고, 기록 지도는 다시 불러와 지운 기록이 빠진다
+function RecordDetailRoute({ cardId }: { cardId: string }) {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const goBack = useGoBack()
+  const { status, card, retry, remove } = useCardDetail(cardId)
+
+  const handleDelete = async () => {
+    const outcome = await remove()
+    if (outcome === 'deleted') {
+      if (location.key === 'default') navigate('/map', { replace: true })
+      else navigate(-1)
+    }
+    return outcome
+  }
+
+  // 기능명세서 18: 도착 후 24시간 안(canEdit)이면 상세 대신 작성 화면에서 고친다.
+  // 뒤로가기로 상세에 다시 오지 않게 기록을 바꾼다
+  if (card?.canEdit) return <Navigate to={cardPath(card.driveId)} replace />
+
+  return (
+    <RecordDetailPage
+      status={status}
+      card={card}
+      onBack={goBack}
+      onRetry={retry}
+      onDelete={handleDelete}
+      // TODO: 플레이리스트 화면이 생기면 연결한다
+    />
+  )
+}
+
+function RecordDetailRouteByParam() {
+  const { cardId = '' } = useParams()
+  return <RecordDetailRoute key={cardId} cardId={cardId} />
 }
 
 // 장소가 바뀌면 상세 화면을 새로 마운트해 이전 장소의 상태가 남지 않게 한다
@@ -398,6 +438,7 @@ function App() {
         }
       />
       <Route path="/map" element={<RecordMapRoute />} />
+      <Route path="/cards/:cardId" element={<RecordDetailRouteByParam />} />
       <Route path="/notifications" element={<NotificationsRoute onRead={handleNotificationRead} />} />
       <Route path="/drive" element={<DriveRoute />} />
       <Route path="/drive/route" element={<RouteSettingRoute />} />

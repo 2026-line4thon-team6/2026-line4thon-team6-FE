@@ -4,11 +4,13 @@ import closeIcon from '@/assets/icons/close-glass.svg'
 import exitIcon from '@/assets/icons/exit.svg'
 import locateIcon from '@/assets/icons/locate.svg'
 import shareIcon from '@/assets/icons/share.svg'
+import trashIcon from '@/assets/icons/trash-fill.svg'
 import styles from './GlassIconButton.module.scss'
 
 const ICONS = {
   back: backIcon,
   share: shareIcon,
+  delete: trashIcon,
   close: closeIcon,
   locate: locateIcon,
   exit: exitIcon,
@@ -20,7 +22,7 @@ interface GlassIconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 // 36px 원형 글래스 버튼
-// 상세 페이지 이미지 위: 뒤로가기, 공유하기 / 드라이브 모드 지도 위: 닫기, 현재 위치, 나가기
+// 상세 페이지 이미지 위: 뒤로가기, 공유하기, 삭제 / 드라이브 모드 지도 위: 닫기, 현재 위치, 나가기
 function GlassIconButton({ icon, className, type = 'button', ...props }: GlassIconButtonProps) {
   return (
     <button type={type} className={[styles.button, className].filter(Boolean).join(' ')} {...props}>
