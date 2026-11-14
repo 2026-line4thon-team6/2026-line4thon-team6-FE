@@ -8,8 +8,10 @@ import BottomNavBar from '@/components/BottomNavBar/BottomNavBar'
 import Button from '@/components/Button/Button'
 import CategoryChip from '@/components/CategoryChip/CategoryChip'
 import NotificationButton from '@/components/NotificationButton/NotificationButton'
+import PendingCardBanner from '@/components/PendingCardBanner/PendingCardBanner'
 import SpotCard from '@/components/SpotCard/SpotCard'
 import useDragScroll from '@/hooks/useDragScroll'
+import type { PendingSummary } from '@/hooks/usePendingCards'
 import type { HomeSummary } from '@/types/home'
 import type { Category, SpotSummary } from '@/types/spot'
 import styles from './HomePage.module.scss'
@@ -25,11 +27,14 @@ interface HomePageProps {
   spots: SpotSummary[]
   // 차량(블루투스) 연결 여부. 서버가 아니라 기기 상태로 판단한다
   carConnected: boolean
+  // 24시간 안에 저장하지 않은 드라이브 카드 (GET /cards/pending). 없으면 null
+  pendingCard?: PendingSummary | null
   onNotificationClick?: () => void
   onStartDrive?: () => void
   onSpotClick?: (id: number) => void
   onLikeToggle?: (id: number, liked: boolean) => void
   onTabChange?: (tab: NavTab) => void
+  onPendingCardClick?: (driveId: string) => void
 }
 
 function HomePage({
@@ -37,11 +42,13 @@ function HomePage({
   categories,
   spots,
   carConnected,
+  pendingCard = null,
   onNotificationClick,
   onStartDrive,
   onSpotClick,
   onLikeToggle,
   onTabChange,
+  onPendingCardClick,
 }: HomePageProps) {
   const categoryDrag = useDragScroll<HTMLUListElement>()
   const spotDrag = useDragScroll<HTMLUListElement>()
@@ -66,6 +73,15 @@ function HomePage({
           <span className={styles.hello}>안녕하세요, {nickname}님! 👋🏻</span>
           <span className={styles.question}>오늘은 어디로 떠나볼까요?</span>
         </h1>
+
+        {pendingCard && (
+          <PendingCardBanner
+            className={styles.pendingBanner}
+            count={pendingCard.count}
+            remainingSeconds={pendingCard.remainingSeconds}
+            onClick={() => onPendingCardClick?.(pendingCard.driveId)}
+          />
+        )}
 
         <section className={styles.banner} aria-label="드라이브 준비">
           <img className={styles.bannerImage} src={heroImage} alt="" />

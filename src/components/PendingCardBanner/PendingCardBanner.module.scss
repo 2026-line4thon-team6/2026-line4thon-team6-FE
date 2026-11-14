@@ -1,0 +1,64 @@
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 55px;
+  padding: 5px 16px 5px 17px;
+  border: 1px solid color('coral-2');
+  border-radius: 20px;
+  text-align: left;
+  background-color: color('coral-3');
+
+  &:active {
+    background-color: color('coral-2');
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.title {
+  @include typo('body-m-medium');
+  color: color('black');
+
+  strong {
+    font-weight: 600;
+  }
+}
+
+.meta {
+  @include typo('caption-bold');
+  color: color('coral');
+  white-space: nowrap;
+}
+
+.separator {
+  margin: 0 6px;
+}
+
+// 오른쪽 원형 화살표 (아이콘은 왼쪽을 향해 있어 뒤집는다)
+.arrow {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 1px;
+  border: 0.5px solid color('coral');
+  border-radius: 18px;
+  background-color: color('coral');
+  filter: drop-shadow(0 0 5px rgb(0 0 0 / 5%));
+
+  img {
+    transform: scaleX(-1);
+  }
+}
