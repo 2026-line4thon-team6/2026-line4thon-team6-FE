@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Route, Routes, useLocation, useNavigate, useParams } from 'react-router'
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
 import CardPromptModal from '@/components/CardPromptModal/CardPromptModal'
 import useCardDetail from '@/hooks/useCardDetail'
@@ -200,6 +200,10 @@ function RecordDetailRoute({ cardId }: { cardId: string }) {
     }
     return outcome
   }
+
+  // 기능명세서 18: 도착 후 24시간 안(canEdit)이면 상세 대신 작성 화면에서 고친다.
+  // 뒤로가기로 상세에 다시 오지 않게 기록을 바꾼다
+  if (card?.canEdit) return <Navigate to={cardPath(card.driveId)} replace />
 
   return (
     <RecordDetailPage
