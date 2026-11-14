@@ -1,0 +1,261 @@
+// Figma 기준 390 x 954 (DriveMode -> Card_UI > 카드 작성). 좌우 여백은 고정, 가운데 영역이 화면 폭에 맞춰 늘어난다
+$gutter: 25px;
+
+.page {
+  position: relative;
+  max-width: var(--app-max-width);
+  min-height: 100vh; // dvh 미지원 웹뷰 대비
+  min-height: 100dvh;
+  margin: 0 auto;
+  // 노치·상태바 영역(PWA 전체화면)만큼 내리고, 브라우저에서는 최소 여백을 둔다
+  padding-top: max(env(safe-area-inset-top, 0px), 12px);
+  overflow-x: hidden;
+  background-color: color('coral-bg');
+}
+
+// 뒤로가기(36px) + 가운데 날짜
+.topBar {
+  display: grid;
+  grid-template-columns: 36px 1fr 36px;
+  align-items: center;
+  padding: 0 $gutter;
+}
+
+.date {
+  grid-column: 2;
+  @include typo('body-l-bold');
+  color: color('gray-800');
+  text-align: center;
+  white-space: nowrap;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  padding: 8px $gutter max(34px, calc(env(safe-area-inset-bottom, 0px) + 20px));
+}
+
+// 드라이브명 바 (Figma 284 x 44)
+.titleBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(284px, 100%);
+  height: 44px;
+  padding: 0 15px;
+  border: 4px solid color('divider');
+  border-radius: 20px;
+  @include typo('body-m-medium');
+  color: color('black');
+  background-color: color('white');
+  filter: drop-shadow(0 0 5px rgb(0 0 0 / 5%));
+
+  img {
+    flex-shrink: 0;
+  }
+}
+
+.title {
+  overflow: hidden;
+  min-width: 0;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.region {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  padding-left: 7px;
+  @include typo('body-s-medium');
+  color: color('coral-pressed-2');
+}
+
+.stats {
+  display: flex;
+  gap: 29px;
+  margin-top: 26px;
+  padding: 0 7px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.statLabel {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  @include typo('body-s');
+  color: color('coral-pressed-2');
+
+  &::before {
+    content: '';
+    width: 3px;
+    height: 17px;
+    border-radius: 100px;
+    background-color: color('coral-stroke');
+  }
+}
+
+.statValue {
+  @include typo('body-l-bold');
+  color: color('black');
+}
+
+// 함께 들었던 플레이리스트 (Figma 340 x 94)
+.playlist {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 94px;
+  margin-top: 20px;
+  padding: 13px 14px 12px;
+  border-radius: 15px;
+  background: linear-gradient(153.83deg, rgb(255 170 149 / 25%) 0.49%, rgb(255 29 70 / 25%) 113.82%);
+}
+
+.playlistCover {
+  flex-shrink: 0;
+  width: 69px;
+  height: 69px;
+  border-radius: 10px;
+  object-fit: cover;
+  background-color: color('coral-2');
+}
+
+.playlistText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.playlistBadge {
+  display: flex;
+  align-items: center;
+  height: 21px;
+  margin-bottom: 6px;
+  padding: 0 10px;
+  border-radius: 100px;
+  @include typo('caption-small-bold');
+  color: color('coral-bg');
+  white-space: nowrap;
+  background-color: color('coral-stroke');
+}
+
+.playlistTitle {
+  overflow: hidden;
+  max-width: 100%;
+  @include typo('body-m-bold');
+  color: color('black');
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.playlistMeta {
+  @include typo('caption');
+  color: color('gray-600');
+  white-space: nowrap;
+}
+
+.playlistIcon {
+  flex-shrink: 0;
+}
+
+.error {
+  margin-top: 10px;
+  @include typo('caption');
+  color: color('red');
+}
+
+.reflections {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.reflection {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.roleLabel {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  @include typo('body-m-bold');
+  color: color('coral-pressed-2');
+}
+
+// 동승자 캐릭터 54 x 51, 운전자 캐릭터 51 x 51
+.roleImage {
+  display: flex;
+  width: 54px;
+  height: 51px;
+
+  img {
+    height: 100%;
+  }
+}
+
+// 한 줄 소감 칸 (Figma 340 x 53)
+.field {
+  display: block;
+  width: 100%;
+  min-height: 53px;
+  padding: 15px 21px;
+  border: 1px solid color('gray-100');
+  border-radius: 20px;
+  @include typo('card-myungjo');
+  color: color('black');
+  background-color: color('white');
+  overflow-wrap: anywhere;
+}
+
+textarea.field {
+  resize: none;
+  overflow: hidden;
+  field-sizing: content; // 지원하는 브라우저에서는 글이 길면 칸이 늘어난다
+  caret-color: color('coral');
+  outline: none;
+
+  &::placeholder {
+    color: color('gray-400');
+  }
+
+  &:focus-visible {
+    border-color: color('coral-stroke');
+  }
+}
+
+.placeholder {
+  color: color('gray-400');
+}
+
+.save {
+  margin-top: 27px;
+}
+
+// 불러오는 중 · 오류 안내 (시안에 없는 상태라 최소한으로 둔다)
+.message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 160px $gutter 0;
+  @include typo('body-m-15');
+  color: color('gray-600');
+  text-align: center;
+}
+
+.retry {
+  width: 140px;
+}
