@@ -1,13 +1,14 @@
-<svg width="66" height="66" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M66 33C66 51.2254 51.2254 66 33 66C14.7746 66 0 51.2254 0 33C0 14.7746 14.7746 0 33 0C51.2254 0 66 14.7746 66 33Z" fill="url(#paint0_linear_0_1)"/>
-<path d="M20 24.2V45L29.1 39.8L38.2 45L46 39.8V19L38.2 24.2L29.1 19L20 24.2Z" fill="white"/>
-<path d="M38.2 24.2L29.1 19L20 24.2V45L29.1 39.8M38.2 24.2L46 19V39.8L38.2 45L29.1 39.8M29.1 39.8V19M38.2 45V24.2" stroke="url(#paint1_linear_0_1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="66" height="66" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Group 2117904856">
+<path id="Ellipse 3" d="M66 33C66 51.2254 51.2254 66 33 66C14.7746 66 0 51.2254 0 33C0 14.7746 14.7746 0 33 0C51.2254 0 66 14.7746 66 33Z" fill="url(#paint0_linear_0_5)"/>
+<path id="Icon" d="M20 24.2V45L29.1 39.8L38.2 45L46 39.8V19L38.2 24.2L29.1 19L20 24.2Z" fill="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="url(#paint1_linear_0_5)"/>
+</g>
 <defs>
-<linearGradient id="paint0_linear_0_1" x1="-29.6582" y1="-65.1646" x2="40.9367" y2="66" gradientUnits="userSpaceOnUse">
+<linearGradient id="paint0_linear_0_5" x1="-29.6582" y1="-65.1646" x2="40.9367" y2="66" gradientUnits="userSpaceOnUse">
 <stop stop-color="#FFE7E1"/>
 <stop offset="1" stop-color="#FF705A"/>
 </linearGradient>
-<linearGradient id="paint1_linear_0_1" x1="8.31645" y1="-6.67089" x2="36.1266" y2="45" gradientUnits="userSpaceOnUse">
+<linearGradient id="paint1_linear_0_5" x1="8.31645" y1="-6.67089" x2="36.1266" y2="45" gradientUnits="userSpaceOnUse">
 <stop stop-color="#FFE7E1"/>
 <stop offset="1" stop-color="#FF705A"/>
 </linearGradient>
