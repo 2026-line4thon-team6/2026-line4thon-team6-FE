@@ -1,6 +1,6 @@
 import { ApiError } from '@/api/client'
 import type { ApiMeta, ApiResponse } from '@/types/api'
-import type { Card, CardAuthor, CardDraftPatch, PendingCard, Reflection, ReflectionPut } from '@/types/card'
+import type { Card, CardAuthor, CardDraftPatch, CardShare, PendingCard, Reflection, ReflectionPut } from '@/types/card'
 import { createMockRecords, markMockRecordDeleted } from './records'
 
 // 백엔드 연동 전(VITE_API_BASE_URL 미설정)에 쓰는 드라이브 카드 목 서버.
@@ -266,4 +266,9 @@ export async function mockFetchCard(cardId: string): Promise<ApiResponse<Card>> 
 export async function mockDeleteCard(cardId: string): Promise<void> {
   if (!createMockRecords().some((record) => record.cardId === cardId)) throw recordNotFound()
   markMockRecordDeleted(cardId)
+}
+
+export async function mockFetchCardShare(cardId: string): Promise<ApiResponse<CardShare>> {
+  if (!createMockRecords().some((record) => record.cardId === cardId)) throw recordNotFound()
+  return { data: { url: `https://bunbungus.app/cards/${cardId}`, access: 'COUPLE_ONLY', expiresAt: null }, meta: meta() }
 }

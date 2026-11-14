@@ -2,6 +2,7 @@ import {
   mockCompleteCard,
   mockDeleteCard,
   mockFetchCard,
+  mockFetchCardShare,
   mockFetchDriveCard,
   mockFetchPendingCards,
   mockSaveCardDraft,
@@ -9,7 +10,7 @@ import {
   mockUploadCardPhoto,
 } from '@/mocks/cards'
 import type { ApiResponse } from '@/types/api'
-import type { Card, CardDraftPatch, PendingCard, Reflection, ReflectionPut } from '@/types/card'
+import type { Card, CardDraftPatch, CardShare, PendingCard, Reflection, ReflectionPut } from '@/types/card'
 import { apiFetch, ApiError, USE_MOCK } from './client'
 
 export interface CoupleRequestOptions {
@@ -40,6 +41,13 @@ export async function deleteCard(card: Pick<Card, 'id' | 'coupleId' | 'version'>
     method: 'DELETE',
     headers: { 'X-Couple-Id': card.coupleId, 'X-Expected-Version': String(card.version) },
   })
+}
+
+// GET /cards/{cardId}/share — 완료 카드의 커플 전용 공유 링크
+export function fetchCardShare(cardId: string): Promise<ApiResponse<CardShare>> {
+  if (USE_MOCK) return mockFetchCardShare(cardId)
+
+  return apiFetch<CardShare>(`${cardPath(cardId)}/share`)
 }
 
 // GET /drives/{driveId}/card — 종료한 드라이브의 카드 작성 데이터. 카드를 만들 수 없는 드라이브는 404 CARD_UNAVAILABLE

@@ -1,24 +1,13 @@
 import copyIcon from '@/assets/icons/copy.svg'
 import pinIcon from '@/assets/icons/pin-md.svg'
-import facebookIcon from '@/assets/images/share/facebook.webp'
-import instagramIcon from '@/assets/images/share/instagram.webp'
-import kakaotalkIcon from '@/assets/images/share/kakaotalk.webp'
-import xIcon from '@/assets/images/share/x.webp'
 import BottomSheet from '@/components/BottomSheet/BottomSheet'
+import ShareChannelList from '@/components/ShareChannelList/ShareChannelList'
 import type { PlaceSummary } from '@/types/place'
 import { formatDuration } from '@/utils/formatDuration'
-import type { ShareChannel } from '@/utils/share'
+import type { ShareChannel, ShareLink } from '@/utils/share'
 import styles from './ShareSheet.module.scss'
 
-const CHANNELS: { channel: ShareChannel; label: string; icon: string }[] = [
-  { channel: 'kakaotalk', label: '카카오톡', icon: kakaotalkIcon },
-  { channel: 'instagram', label: '인스타그램', icon: instagramIcon },
-  { channel: 'x', label: 'X', icon: xIcon },
-  { channel: 'facebook', label: '페이스북', icon: facebookIcon },
-]
-
-// 공유 링크 상태: 받아오는 중 / 받아옴 / 실패
-export type ShareLink = { status: 'loading' } | { status: 'ready'; url: string } | { status: 'error' }
+export type { ShareLink } from '@/utils/share'
 
 interface ShareSheetProps {
   place: PlaceSummary
@@ -68,21 +57,7 @@ function ShareSheet({ place, link, onClose, onCopyLink, onShareChannel }: ShareS
 
         <section className={styles.section}>
           <h2 className={styles.heading}>다른 방법으로 공유하기</h2>
-          <ul className={styles.channels}>
-            {CHANNELS.map(({ channel, label, icon }) => (
-              <li key={channel}>
-                <button
-                  type="button"
-                  className={styles.channel}
-                  disabled={!url}
-                  onClick={() => url && onShareChannel(channel, url)}
-                >
-                  <img src={icon} alt="" width={57} height={57} />
-                  {label}
-                </button>
-              </li>
-            ))}
-          </ul>
+          <ShareChannelList disabled={!url} onSelect={(channel) => url && onShareChannel(channel, url)} />
         </section>
       </div>
     </BottomSheet>

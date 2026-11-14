@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router'
+import { fetchCardShare } from '@/api/cards'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
 import CardPromptModal from '@/components/CardPromptModal/CardPromptModal'
 import DriveNameSheet from '@/components/DriveNameSheet/DriveNameSheet'
@@ -22,12 +23,16 @@ import PlaceDetailPage from '@/pages/PlaceDetail/PlaceDetailPage'
 import RecordDetailPage from '@/pages/RecordDetail/RecordDetailPage'
 import RecordCalendarSheet from '@/pages/RecordMap/RecordCalendarSheet'
 import RecordMapPage, { type RecordView } from '@/pages/RecordMap/RecordMapPage'
+import RecordShareSheet from '@/pages/RecordMap/RecordShareSheet'
 import RouteSettingPage from '@/pages/RouteSetting/RouteSettingPage'
 import type { HomeSummary } from '@/types/home'
 import type { Notification } from '@/types/notification'
+import type { RecordSummary } from '@/types/record'
 import type { Category, SpotSummary } from '@/types/spot'
 import { todayInSeoul } from '@/utils/calendar'
-import { copyText, createIdempotencyKey, shareTo } from '@/utils/share'
+import { formatDate } from '@/utils/formatDate'
+import { copyText, createIdempotencyKey, type ShareChannel, type ShareLink, shareTo } from '@/utils/share'
+import { shareStory } from '@/utils/storyImage'
 
 // 화면 주소. 마이 화면은 아직 없어 탭을 눌러도 이동하지 않는다
 const TAB_PATHS: Partial<Record<NavTab, string>> = {
@@ -209,6 +214,8 @@ function RecordMapRoute() {
   const [query, setQuery] = useState('')
   const [date, setDate] = useState<string | null>(null)
   const [calendarOpen, setCalendarOpen] = useState(false)
+  // 공유 중인 기록 카드와 그 카드의 커플 전용 링크
+  const [sharing, setSharing] = useState<{ card: RecordSummary; link: ShareLink } | null>(null)
   const filter = date ? { date } : { q: query }
   const map = useRecordMap(filter)
   const list = useRecords(filter)
@@ -216,6 +223,30 @@ function RecordMapRoute() {
   const handleSearch = (nextQuery: string) => {
     setQuery(nextQuery)
     setDate(null)
+  }
+
+  const handleShare = (card: RecordSummary) => {
+    setSharing({ card, link: { status: 'loading' } })
+    // 링크를 받는 사이 다른 카드를 공유하기 시작했으면 늦은 응답은 버린다
+    const update = (link: ShareLink) => setSharing((prev) => (prev?.card.cardId === card.cardId ? { card, link } : prev))
+    fetchCardShare(card.cardId)
+      .then(({ data }) => update({ status: 'ready', url: data.url }))
+      .catch(() => update({ status: 'error' }))
+  }
+
+  // 인스타그램은 카드를 스토리 이미지(기록 지도 배경 + 카드)로 만들어 넘기고, 이미지 공유를 지원하지 않는 기기에서는 링크로 공유한다
+  const handleShareChannel = async (card: RecordSummary, channel: ShareChannel, url: string) => {
+    if (channel === 'instagram') {
+      const result = await shareStory({
+        photoUrl: card.thumbnailUrl,
+        title: card.title,
+        date: formatDate(card.driveDate),
+        // 스토리 배경에 지금 기록 지도의 사진 마커를 함께 그린다
+        markers: map.markers.map(({ coordinate, latestCard }) => ({ ...coordinate, photoUrl: latestCard.thumbnailUrl })),
+      })
+      if (result !== 'unsupported') return
+    }
+    await shareTo(channel, { url, title: card.title })
   }
 
   const handleDateSelect = (nextDate: string) => {
@@ -248,9 +279,17 @@ function RecordMapRoute() {
         onCalendarClick={() => setCalendarOpen(true)}
         onDateClear={() => setDate(null)}
         onCardClick={(card) => navigate(`/cards/${encodeURIComponent(card.cardId)}`)}
-        // TODO: 기록 지도 공유 화면이 생기면 연결한다
-        onShare={() => {}}
+        onShare={handleShare}
       />
+      {sharing && (
+        <RecordShareSheet
+          card={sharing.card}
+          link={sharing.link}
+          onClose={() => setSharing(null)}
+          onCopyLink={(url) => void copyText(url)}
+          onShareChannel={(channel, url) => void handleShareChannel(sharing.card, channel, url)}
+        />
+      )}
       {calendarOpen && (
         <RecordCalendarSheet
           selectedDate={date}

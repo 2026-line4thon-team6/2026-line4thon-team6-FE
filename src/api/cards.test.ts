@@ -78,3 +78,21 @@ describe('deleteCard', () => {
     expect(data.items.some((item) => item.cardId === 'crd_02')).toBe(false)
   })
 })
+
+describe('fetchCardShare', () => {
+  it('GET /cards/{cardId}/share 를 요청한다', async () => {
+    const { fetchCardShare } = await loadWithBackend()
+
+    await fetchCardShare('crd_01')
+
+    expect(new URL(fetchMock.mock.calls[0][0] as string).pathname).toBe('/api/v1/cards/crd_01/share')
+  })
+
+  it('백엔드 주소가 없으면 커플 전용 목 링크를 돌려준다', async () => {
+    const { fetchCardShare } = await loadWithMock()
+
+    const { data } = await fetchCardShare('crd_01')
+
+    expect(data).toEqual({ url: 'https://bunbungus.app/cards/crd_01', access: 'COUPLE_ONLY', expiresAt: null })
+  })
+})
