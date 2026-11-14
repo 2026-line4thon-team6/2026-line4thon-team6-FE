@@ -1,5 +1,5 @@
 import type { FormEvent, InputHTMLAttributes } from 'react'
-import searchIcon from '@/assets/icons/search.svg'
+import searchIcon from '@/assets/icons/search-coral.svg'
 import styles from './SearchBar.module.scss'
 
 interface SearchBarProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'onSubmit'> {
