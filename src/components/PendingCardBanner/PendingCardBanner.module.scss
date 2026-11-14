@@ -11,8 +11,9 @@
   text-align: left;
   background-color: color('coral-3');
 
-  &:active {
-    background-color: color('coral-2');
+  // 누르면 화살표 원만 진해진다. 배너 배경 · 화살표 테두리는 그대로 (Figma 뒤로가기 pressed, 323:32020)
+  &:active .arrow {
+    background-color: color('coral-pressed');
   }
 
   &:focus-visible {
