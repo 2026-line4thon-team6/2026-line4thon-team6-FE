@@ -8,6 +8,8 @@ export interface GameQuestion {
   optionB: string | null
   hint: string | null
   answer: string | null
+  // TODO: 명세에 없는 필드. 힌트를 열기 전 포스트잇 개수(정답 글자 수)를 알려면 백엔드 추가 필요
+  answerLength?: number | null
   hintRevealed: boolean
   answerRevealed: boolean
 }

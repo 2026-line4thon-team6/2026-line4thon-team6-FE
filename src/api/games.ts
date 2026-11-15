@@ -4,10 +4,12 @@ import {
   mockCreateGameSession,
   mockGetGameSession,
   mockNextGameQuestion,
+  mockRevealGameAnswer,
+  mockRevealGameHint,
   mockSaveGameResponse,
 } from '@/mocks/games'
 import type { ApiResponse } from '@/types/api'
-import type { GameResponse, GameResponseInput, GameSession, GameType } from '@/types/game'
+import type { GameQuestion, GameResponse, GameResponseInput, GameSession, GameType } from '@/types/game'
 import type { Job } from '@/types/job'
 import { apiFetch, USE_MOCK } from './client'
 
@@ -32,6 +34,21 @@ export function getGameSession(gameSessionId: string): Promise<ApiResponse<GameS
   return apiFetch<GameSession>(sessionPath(gameSessionId))
 }
 
+const questionPath = (gameSessionId: string, questionId: string) =>
+  `${sessionPath(gameSessionId)}/questions/${encodeURIComponent(questionId)}`
+
+export function revealGameHint(gameSessionId: string, questionId: string): Promise<ApiResponse<GameQuestion>> {
+  if (USE_MOCK) return mockRevealGameHint(gameSessionId, questionId)
+
+  return apiFetch<GameQuestion>(`${questionPath(gameSessionId, questionId)}/hint`, { method: 'POST' })
+}
+
+export function revealGameAnswer(gameSessionId: string, questionId: string): Promise<ApiResponse<GameQuestion>> {
+  if (USE_MOCK) return mockRevealGameAnswer(gameSessionId, questionId)
+
+  return apiFetch<GameQuestion>(`${questionPath(gameSessionId, questionId)}/answer`, { method: 'POST' })
+}
+
 export function saveGameResponse(
   gameSessionId: string,
   questionId: string,
@@ -39,7 +56,7 @@ export function saveGameResponse(
 ): Promise<ApiResponse<GameResponse>> {
   if (USE_MOCK) return mockSaveGameResponse(gameSessionId, questionId, body)
 
-  return apiFetch<GameResponse>(`${sessionPath(gameSessionId)}/questions/${encodeURIComponent(questionId)}/responses/me`, {
+  return apiFetch<GameResponse>(`${questionPath(gameSessionId, questionId)}/responses/me`, {
     method: 'PUT',
     body: JSON.stringify(body),
   })

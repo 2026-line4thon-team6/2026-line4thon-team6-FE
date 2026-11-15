@@ -894,6 +894,28 @@ describe('드라이브 주행 · 마치기', () => {
     expect(await screen.findByRole('button', { name: '드라이브 마치기' })).toBeInTheDocument()
   })
 
+  it('넌센스 퀴즈: 카드 → 초성 힌트 → 정답 보기 → 누가 맞혔는지 → 다음 문제', async () => {
+    setMockGenerateMs(300)
+    const user = await startDriving()
+
+    await user.click(screen.getByRole('button', { name: /넌센스 퀴즈/ }))
+    expect(await screen.findByRole('heading', { name: '세상에서 가장 추운 바다는?' }, { timeout: 3000 })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '다음 문제' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '초성 힌트 보기' }))
+    expect(await screen.findByText('ㅆ')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '정답 보기' }))
+    expect(await screen.findByText('썰')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '민준' }))
+    expect(screen.getByRole('button', { name: '민준' })).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(screen.getByRole('button', { name: '다음 문제' }))
+    expect(await screen.findByRole('heading', { name: '왕이 넘어지면?' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '초성 힌트 보기' }))
+    expect(await screen.findAllByText('ㅋ')).toHaveLength(2)
+  })
+
   it('라디오: 보낸 사연 목록에서 사연을 고르면 재생되고, 드라이브 카드에 재생 중이 뜬다', async () => {
     const user = await startDriving()
 
