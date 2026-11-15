@@ -12,7 +12,14 @@ function useDriveMap(routeId: string | null) {
 
   const locate = useCallback(async () => {
     const coordinate = await getCurrentCoordinate()
-    if (coordinate) setPosition((prev) => ({ coordinate, accuracyMeters: prev?.accuracyMeters ?? Infinity }))
+    if (coordinate) {
+      setPosition((prev) => ({
+        coordinate,
+        accuracyMeters: prev?.accuracyMeters ?? Infinity,
+        recordedAt: new Date().toISOString(),
+        speedMetersPerSecond: null,
+      }))
+    }
   }, [])
 
   useEffect(
@@ -53,6 +60,7 @@ function useDriveMap(routeId: string | null) {
   const path = useMemo(() => (loaded ? decodePolyline(loaded.polyline) : []), [loaded])
 
   return {
+    position,
     current: position?.coordinate ?? null,
     accuracyMeters: position?.accuracyMeters ?? null,
     path,

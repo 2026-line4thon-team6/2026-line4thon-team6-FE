@@ -18,6 +18,7 @@ import useArrival from '@/hooks/useArrival'
 import useDriveRestAreas from '@/hooks/useDriveRestAreas'
 import usePlaylistGeneration from '@/hooks/usePlaylistGeneration'
 import useDriveMap from '@/hooks/useDriveMap'
+import useGpsRecorder from '@/hooks/useGpsRecorder'
 import useDriveCard from '@/hooks/useDriveCard'
 import useNotifications from '@/hooks/useNotifications'
 import usePendingCards from '@/hooks/usePendingCards'
@@ -91,6 +92,7 @@ import type { RecordSummary } from '@/types/record'
 import type { Category, SpotSummary } from '@/types/spot'
 import { todayInSeoul } from '@/utils/calendar'
 import { formatDate } from '@/utils/formatDate'
+import { distanceMeters } from '@/utils/location'
 import { copyText, createIdempotencyKey, type ShareChannel, shareInviteCode, type ShareLink, shareTo } from '@/utils/share'
 import { shareStory } from '@/utils/storyImage'
 
@@ -174,13 +176,14 @@ interface PlaceDetailRouteProps {
   placeId: string
   couple: HomeSummary['couple']
   mascotName: string
+  myUserId: string
   onFavoriteChange: (placeId: string, favorite: boolean) => void
 }
 
-function PlaceDetailRoute({ placeId, couple, mascotName, onFavoriteChange }: PlaceDetailRouteProps) {
+function PlaceDetailRoute({ placeId, couple, mascotName, myUserId, onFavoriteChange }: PlaceDetailRouteProps) {
   const navigate = useNavigate()
   const goBack = useGoBack()
-  const drive = useStartDrive(couple)
+  const drive = useStartDrive(myUserId)
   const { status, detail, retry, toggleFavorite, getShareUrl, sendToPartner } = usePlaceDetail(placeId)
   // 같은 전송 시도의 재시도에는 같은 멱등 키를 쓰고, 성공하면 새 키로 바꾼다
   const idempotencyKey = useRef<string | null>(null)
@@ -224,13 +227,23 @@ function PlaceDetailRoute({ placeId, couple, mascotName, onFavoriteChange }: Pla
   )
 }
 
-function DriveRoute() {
+const NEAR_DESTINATION_METERS = 300
+
+function DriveRoute({ myUserId }: { myUserId: string }) {
   const navigate = useNavigate()
   const location = useLocation()
-  const { status, drive, rename, pause, resume, end } = useDrive()
+  const { status, drive, rename, pause, resume, end, sync } = useDrive()
   const { playing: radioPlaying } = useRadioPlayer()
   const map = useDriveMap(drive?.routeId ?? null)
   const driving = drive?.status === 'ACTIVE'
+  const gps = useGpsRecorder({
+    drive,
+    position: map.position,
+    recording: driving && drive?.recorderUserId === myUserId,
+    urgent:
+      !!map.current && !!map.destination && distanceMeters(map.current, map.destination) <= NEAR_DESTINATION_METERS,
+    onReceipt: (receipt) => sync(receipt.drive),
+  })
   const restAreas = useDriveRestAreas(drive?.id ?? null, drive?.routeId ?? null, driving)
   const { alert: restAreaAlert, dismiss: dismissRestAreaAlert } = useRestAreaAlert(restAreas, map.current, driving)
   const restAreaDetail = useRestAreaDetail()
@@ -238,11 +251,9 @@ function DriveRoute() {
 
   useArrival({
     active: drive?.status === 'ACTIVE',
-    current: map.current,
-    accuracyMeters: map.accuracyMeters,
-    destination: map.destination,
+    arrived: gps.arrivalCandidate,
     onArrive: async () => {
-      const ended = await end('ARRIVED')
+      const ended = await end('ARRIVED', await gps.flush())
       if (ended) setArrivedDriveId(ended.id)
       return ended !== null
     },
@@ -252,7 +263,7 @@ function DriveRoute() {
 
   // TODO: 실패 토스트
   const handleEnd = async () => {
-    const ended = await end('USER_ENDED')
+    const ended = await end('USER_ENDED', await gps.flush())
     if (ended) navigate('/', { replace: true })
     return ended !== null
   }
@@ -906,6 +917,7 @@ const cardPath = (driveId: string) => `/drives/${encodeURIComponent(driveId)}/ca
 
 interface HomeRouteProps {
   home: HomeSummary
+  myUserId: string
   categories: Category[]
   spots: SpotSummary[]
   // 미작성 카드 팝업은 앱을 켠 뒤 한 번만 띄운다. 이후에는 배너로만 알린다
@@ -915,11 +927,19 @@ interface HomeRouteProps {
 }
 
 // 홈에 들어올 때마다 미작성 카드를 새로 불러온다
-function HomeRoute({ home, categories, spots, pendingPromptSeen, onPendingPromptSeen, onLikeToggle }: HomeRouteProps) {
+function HomeRoute({
+  home,
+  myUserId,
+  categories,
+  spots,
+  pendingPromptSeen,
+  onPendingPromptSeen,
+  onLikeToggle,
+}: HomeRouteProps) {
   const navigate = useNavigate()
   const goTab = useTabNavigate()
   const { summary } = usePendingCards()
-  const drive = useStartDrive(home.couple)
+  const drive = useStartDrive(myUserId)
   const activeDrive = useActiveDrive()
   const timeOfDay = useTimeOfDay()
 
@@ -1062,6 +1082,7 @@ function App() {
             element={
               <HomeRoute
                 home={home}
+                myUserId={me.id}
                 categories={MOCK_CATEGORIES}
                 spots={spots}
                 pendingPromptSeen={pendingPromptSeen}
@@ -1078,7 +1099,7 @@ function App() {
             }
           />
           <Route path="/notifications" element={<NotificationsRoute onRead={handleNotificationRead} />} />
-          <Route path="/drive" element={<DriveRoute />} />
+          <Route path="/drive" element={<DriveRoute myUserId={me.id} />} />
           <Route path="/drive/route" element={<RouteSettingRoute />} />
           <Route path="/drive/playlist" element={<DjPlaylistRoute />} />
           <Route path="/drive/radio" element={<DriveRadioRoute />} />
@@ -1114,6 +1135,7 @@ function App() {
               <PlaceDetailRouteByParam
                 couple={home.couple}
                 mascotName={home.mascotName}
+                myUserId={me.id}
                 // 상세에서 바꾼 찜 상태를 홈 카드에도 반영한다 (목 장소 id는 홈 카드 id의 문자열)
                 onFavoriteChange={(placeId, favorite) => setSpotLiked(Number(placeId), favorite)}
               />

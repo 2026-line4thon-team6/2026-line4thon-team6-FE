@@ -1,6 +1,7 @@
 import {
   mockCancelPreparedDrive,
   mockEndDrive,
+  mockUploadGpsBatch,
   mockGetActiveDrive,
   mockGetDrive,
   mockPauseDrive,
@@ -17,6 +18,8 @@ import type {
   DriveRequestOptions,
   DriveVersionRequest,
   EndDriveRequest,
+  GpsBatchReceipt,
+  GpsSample,
   IdempotentDriveRequestOptions,
   PrepareDriveRequest,
   StartDriveRequest,
@@ -126,6 +129,20 @@ export function cancelPreparedDrive(
   if (USE_MOCK) return mockCancelPreparedDrive(driveId, body)
 
   return apiFetch<Drive>(`${path(driveId)}/cancel`, {
+    method: 'POST',
+    headers: writeHeaders(options),
+    body: JSON.stringify(body),
+  })
+}
+
+export function uploadGpsBatch(
+  driveId: string,
+  body: { samples: GpsSample[] },
+  options: IdempotentDriveRequestOptions,
+): Promise<ApiResponse<GpsBatchReceipt>> {
+  if (USE_MOCK) return mockUploadGpsBatch(driveId, body)
+
+  return apiFetch<GpsBatchReceipt>(`${path(driveId)}/gps-batches`, {
     method: 'POST',
     headers: writeHeaders(options),
     body: JSON.stringify(body),

@@ -80,3 +80,22 @@ export interface DriveRequestOptions {
 export interface IdempotentDriveRequestOptions extends DriveRequestOptions {
   idempotencyKey: string
 }
+
+export interface GpsSample {
+  sequence: number
+  recordedAt: string
+  coordinate: Coordinate
+  accuracyMeters: number
+  speedMetersPerSecond: number
+}
+
+// POST /drives/{driveId}/gps-batches
+export interface GpsBatchReceipt {
+  acceptedSequences: number[]
+  duplicateSequences: number[]
+  rejected: { sequence: number; reason: string }[]
+  highestContiguousSequence: number
+  arrivalCandidate: boolean
+  drive: Drive
+  restAreaAlerts: { id: string; restAreaId: string; restAreaName: string; distanceMeters: number; message: string }[]
+}

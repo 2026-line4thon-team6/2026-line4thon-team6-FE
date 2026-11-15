@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { ApiError } from '@/api/client'
+import { fetchMyCouple } from '@/api/couples'
 import { getActiveDrive, prepareDrive } from '@/api/drives'
-import type { HomeSummary } from '@/types/home'
+import type { Couple } from '@/types/couple'
 import { createIdempotencyKey } from '@/utils/share'
 
 export interface DriveLocationState {
@@ -10,22 +11,21 @@ export interface DriveLocationState {
   destinationName?: string
 }
 
-// TODO: GET /home 연동 시 실제 id로 교체
-const MY_USER_ID = 'usr_me'
-const PARTNER_USER_ID = 'usr_partner'
-
-function useStartDrive(couple: HomeSummary['couple']) {
+function useStartDrive(myUserId: string) {
   const navigate = useNavigate()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [state, setState] = useState<DriveLocationState>({})
+  const couple = useRef<Couple | null>(null)
   const submitting = useRef(false)
   const idempotencyKey = useRef<string | null>(null)
 
   const goDrive = (next: DriveLocationState) => navigate('/drive', { state: next })
 
   const start = async (destinationPlaceId?: string) => {
+    const connection = await fetchMyCouple().catch(() => null)
+    couple.current = connection?.data.connectionStatus === 'CONNECTED' ? connection.data.couple : null
     // TODO: 커플 미연결 처리
-    if (!couple) return
+    if (!couple.current) return
     const next = destinationPlaceId ? { destinationPlaceId } : {}
 
     const active = await getActiveDrive().catch(() => null)
@@ -38,7 +38,9 @@ function useStartDrive(couple: HomeSummary['couple']) {
   }
 
   const submit = async (title: string) => {
-    if (!couple || submitting.current) return
+    const current = couple.current
+    const partner = current?.members.find((member) => member.id !== myUserId)
+    if (!current || !partner || submitting.current) return
     submitting.current = true
     idempotencyKey.current ??= createIdempotencyKey()
 
@@ -46,11 +48,11 @@ function useStartDrive(couple: HomeSummary['couple']) {
       await prepareDrive(
         {
           title: title || undefined,
-          driverUserId: MY_USER_ID,
-          passengerUserId: PARTNER_USER_ID,
-          recorderUserId: MY_USER_ID,
+          driverUserId: myUserId,
+          passengerUserId: partner.id,
+          recorderUserId: myUserId,
         },
-        { coupleId: couple.id, idempotencyKey: idempotencyKey.current },
+        { coupleId: current.id, idempotencyKey: idempotencyKey.current },
       )
       idempotencyKey.current = null
       setSheetOpen(false)

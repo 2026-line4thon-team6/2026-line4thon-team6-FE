@@ -64,17 +64,19 @@ function useDrive() {
   const pause = () => run((drive) => pauseDrive(drive.id, { expectedVersion: drive.controlVersion }, options(drive)))
   const resume = () => run((drive) => resumeDrive(drive.id, { expectedVersion: drive.controlVersion }, options(drive)))
 
-  // TODO: GPS 전송을 붙이면 마지막으로 보낸 묶음 번호를 넣는다
-  const end = (reason: DriveEndReason) =>
+  const end = (reason: DriveEndReason, lastRecordedSequence = 0) =>
     run((drive) =>
-      endDrive(
-        drive.id,
-        { expectedVersion: drive.controlVersion, reason, lastRecordedSequence: 0 },
-        options(drive),
-      ),
+      endDrive(drive.id, { expectedVersion: drive.controlVersion, reason, lastRecordedSequence }, options(drive)),
     )
 
-  return { ...state, rename, setRoute, start, pause, resume, end }
+  const sync = (next: Drive) => {
+    const drive = latest.current
+    if (!drive || drive.id !== next.id || next.controlVersion < drive.controlVersion) return
+    latest.current = next
+    setState({ status: 'ready', drive: next })
+  }
+
+  return { ...state, rename, setRoute, start, pause, resume, end, sync }
 }
 
 export default useDrive
