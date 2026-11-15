@@ -21,6 +21,14 @@ const NONSENSE: [prompt: string, answer: string][] = [
   ['소가 웃으면?', '우하하'],
 ]
 
+const MEMORY = [
+  '우리가 가장 먼저 기록한 드라이브 장소는 어디였을까요?',
+  '지난 드라이브에서 가장 오래 머문 휴게소는 어디였을까요?',
+  '우리가 처음으로 함께 본 바다는 어디였을까요?',
+  '가장 멀리 떠났던 드라이브의 목적지는 어디였을까요?',
+  '지난 드라이브 카드에 남긴 소감 중 가장 기억에 남는 한 마디는?',
+]
+
 const INITIALS = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ'
 const toInitials = (word: string) =>
   [...word]
@@ -54,7 +62,9 @@ function build(gameId: string, type: GameType): Pick<Entry, 'questions' | 'secre
   const rows =
     type === 'BALANCE'
       ? BALANCE.map(([prompt, optionA, optionB]) => ({ prompt, optionA, optionB, hint: null, answer: null }))
-      : NONSENSE.map(([prompt, answer]) => ({ prompt, optionA: null, optionB: null, hint: toInitials(answer), answer }))
+      : type === 'NONSENSE'
+        ? NONSENSE.map(([prompt, answer]) => ({ prompt, optionA: null, optionB: null, hint: toInitials(answer), answer }))
+        : MEMORY.map((prompt) => ({ prompt, optionA: null, optionB: null, hint: null, answer: null }))
   return {
     questions: rows.map(({ prompt, optionA, optionB, answer }, index) => ({
       id: `${gameId}_q${index + 1}`,
@@ -106,7 +116,6 @@ const respond = (session: GameSession): Promise<ApiResponse<GameSession>> =>
   Promise.resolve({ data: structuredClone(session), meta: createMeta() })
 
 export async function mockCreateGameSession({ driveId, type }: { driveId: string; type: GameType }): Promise<ApiResponse<Job>> {
-  if (type === 'MEMORY') throw mockApiError(422, 'GAME_TYPE_UNSUPPORTED', '아직 준비 중인 게임이에요.')
   const job = mockStartJob('GAME_GENERATION', 'GAME_SESSION', () => {
     const id = `game_mock_${++count}`
     const { questions, secrets } = build(id, type)
