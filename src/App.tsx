@@ -812,7 +812,6 @@ function CoupleRoute() {
       onChangeStartDate={changeStartDate}
       onRenameMascot={renameMascot}
       onUpdateProfile={updateProfile}
-      onCopyInviteCode={(code) => copyText(code).catch(() => undefined)}
       onDisconnect={disconnect}
       onDisconnected={() => navigate('/my', { replace: true })}
     />
@@ -889,7 +888,7 @@ function RadioStoryRouteByParam() {
 function CoupleInviteRoute() {
   const navigate = useNavigate()
   const goBack = useGoBack('/')
-  const { retry, connect, ...state } = useCoupleInvite()
+  const { retry, connect, restore, ...state } = useCoupleInvite()
   const goHome = () => navigate('/', { replace: true })
 
   return (
@@ -900,6 +899,7 @@ function CoupleInviteRoute() {
       onCopy={(code) => copyText(code).catch(() => undefined)}
       onShare={shareInviteCode}
       onConnect={connect}
+      onRestore={restore}
       onConnected={goHome}
       onSkip={goHome}
     />

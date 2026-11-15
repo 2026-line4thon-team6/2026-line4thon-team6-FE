@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { ApiError } from '@/api/client'
-import { disconnectCouple, fetchMyCouple, fetchMyInvite, renameMascot as renameMascotApi, updateCoupleStartDate } from '@/api/couples'
+import { disconnectCouple, fetchMyCouple, renameMascot as renameMascotApi, updateCoupleStartDate } from '@/api/couples'
 import { fetchMe, updateMe } from '@/api/me'
 import type { Couple } from '@/types/couple'
 import type { Me, UpdateMeRequest } from '@/types/me'
 
 const MESSAGES = {
   conflict: '연인이 먼저 정보를 바꿨어요. 새로 불러온 정보를 확인해 주세요.',
+  contextChanged: '커플 연결 상태가 바뀌었어요. 새로 불러온 정보를 확인해 주세요.',
+  futureStartDate: '오늘 이후 날짜는 고를 수 없어요.',
   activeDrive: '진행 중인 드라이브를 먼저 끝낸 뒤 해제해 주세요.',
   unknown: '저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
 }
@@ -16,12 +18,14 @@ interface State {
   status: 'loading' | 'ready' | 'error' | 'unlinked'
   couple: Couple | null
   me: Me | null
-  inviteCode: string | null // 불러오지 못하면 null
 }
 
-const INITIAL: State = { status: 'loading', couple: null, me: null, inviteCode: null }
+const INITIAL: State = { status: 'loading', couple: null, me: null }
 
 const toMessage = (reason: unknown) => (reason instanceof ApiError ? reason.message : MESSAGES.unknown)
+const codeOf = (reason: unknown) => (reason instanceof ApiError ? reason.code : null)
+// 그 사이 연결이 해제됐거나(COUPLE_REQUIRED) 다른 커플로 바뀌었을 때(COUPLE_CONTEXT_CHANGED) 서버가 403으로 거절한다
+const isContextChanged = (reason: unknown) => ['COUPLE_CONTEXT_CHANGED', 'COUPLE_REQUIRED'].includes(codeOf(reason) ?? '')
 
 // 커플 페이지 데이터와 수정 동작 (시작일 · 붕붕이명 · 내 정보 · 연결 해제)
 // 수정 함수는 성공하면 null, 실패하면 화면에 보여 줄 안내 문구를 돌려준다
@@ -34,17 +38,13 @@ function useCouplePage() {
   useEffect(() => {
     let ignore = false
 
-    Promise.all([fetchMyCouple(), fetchMe(), fetchMyInvite().catch(() => null)])
-      .then(([{ data: connection }, { data: me }, invite]) => {
+    // 내 커플 코드(GET /couple-invites/me)는 연결할 때 소진돼 연결된 커플에게는 404라 불러오지 않는다
+    Promise.all([fetchMyCouple(), fetchMe()])
+      .then(([{ data: connection }, { data: me }]) => {
         if (ignore) return
         const couple = connection.connectionStatus === 'CONNECTED' ? connection.couple : null
         coupleRef.current = couple
-        setState({
-          status: couple ? 'ready' : 'unlinked',
-          couple,
-          me,
-          inviteCode: invite?.data.code ?? null,
-        })
+        setState({ status: couple ? 'ready' : 'unlinked', couple, me })
       })
       .catch(() => {
         if (!ignore) setState({ ...INITIAL, status: 'error' })
@@ -65,6 +65,15 @@ function useCouplePage() {
     setState((prev) => ({ ...prev, couple }))
   }
 
+  // 커플 연결이 바뀌었으면 현재 연결을 다시 불러온다. 끊겼으면 연결 전 화면(unlinked)으로 바꾼다
+  const reloadConnection = async () => {
+    const { data } = await fetchMyCouple().catch(() => ({ data: null }))
+    if (!data) return
+    const couple = data.connectionStatus === 'CONNECTED' ? data.couple : null
+    coupleRef.current = couple
+    setState((prev) => ({ ...prev, status: couple ? 'ready' : 'unlinked', couple }))
+  }
+
   // 커플 정보 수정 공통: 버전 충돌이면 다시 불러오고 안내 문구를 돌려준다
   const updateCouple = async (request: (couple: Couple) => Promise<{ data: Couple }>) => {
     const couple = coupleRef.current
@@ -74,11 +83,16 @@ function useCouplePage() {
       setCouple(data)
       return null
     } catch (reason) {
-      if (reason instanceof ApiError && reason.code === 'VERSION_CONFLICT') {
+      if (codeOf(reason) === 'VERSION_CONFLICT') {
         const { data } = await fetchMyCouple().catch(() => ({ data: null }))
         if (data?.couple) setCouple(data.couple)
         return MESSAGES.conflict
       }
+      if (isContextChanged(reason)) {
+        await reloadConnection()
+        return MESSAGES.contextChanged
+      }
+      if (codeOf(reason) === 'INVALID_START_DATE') return MESSAGES.futureStartDate
       return toMessage(reason)
     }
   }
@@ -115,7 +129,11 @@ function useCouplePage() {
       await disconnectCouple({ coupleId: couple.id })
       return null
     } catch (reason) {
-      if (reason instanceof ApiError && reason.code === 'ACTIVE_DRIVE_EXISTS') return MESSAGES.activeDrive
+      if (codeOf(reason) === 'ACTIVE_DRIVE_EXISTS') return MESSAGES.activeDrive
+      if (isContextChanged(reason)) {
+        await reloadConnection()
+        return MESSAGES.contextChanged
+      }
       return toMessage(reason)
     }
   }

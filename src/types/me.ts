@@ -10,7 +10,7 @@ export interface Me {
 }
 
 // PATCH /me — 바꿀 값만 보낸다. birthDate=null은 삭제
-export interface UpdateMeRequest {
-  nickname?: string
-  birthDate?: string | null
-}
+// 빈 요청({})은 서버가 422로 거절하므로 둘 중 하나는 꼭 담도록 타입으로 막는다
+export type UpdateMeRequest =
+  | { nickname: string; birthDate?: string | null }
+  | { nickname?: string; birthDate: string | null }
