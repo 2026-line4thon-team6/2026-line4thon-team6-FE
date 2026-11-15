@@ -43,7 +43,7 @@ export async function mockFetchHome(): Promise<ApiResponse<HomeResponse>> {
         weather: '맑음',
         temperatureC: 22,
         traffic: '원활',
-        recommendedTheme: '바다 드라이브',
+        recommendedTheme: null, // 백엔드처럼 비워 두고 FE의 하루 테마를 쓴다
         radiusMeters: 5000,
         weatherAvailable: true,
         trafficAvailable: true,

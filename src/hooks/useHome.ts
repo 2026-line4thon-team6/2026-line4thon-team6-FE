@@ -49,7 +49,7 @@ function useHome(user: Pick<Me, 'id' | 'nickname'> | null) {
   const response = loaded && loaded.userId === userId ? loaded.data : null
 
   return {
-    summary: response ? toHomeSummary(response) : emptyHomeSummary(user),
+    summary: response ? toHomeSummary(response, new Date(receivedAt)) : emptyHomeSummary(user),
     // 아직 불러오지 않았으면 null
     pendingCards: response?.pendingCards ?? null,
     receivedAt,
