@@ -916,6 +916,26 @@ describe('드라이브 주행 · 마치기', () => {
     expect(await screen.findAllByText('ㅋ')).toHaveLength(2)
   })
 
+  it('추억 게임: 카드 → 누가 맞혔는지 고르기 → 다음 문제 (안 골라도 넘어간다)', async () => {
+    setMockGenerateMs(300)
+    const user = await startDriving()
+
+    await user.click(screen.getByRole('button', { name: /추억 게임/ }))
+    expect(
+      await screen.findByRole('heading', { name: '우리가 가장 먼저 기록한 드라이브 장소는 어디였을까요?' }, { timeout: 3000 }),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '민준' }))
+    expect(screen.getByRole('button', { name: '민준' })).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(screen.getByRole('button', { name: '다음 문제' }))
+    expect(await screen.findByRole('heading', { name: /가장 오래 머문 휴게소/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '민준' })).toHaveAttribute('aria-pressed', 'false')
+
+    await user.click(screen.getByRole('button', { name: '다음 문제' }))
+    expect(await screen.findByRole('heading', { name: /처음으로 함께 본 바다/ })).toBeInTheDocument()
+  })
+
   it('라디오: 보낸 사연 목록에서 사연을 고르면 재생되고, 드라이브 카드에 재생 중이 뜬다', async () => {
     const user = await startDriving()
 

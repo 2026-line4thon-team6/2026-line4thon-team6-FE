@@ -43,6 +43,7 @@ import RadioPlayerProvider from '@/components/RadioPlayerProvider/RadioPlayerPro
 import DriveRadioPage from '@/pages/DriveRadio/DriveRadioPage'
 import BalanceGamePage from '@/pages/Game/BalanceGamePage'
 import NonsenseQuizPage, { type Winner } from '@/pages/Game/NonsenseQuizPage'
+import MemoryGamePage from '@/pages/Game/MemoryGamePage'
 import useGameSession from '@/hooks/useGameSession'
 import RadioStoriesDrawer from '@/pages/DriveRadio/RadioStoriesDrawer'
 import { fetchRadioEpisode, RADIO_STORY_MAX_LENGTH } from '@/api/radio'
@@ -285,10 +286,7 @@ function DriveRoute() {
           <ContentCards
             onPlaylistClick={() => navigate('/drive/playlist')}
             onContentClick={(kind) => {
-              if (kind === 'radio') navigate('/drive/radio')
-              // TODO: 추억 게임 화면 연결
-              if (kind === 'balance') navigate('/drive/game/balance')
-              if (kind === 'nonsense') navigate('/drive/game/nonsense')
+              navigate(kind === 'radio' ? '/drive/radio' : `/drive/game/${kind}`)
             }}
             radioPlaying={radioPlaying}
           />
@@ -434,6 +432,45 @@ function NonsenseQuizRoute({ myUserId, myNickname, partnerNickname }: BalanceGam
       onRevealHint={() => void game.revealHint()}
       onRevealAnswer={() => void game.revealAnswer()}
       onWinnerChange={(value) => question && setWinner({ questionId: question.id, value })}
+      onNext={() => void game.advance()}
+      onRetry={game.retry}
+      onAbandon={() => {
+        void game.abandon()
+        navigate('/drive', { replace: true })
+      }}
+    />
+  )
+}
+
+function MemoryGameRoute({ myUserId, myNickname, partnerNickname }: BalanceGameRouteProps) {
+  const navigate = useNavigate()
+  const { status: driveStatus, drive } = useDrive()
+  const game = useGameSession(drive?.id ?? null, 'MEMORY')
+  const responses = game.session?.responses ?? []
+  const winner =
+    responses.find((response) => response.authorUserId === myUserId)?.selectedRole ??
+    responses.find((response) => response.selectedRole)?.selectedRole ??
+    null
+  const meDriver = drive?.passengerUserId !== myUserId
+
+  useEffect(() => {
+    if (game.status === 'completed') navigate('/drive', { replace: true })
+  }, [game.status, navigate])
+
+  if (driveStatus === 'empty') return <Navigate to="/" replace />
+
+  return (
+    <MemoryGamePage
+      status={game.status}
+      question={game.session?.currentQuestion ?? null}
+      names={
+        meDriver
+          ? { DRIVER: myNickname, PASSENGER: partnerNickname }
+          : { DRIVER: partnerNickname, PASSENGER: myNickname }
+      }
+      winner={winner}
+      busy={game.busy}
+      onWinnerChange={(selectedRole) => void game.respond({ type: 'MEMORY', selectedRole }, myUserId)}
       onNext={() => void game.advance()}
       onRetry={game.retry}
       onAbandon={() => {
@@ -1049,6 +1086,10 @@ function App() {
           <Route
             path="/drive/game/nonsense"
             element={<NonsenseQuizRoute myUserId={me.id} myNickname={me.nickname} partnerNickname={partnerNickname} />}
+          />
+          <Route
+            path="/drive/game/memory"
+            element={<MemoryGameRoute myUserId={me.id} myNickname={me.nickname} partnerNickname={partnerNickname} />}
           />
           <Route path="/my" element={<MyRoute auth={auth} />} />
           <Route path="/my/couple" element={<CoupleRoute />} />
