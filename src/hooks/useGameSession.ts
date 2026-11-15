@@ -6,6 +6,8 @@ import {
   createGameSession,
   getGameSession,
   nextGameQuestion,
+  revealGameAnswer,
+  revealGameHint,
   saveGameResponse,
 } from '@/api/games'
 import { cancelJob, getJob } from '@/api/jobs'
@@ -90,6 +92,17 @@ function useGameSession(driveId: string | null, type: GameType) {
     }
   }
 
+  const reveal = async (kind: 'hint' | 'answer') => {
+    const question = session?.currentQuestion
+    if (!session || !question) return
+    try {
+      const { data } = await (kind === 'hint' ? revealGameHint : revealGameAnswer)(session.id, question.id)
+      setSession((prev) => (prev?.currentQuestion?.id === data.id ? { ...prev, currentQuestion: data } : prev))
+    } catch {
+      await refresh()
+    }
+  }
+
   const advance = async () => {
     const question = session?.currentQuestion
     if (!session || !question || busy) return
@@ -120,7 +133,17 @@ function useGameSession(driveId: string | null, type: GameType) {
     setAttempt((value) => value + 1)
   }
 
-  return { status, session, busy, respond, advance, abandon, retry }
+  return {
+    status,
+    session,
+    busy,
+    respond,
+    revealHint: () => reveal('hint'),
+    revealAnswer: () => reveal('answer'),
+    advance,
+    abandon,
+    retry,
+  }
 }
 
 export default useGameSession

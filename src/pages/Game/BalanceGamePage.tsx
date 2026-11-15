@@ -13,7 +13,6 @@ type Role = 'DRIVER' | 'PASSENGER'
 interface BalanceGamePageProps {
   status: 'generating' | 'playing' | 'completed' | 'error'
   question: GameQuestion | null
-  isLast: boolean
   names: Record<Role, string | null>
   choices: Record<Role, Choice | null>
   busy: boolean
@@ -31,7 +30,6 @@ const ROLES: { role: Role; fallback: string; image: string }[] = [
 function BalanceGamePage({
   status,
   question,
-  isLast,
   names,
   choices,
   busy,
@@ -110,7 +108,7 @@ function BalanceGamePage({
         <div className={styles.actions}>
           {status === 'playing' && (
             <Button size="cta" disabled={!answered || busy} onClick={onNext}>
-              {isLast ? '게임 완료' : '다음 문제'}
+              다음 문제
             </Button>
           )}
           <Button size="cta" variant="secondary" onClick={() => setConfirming(true)}>
