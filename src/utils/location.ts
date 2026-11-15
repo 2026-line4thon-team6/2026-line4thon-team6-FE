@@ -5,7 +5,16 @@ import type { Coordinate } from '@/types/route'
 export interface Position {
   coordinate: Coordinate
   accuracyMeters: number
+  recordedAt: string
+  speedMetersPerSecond: number | null
 }
+
+const mockPosition = (): Position => ({
+  coordinate: MOCK_CURRENT_COORDINATE,
+  accuracyMeters: 10,
+  recordedAt: new Date().toISOString(),
+  speedMetersPerSecond: null,
+})
 
 export function getCurrentCoordinate(): Promise<Coordinate | null> {
   if (USE_MOCK) return Promise.resolve(MOCK_CURRENT_COORDINATE)
@@ -20,16 +29,18 @@ export function getCurrentCoordinate(): Promise<Coordinate | null> {
   })
 }
 
-const toPosition = ({ coords }: GeolocationPosition): Position => ({
+const toPosition = ({ coords, timestamp }: GeolocationPosition): Position => ({
   coordinate: { latitude: coords.latitude, longitude: coords.longitude },
   accuracyMeters: coords.accuracy,
+  recordedAt: new Date(timestamp).toISOString(),
+  speedMetersPerSecond: coords.speed,
 })
 
 const HIGH_ACCURACY: PositionOptions = { enableHighAccuracy: true, maximumAge: 5000, timeout: 10_000 }
 
 export function watchPosition(onChange: (position: Position) => void, onDenied?: () => void): () => void {
   if (USE_MOCK) {
-    onChange({ coordinate: MOCK_CURRENT_COORDINATE, accuracyMeters: 10 })
+    onChange(mockPosition())
     return () => {}
   }
   if (!navigator.geolocation) {
@@ -46,7 +57,7 @@ export function watchPosition(onChange: (position: Position) => void, onDenied?:
 }
 
 export function requestPosition(): Promise<Position | null> {
-  if (USE_MOCK) return Promise.resolve({ coordinate: MOCK_CURRENT_COORDINATE, accuracyMeters: 10 })
+  if (USE_MOCK) return Promise.resolve(mockPosition())
   if (!navigator.geolocation) return Promise.resolve(null)
 
   return new Promise((resolve) => {

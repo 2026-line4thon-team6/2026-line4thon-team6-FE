@@ -11,7 +11,7 @@ import { resetMockDjPlaylists } from '@/mocks/djPlaylists'
 import { resetMockRadio } from '@/mocks/radio'
 import { resetMockGames } from '@/mocks/games'
 import { resetMockJobs, setMockGenerateMs } from '@/mocks/jobs'
-import { resetMockDrives } from '@/mocks/drives'
+import { mockGetActiveDrive, resetMockDrives } from '@/mocks/drives'
 import { resetMockStamps } from '@/mocks/restAreas'
 import { resetMockRoutes } from '@/mocks/routes'
 import { resetMockSearchHistory } from '@/mocks/search'
@@ -570,6 +570,13 @@ describe('드라이브 모드 진입', () => {
     await user.click(within(sheet).getByRole('button', { name: '붕붕! 붕붕이가 출발' }))
 
     expect(await screen.findByRole('button', { name: '경로 탐색' })).toBeInTheDocument()
+    const { data } = await mockGetActiveDrive()
+    expect(data.drive).toMatchObject({
+      coupleId: 'cpl_01',
+      driverUserId: 'usr_minjun',
+      passengerUserId: 'usr_minji',
+      recorderUserId: 'usr_minjun',
+    })
   })
 
   it('시트 바깥을 누르면 드라이브를 만들지 않고 시트가 닫힌다', async () => {
