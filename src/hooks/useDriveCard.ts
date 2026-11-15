@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { completeCard, fetchDriveCard, saveCardDraft, saveMyReflection, uploadCardPhoto } from '@/api/cards'
+import {
+  completeCard,
+  discardUploadedPhoto,
+  fetchDriveCard,
+  saveCardDraft,
+  saveMyReflection,
+  uploadCardPhoto,
+} from '@/api/cards'
 import { ApiError } from '@/api/client'
 import type { Card, Reflection } from '@/types/card'
 import { createIdempotencyKey } from '@/utils/share'
@@ -122,7 +129,13 @@ function useDriveCard(driveId: string, myUserId: string) {
             uploadCardPhoto(file, { coupleId: current.coupleId, idempotencyKey: createIdempotencyKey() }),
           ),
         )
-        await savePhotos(current, [...current.photos.map((photo) => photo.mediaId), ...ids])
+        try {
+          await savePhotos(current, [...current.photos.map((photo) => photo.mediaId), ...ids])
+        } catch (reason) {
+          // 붙이지 못한 사진은 서버에 남아 업로드 한도(시간당 20장)를 차지하므로 바로 지운다. 지우기 실패는 무시한다(24시간 뒤 만료)
+          await Promise.all(ids.map((id) => discardUploadedPhoto(id, { coupleId: current.coupleId }).catch(() => undefined)))
+          throw reason
+        }
       })
     }
     if (tooMany) setError(MESSAGES.tooMany)
