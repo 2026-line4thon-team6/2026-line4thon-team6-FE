@@ -32,6 +32,7 @@ import useRecordMap from '@/hooks/useRecordMap'
 import useRecords from '@/hooks/useRecords'
 import useRestAreaAlert from '@/hooks/useRestAreaAlert'
 import useRestAreaDetail from '@/hooks/useRestAreaDetail'
+import useRouteRestAreas from '@/hooks/useRouteRestAreas'
 import useRouteSetting from '@/hooks/useRouteSetting'
 import useStartDrive, { type DriveLocationState } from '@/hooks/useStartDrive'
 import useTimeOfDay from '@/hooks/useTimeOfDay'
@@ -561,6 +562,7 @@ function RouteSettingRoute() {
   const { status, drive, setRoute, start } = useDrive()
   const { destinationPlaceId, destinationName } = (location.state ?? {}) as DriveLocationState
   const routeSetting = useRouteSetting(destinationPlaceId, destinationName)
+  const routeRestAreas = useRouteRestAreas(routeSetting.route?.polyline ?? null)
   const [confirming, setConfirming] = useState(false)
 
   if (status === 'empty') return <Navigate to="/" replace />
@@ -586,6 +588,7 @@ function RouteSettingRoute() {
       results={routeSetting.results}
       route={routeSetting.route}
       routeStatus={routeSetting.routeStatus}
+      restAreas={routeRestAreas}
       confirming={confirming}
       onQueryChange={routeSetting.changeQuery}
       onSearch={routeSetting.submitSearch}

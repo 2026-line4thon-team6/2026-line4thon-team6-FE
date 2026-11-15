@@ -7,7 +7,7 @@ import RecentSearchItem from '@/components/RecentSearchItem/RecentSearchItem'
 import RouteSearchBox from '@/components/RouteSearchBox/RouteSearchBox'
 import SearchResultItem from '@/components/SearchResultItem/SearchResultItem'
 import type { PlaceSummary } from '@/types/place'
-import type { Route } from '@/types/route'
+import type { Coordinate, Route } from '@/types/route'
 import type { SearchHistoryItem } from '@/types/search'
 import { formatArrival, formatDistance, formatEstimatedDuration } from '@/utils/driveStats'
 import { decodePolyline } from '@/utils/polyline'
@@ -21,6 +21,7 @@ interface RouteSettingPageProps {
   results: PlaceSummary[] | null
   route: Route | null
   routeStatus: 'idle' | 'loading' | 'error'
+  restAreas?: { id: string; name: string; coordinate: Coordinate }[]
   confirming?: boolean
   onQueryChange: (value: string) => void
   onSearch: (keyword: string) => void
@@ -48,6 +49,7 @@ function RouteSettingPage({
   results,
   route,
   routeStatus,
+  restAreas = [],
   confirming = false,
   onQueryChange,
   onSearch,
@@ -99,6 +101,7 @@ function RouteSettingPage({
               path={path}
               origin={route.origin.coordinate}
               destination={route.destination.coordinate}
+              restAreas={restAreas}
               fitPadding={FIT_PADDING}
             />
           </div>
