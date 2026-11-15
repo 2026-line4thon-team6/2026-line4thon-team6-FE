@@ -9,6 +9,7 @@ import { resetMockPlaces } from '@/mocks/places'
 import { resetMockCards } from '@/mocks/cards'
 import { resetMockDjPlaylists } from '@/mocks/djPlaylists'
 import { resetMockRadio } from '@/mocks/radio'
+import { resetMockGames } from '@/mocks/games'
 import { resetMockJobs, setMockGenerateMs } from '@/mocks/jobs'
 import { resetMockDrives } from '@/mocks/drives'
 import { resetMockStamps } from '@/mocks/restAreas'
@@ -60,6 +61,7 @@ beforeEach(() => {
   resetMockDjPlaylists()
   resetMockJobs()
   resetMockRadio()
+  resetMockGames()
   resetMockPlaces()
   localStorage.clear()
   sessionStorage.clear()
@@ -860,6 +862,36 @@ describe('드라이브 주행 · 마치기', () => {
 
     await user.click(screen.getByRole('button', { name: '중단하기' }))
     expect(screen.getByRole('heading', { name: '사연 입력하기' })).toBeInTheDocument()
+  })
+
+  it('밸런스 게임: 카드 → 문제 생성 → 고르기 → 다음 문제 → 게임 중단', async () => {
+    setMockGenerateMs(300)
+    const user = await startDriving()
+
+    await user.click(screen.getByRole('button', { name: /밸런스 게임/ }))
+    expect(screen.getByText('밸런스 게임 문제를 만들고 있어요.')).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: '드라이브 중 하나만 가능하다면?' }, { timeout: 3000 }),
+    ).toBeInTheDocument()
+
+    expect(screen.getByRole('group', { name: '민준 선택' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: '민지 선택' })).toBeInTheDocument()
+
+    const next = screen.getByRole('button', { name: '다음 문제' })
+    expect(next).toBeDisabled()
+    const mine = screen.getByRole('group', { name: '민준 선택' })
+    const partner = screen.getByRole('group', { name: '민지 선택' })
+    await user.click(within(mine).getByRole('button', { name: 'A' }))
+    await user.click(within(partner).getByRole('button', { name: 'B' }))
+    expect(within(mine).getByRole('button', { name: 'A' })).toHaveAttribute('aria-pressed', 'true')
+    expect(within(partner).getByRole('button', { name: 'B' })).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(next)
+    expect(await screen.findByRole('heading', { name: '휴게소에서 하나만 먹는다면?' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '게임 중단하기' }))
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: '그만하기' }))
+    expect(await screen.findByRole('button', { name: '드라이브 마치기' })).toBeInTheDocument()
   })
 
   it('라디오: 보낸 사연 목록에서 사연을 고르면 재생되고, 드라이브 카드에 재생 중이 뜬다', async () => {

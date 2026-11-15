@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router'
 import { fetchCardShare } from '@/api/cards'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
@@ -41,6 +41,8 @@ import PlaylistsPage from '@/pages/Archive/PlaylistsPage'
 import RadioStoriesPage from '@/pages/Archive/RadioStoriesPage'
 import RadioPlayerProvider from '@/components/RadioPlayerProvider/RadioPlayerProvider'
 import DriveRadioPage from '@/pages/DriveRadio/DriveRadioPage'
+import BalanceGamePage from '@/pages/Game/BalanceGamePage'
+import useGameSession from '@/hooks/useGameSession'
 import RadioStoriesDrawer from '@/pages/DriveRadio/RadioStoriesDrawer'
 import { fetchRadioEpisode, RADIO_STORY_MAX_LENGTH } from '@/api/radio'
 import type { RadioEpisode } from '@/types/radio'
@@ -281,7 +283,11 @@ function DriveRoute() {
         contents={
           <ContentCards
             onPlaylistClick={() => navigate('/drive/playlist')}
-            onContentClick={(kind) => kind === 'radio' && navigate('/drive/radio')}
+            onContentClick={(kind) => {
+              if (kind === 'radio') navigate('/drive/radio')
+              // TODO: 넌센스 퀴즈 · 추억 게임 화면 연결
+              if (kind === 'balance') navigate('/drive/game/balance')
+            }}
             radioPlaying={radioPlaying}
           />
         }
@@ -337,6 +343,63 @@ function DjPlaylistRoute() {
       onChange={generation.setPreference}
       onSubmit={() => void generation.submit()}
       onBack={() => navigate(-1)}
+    />
+  )
+}
+
+interface BalanceGameRouteProps {
+  myUserId: string
+  myNickname: string | null
+  partnerNickname: string | null
+}
+
+function BalanceGameRoute({ myUserId, myNickname, partnerNickname }: BalanceGameRouteProps) {
+  const navigate = useNavigate()
+  const { status: driveStatus, drive } = useDrive()
+  const game = useGameSession(drive?.id ?? null, 'BALANCE')
+  const responses = game.session?.responses ?? []
+  const myChoice = responses.find((response) => response.authorUserId === myUserId)?.choice ?? null
+  const myRole = drive?.passengerUserId === myUserId ? 'PASSENGER' : 'DRIVER'
+  const question = game.session?.currentQuestion ?? null
+  // TODO: 응답 API는 본인 응답만 저장한다(D07). 폰 하나로 상대 선택까지 저장하려면 백엔드 확인 필요
+  const [partnerPick, setPartnerPick] = useState<{ questionId: string; choice: 'A' | 'B' } | null>(null)
+  const partnerChoice =
+    (partnerPick && partnerPick.questionId === question?.id ? partnerPick.choice : null) ??
+    responses.find((response) => response.authorUserId !== myUserId)?.choice ??
+    null
+
+  useEffect(() => {
+    if (game.status === 'completed') navigate('/drive', { replace: true })
+  }, [game.status, navigate])
+
+  if (driveStatus === 'empty') return <Navigate to="/" replace />
+
+  return (
+    <BalanceGamePage
+      status={game.status}
+      question={question}
+      isLast={!!question && question.number >= (game.session?.questionCount ?? 0)}
+      names={
+        myRole === 'DRIVER'
+          ? { DRIVER: myNickname, PASSENGER: partnerNickname }
+          : { DRIVER: partnerNickname, PASSENGER: myNickname }
+      }
+      choices={
+        myRole === 'DRIVER'
+          ? { DRIVER: myChoice, PASSENGER: partnerChoice }
+          : { DRIVER: partnerChoice, PASSENGER: myChoice }
+      }
+      busy={game.busy}
+      onChoose={(role, choice) => {
+        if (role === myRole) void game.respond({ type: 'BALANCE', choice }, myUserId)
+        else if (question) setPartnerPick({ questionId: question.id, choice })
+      }}
+      onNext={() => void game.advance()}
+      onRetry={game.retry}
+      onAbandon={() => {
+        void game.abandon()
+        navigate('/drive', { replace: true })
+      }}
     />
   )
 }
@@ -939,6 +1002,9 @@ function App() {
           <Route path="/drive/route" element={<RouteSettingRoute />} />
           <Route path="/drive/playlist" element={<DjPlaylistRoute />} />
           <Route path="/drive/radio" element={<DriveRadioRoute />} />
+          <Route path="/drive/game/balance" element={
+              <BalanceGameRoute myUserId={me.id} myNickname={me.nickname} partnerNickname={partnerNickname} />
+            } />
           <Route path="/my" element={<MyRoute auth={auth} />} />
           <Route path="/my/couple" element={<CoupleRoute />} />
           <Route path="/couple/invite" element={<CoupleInviteRoute />} />

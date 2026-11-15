@@ -1,0 +1,163 @@
+$gutter: 25px;
+
+.page {
+  display: flex;
+  flex-direction: column;
+  max-width: var(--app-max-width);
+  min-height: var(--app-height);
+  margin: 0 auto;
+  background-color: color('coral-bg');
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: calc(max(var(--safe-top), 12px) + 5px) $gutter 0;
+}
+
+.title {
+  @include typo('body-l-bold');
+  color: color('black');
+}
+
+.main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 0 $gutter calc(34px + var(--safe-bottom));
+}
+
+.prompt {
+  min-height: calc(24px * 1.4 * 2);
+  margin-top: 71px;
+  @include typo('title-s-bold');
+  color: color('black');
+  word-break: keep-all;
+}
+
+.options {
+  display: grid;
+  grid-template-columns: repeat(2, 154px);
+  gap: 16px;
+  justify-content: center;
+  margin-top: 86px;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-height: 76px;
+  padding: 15px 14px 15px 17px;
+  border-radius: 20px;
+  background-color: color('white');
+  filter: drop-shadow(0 0 5px rgb(0 0 0 / 5%));
+}
+
+.optionKey {
+  @include typo('title-l-bold');
+  color: transparent;
+  background: linear-gradient(133.5deg, rgb(255 200 191) 40%, rgb(255 186 175));
+  background-clip: text;
+}
+
+.optionText {
+  @include typo('body-m-15-bold');
+  color: color('black');
+  white-space: pre-line;
+  word-break: keep-all;
+}
+
+.players {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 304px;
+  max-width: 100%;
+  margin: 34px auto 0;
+}
+
+.player {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  @include typo('body-m-bold');
+  color: color('coral-pressed-2');
+
+  img {
+    height: 51px;
+    max-width: none;
+  }
+}
+
+.name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.DRIVER {
+  gap: 9px;
+}
+
+.PASSENGER {
+  gap: 6px;
+}
+
+.chips {
+  display: flex;
+  flex-shrink: 0;
+  gap: 12px;
+  margin-left: 12px;
+}
+
+.chip {
+  width: 70px;
+  height: 40px;
+  border: 1px solid color('gray-100');
+  border-radius: 100px;
+  background-color: color('white');
+  @include typo('body-l-bold');
+  color: color('gray-800');
+
+  &[aria-pressed='true'] {
+    border-color: color('coral-stroke');
+    background-color: color('coral-2');
+    color: color('coral-pressed');
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}
+
+.message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding-top: 160px;
+  @include typo('body-m-15');
+  color: color('gray-600');
+  text-align: center;
+}
+
+.retry {
+  width: 140px;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: auto;
+  padding-top: 20px;
+}
