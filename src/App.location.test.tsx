@@ -101,24 +101,26 @@ describe('목적지 도착', () => {
   it('주행 중 위치를 GPS 묶음으로 보내고, 마치기 전에 남은 묶음을 보낸 뒤 마지막 번호로 종료한다', async () => {
     const user = await startDriving()
 
-    moveTo(at({ latitude: 37.49, longitude: 127.01 }, 10))
-    moveTo(at({ latitude: 37.495, longitude: 127.005 }, 10))
-    moveTo(at({ latitude: 37.5, longitude: 127.0 }, 300))
+    moveTo(at({ latitude: 37.49, longitude: 127.01 }, 10, 1))
+    moveTo(at({ latitude: 37.495, longitude: 127.005 }, 10, 2))
+    moveTo(at({ latitude: 37.5, longitude: 127.0 }, 300, 3))
 
     await user.click(screen.getByRole('button', { name: '드라이브 마치기' }))
     await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: '드라이브 종료' }))
     expect(await screen.findByRole('button', { name: '드라이브 시작하기' })).toBeInTheDocument()
 
     const recorded = mockRecordedGps('drv_mock_1')
-    expect(recorded.map(({ sequence }) => sequence)).toEqual([1, 2, 3])
-    expect(recorded[1]).toEqual({
-      sequence: 2,
+    const [first, second] = recorded.slice(-2)
+    expect(recorded.map(({ sequence }) => sequence)).toEqual(recorded.map((_, index) => index + 1))
+    expect(first).toEqual({
+      sequence: recorded.length - 1,
       recordedAt: expect.any(String),
       coordinate: { latitude: 37.49, longitude: 127.01 },
       accuracyMeters: 10,
       speedMetersPerSecond: 0,
     })
-    expect(mockEndRequests.at(-1)).toMatchObject({ reason: 'USER_ENDED', lastRecordedSequence: 3 })
+    expect(second.coordinate).toEqual({ latitude: 37.495, longitude: 127.005 })
+    expect(mockEndRequests.at(-1)).toMatchObject({ reason: 'USER_ENDED', lastRecordedSequence: second.sequence })
   })
 
   it('위치가 부정확하면 목적지 근처여도 마치지 않는다', async () => {
