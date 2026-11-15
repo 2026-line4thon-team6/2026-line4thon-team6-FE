@@ -39,3 +39,13 @@ export interface SendToPartnerResult {
   recipientUserId: string
   sentAt: string
 }
+
+// GET /public/places/{placeId} — 로그인 없이 보는 공유 장소. 찜 여부 · 소요 시간처럼 사용자에 따라 달라지는 값은 없다
+export interface PublicPlace {
+  id: string
+  name: string
+  address: string
+  coordinate: { latitude: number; longitude: number }
+  thumbnailUrl: string | null
+  introduction: string | null
+}

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { logout } from '@/api/auth'
 import { prepareDrive } from '@/api/drives'
 import { MOCK_PARTNER_INVITE_CODE, mockEndSession, mockFetchMe, resetMockCouple } from '@/mocks/couples'
-import { resetMockPlaces } from '@/mocks/places'
+import { mockFetchFavorites, mockFetchPublicPlace, resetMockPlaces } from '@/mocks/places'
 import { resetMockCards } from '@/mocks/cards'
 import { resetMockDjPlaylists } from '@/mocks/djPlaylists'
 import { resetMockRadio } from '@/mocks/radio'
@@ -345,6 +345,12 @@ describe('로그인 · 가입 (기능명세서 L1~L9)', () => {
     await logout('test-logout')
   }
 
+  // 목 장소 id는 브랜치마다 다를 수 있어 목 저장소에서 꺼내 쓴다
+  async function firstMockPlaceId() {
+    const { data } = await mockFetchFavorites()
+    return data.items[0].id
+  }
+
   it('로그인하지 않았으면 어느 주소로 들어와도 로그인 화면을 보여 준다', async () => {
     await signOut()
     renderApp('/my')
@@ -418,6 +424,35 @@ describe('로그인 · 가입 (기능명세서 L1~L9)', () => {
 
     await user.click(screen.getByRole('button', { name: '이용약관 보기' }))
     expect(await screen.findByRole('heading', { level: 1, name: '이용 약관' })).toBeInTheDocument()
+  })
+
+  it('로그인하지 않았어도 장소 공유 링크를 열면 로그인 화면 대신 공개 장소 화면을 보여 준다', async () => {
+    const { data: place } = await mockFetchPublicPlace(await firstMockPlaceId())
+    await signOut()
+    const user = renderApp(`/places/${place.id}`)
+
+    expect(await screen.findByRole('heading', { level: 1, name: place.name })).toBeInTheDocument()
+    expect(screen.getByText('공유받은 드라이브 장소')).toBeInTheDocument()
+    // 로그인이 필요한 회원용 버튼은 없다
+    expect(screen.queryByRole('button', { name: '연인에게 보내기' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '붕붕어스 시작하기' }))
+    expect(await screen.findByRole('button', { name: '카카오로 3초 만에 시작하기' })).toBeInTheDocument()
+  })
+
+  it('로그인하지 않은 사용자가 없는 장소 링크를 열면 찾을 수 없다고 안내한다', async () => {
+    await signOut()
+    renderApp('/places/없는-장소')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('장소를 찾을 수 없어요.')
+  })
+
+  it('로그인한 사용자가 장소 공유 링크를 열면 기존 회원용 상세를 보여 준다', async () => {
+    const placeId = await firstMockPlaceId()
+    renderApp(`/places/${placeId}`)
+
+    expect(await screen.findByRole('button', { name: '연인에게 보내기' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '붕붕어스 시작하기' })).not.toBeInTheDocument()
   })
 
   it('기존 가입자는 로그인하면 바로 메인 홈으로 간다', async () => {
