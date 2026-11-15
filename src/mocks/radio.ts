@@ -1,8 +1,9 @@
 import { ApiError } from '@/api/client'
-import type { ApiMeta, ApiResponse, CursorPage } from '@/types/api'
+import type { ApiMeta, ApiResponse, CursorPage, CursorParams } from '@/types/api'
 import type { Job } from '@/types/job'
 import type { CreateRadioEpisodeRequest, RadioEpisode } from '@/types/radio'
 import { mockStartJob } from './jobs'
+import { paginate } from './utils'
 
 // 백엔드 연동 전(VITE_API_BASE_URL 미설정)에 쓰는 라디오 사연 보관함 목 응답.
 // Figma 'My_UI > 라디오 사연 보관함'의 10개 사연. 시안은 앞부분만 보여 주므로 뒷부분은 지어서 채운다
@@ -100,12 +101,15 @@ export async function mockCreateRadioEpisode({
   return { data: job, meta: meta() }
 }
 
-export async function mockFetchRadioHistory(q?: string): Promise<ApiResponse<CursorPage<RadioEpisode>>> {
+export async function mockFetchRadioHistory(
+  q?: string,
+  { cursor, limit }: CursorParams = {},
+): Promise<ApiResponse<CursorPage<RadioEpisode>>> {
   const keyword = q?.trim() ?? ''
   const items = [...created, ...MOCK_RADIO_EPISODES].filter(
     (episode) => !keyword || `${episode.story ?? ''} ${episode.broadcastText ?? ''}`.includes(keyword),
   )
-  return { data: { items: structuredClone(items), nextCursor: null, hasMore: false }, meta: meta() }
+  return { data: paginate(structuredClone(items), cursor, limit), meta: meta() }
 }
 
 // GET /radio/episodes/{episodeId}. 목 서버에는 음성 파일이 없어 audioUrl은 null

@@ -1,6 +1,7 @@
-import type { ApiMeta, ApiResponse, CursorPage } from '@/types/api'
+import type { ApiMeta, ApiResponse, CursorPage, CursorParams } from '@/types/api'
 import type { PlaceCategory, PlaceDetail, PlaceShare, PlaceSummary, SendToPartnerResult } from '@/types/place'
 import { MOCK_SPOTS } from './home'
+import { paginate } from './utils'
 
 // 백엔드 연동 전(VITE_API_BASE_URL 미설정)에 쓰는 장소 목 응답.
 // 홈의 목 장소(MOCK_SPOTS)와 같은 15곳을 API 형식으로 바꿔 쓴다. 장소 id는 홈 카드의 id를 문자열로 쓴다
@@ -98,11 +99,14 @@ export async function mockSetPlaceFavorite(placeId: string, favorite: boolean): 
 }
 
 // 찜한 장소만, 홈 목 데이터 순서대로. category를 생략하면 전체
-export async function mockFetchFavorites(category?: PlaceCategory): Promise<ApiResponse<CursorPage<PlaceSummary>>> {
+export async function mockFetchFavorites(
+  category?: PlaceCategory,
+  { cursor, limit }: CursorParams = {},
+): Promise<ApiResponse<CursorPage<PlaceSummary>>> {
   const items = [...(store ??= createStore()).values()]
     .map(({ place }) => place)
     .filter((place) => place.isFavorite && (!category || place.category === category))
-  return { data: { items, nextCursor: null, hasMore: false }, meta: meta() }
+  return { data: paginate(items, cursor, limit), meta: meta() }
 }
 
 export async function mockSendPlaceToPartner(placeId: string): Promise<ApiResponse<SendToPartnerResult>> {

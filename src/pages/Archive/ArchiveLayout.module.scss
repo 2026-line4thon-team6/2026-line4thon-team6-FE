@@ -39,3 +39,22 @@
 .retry {
   width: 140px;
 }
+
+// 알림 목록의 '더 보기'와 같은 글자 버튼
+.loadMore {
+  display: block;
+  margin: 16px auto 0;
+  padding: 8px 16px;
+  @include typo('body-s-medium');
+  color: color('coral-pressed');
+
+  &:disabled {
+    color: color('gray-400');
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}

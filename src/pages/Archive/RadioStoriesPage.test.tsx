@@ -80,3 +80,14 @@ describe('상태', () => {
     expect(onRetry).toHaveBeenCalled()
   })
 })
+
+describe('더 보기', () => {
+  it('다음 페이지가 있으면 더 보기 버튼을 누를 수 있다', async () => {
+    const onLoadMore = vi.fn()
+    const { user } = renderPage({ hasMore: true, onLoadMore })
+
+    await user.click(screen.getByRole('button', { name: '더 보기' }))
+
+    expect(onLoadMore).toHaveBeenCalledTimes(1)
+  })
+})

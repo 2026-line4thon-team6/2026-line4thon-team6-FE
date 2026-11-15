@@ -32,6 +32,16 @@ export class ApiError extends Error {
   }
 }
 
+// 쿼리 문자열을 붙인 경로. 값이 없는(undefined · 빈 문자열) 파라미터는 뺀다
+export function withQuery(path: string, params: Record<string, string | number | undefined>) {
+  const query = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== '') query.set(key, String(value))
+  }
+  const search = query.toString()
+  return search ? `${path}?${search}` : path
+}
+
 // 성공하면 { data, meta } 를 돌려주고, 실패하면 ApiError를 던진다. 본문이 없는 204는 null을 돌려준다
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<ApiResponse<T>> {
   const headers = new Headers(init.headers)
