@@ -9,7 +9,6 @@ const MAX_SAMPLES = 12
 const PER_SAMPLE = 10
 const MAX_DISTANCE = 1000
 
-// TODO: 경로 기준 휴게소 API가 없어 검색 API(주변 휴게소)로 경로 근처만 고른다. 진행 방향(상행·하행)은 구분하지 못함
 function useRouteRestAreas(polyline: string | null) {
   const path = useMemo(() => (polyline ? decodePolyline(polyline) : []), [polyline])
   const [loaded, setLoaded] = useState<{ polyline: string; items: RestArea[] } | null>(null)
