@@ -7,8 +7,8 @@ export interface Coordinate {
 export interface RecordDestination {
   placeId: string | null // 자유 좌표 목적지면 null
   name: string
-  address: string
-  coordinate: Coordinate
+  address: string | null
+  coordinate: Coordinate | null // 좌표가 없는 목적지는 지도에 나오지 않는다
 }
 
 // 같은 목적지에서 가장 최근에 완료한 카드
@@ -18,7 +18,8 @@ export interface RecordMapCard {
   title: string
   driveDate: string // YYYY-MM-DD (Asia/Seoul)
   destination: RecordDestination | null // 목적지를 정하지 않았으면 null
-  thumbnailUrl: string // 사진이 없는 기록은 서버가 기본 사진을 준다 (D15)
+  // 첫 사진(10분짜리 서명 링크). 사진이 없는 기록은 null → FE가 공통 기본 일러스트를 보여 준다 (D15, RecordPhoto)
+  thumbnailUrl: string | null
   distanceMeters: number
   activeDurationSeconds: number
   completedAt: string // UTC RFC3339

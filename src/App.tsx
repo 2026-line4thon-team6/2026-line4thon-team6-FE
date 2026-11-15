@@ -154,9 +154,11 @@ function NotificationsRoute({ onRead }: NotificationsRouteProps) {
       markRead(notification.id)
       onRead()
     }
-    // 공유받은 장소는 상세 화면으로 이동한다. 카드 · 커플 화면은 아직 없어 이동하지 않는다
+    // 공유받은 장소는 장소 상세, 소감 · 카드 완료 알림은 기록 상세로 이동한다. 커플 알림은 이동하지 않는다
     if (notification.targetType === 'PLACE') {
       navigate(`/places/${encodeURIComponent(notification.targetId)}`)
+    } else if (notification.targetType === 'CARD') {
+      navigate(`/cards/${encodeURIComponent(notification.targetId)}`)
     }
   }
 

@@ -20,6 +20,8 @@ export interface Reflection {
   submittedAt: string | null
   updatedAt: string
   version: number // 내 소감 PUT의 expectedVersion. Card.version과 별개
+  // 쓴 사람의 이번 주행 역할. 화면은 닉네임으로 보여 주므로 쓰지 않는다 (백엔드에 제거 제안 예정)
+  role: 'DRIVER' | 'PASSENGER'
 }
 
 export interface CardPhoto {
@@ -37,11 +39,12 @@ export interface CardPlaylist {
   thumbnailUrl: string | null // 없으면 FE 기본 이미지
 }
 
+// 백엔드 Place: 자유 좌표 목적지는 placeId가 없고, 주소 · 좌표도 비어 있을 수 있다
 export interface CardDestination {
   placeId: string | null
   name: string
-  address: string
-  coordinate: { latitude: number; longitude: number }
+  address: string | null
+  coordinate: { latitude: number; longitude: number } | null
 }
 
 export interface Card {
@@ -64,9 +67,8 @@ export interface Card {
   canEdit: boolean
   canDelete: boolean
   version: number // 제목 · 사진 PATCH와 complete의 expectedVersion
-  // 운전자 사용자 id. 소감 칸에 운전자 · 동승자를 표시하는 데 쓴다.
-  // API 명세(Card)에 아직 없는 필드 — 백엔드 확인 필요 (Drive.driverUserId와 같은 값)
-  driverUserId: string | null
+  // 운전자 사용자 id (백엔드 CardView에 있음). 화면은 닉네임으로 보여 주므로 쓰지 않는다 (백엔드에 제거 제안 예정)
+  driverUserId: string
 }
 
 // GET /cards/pending — 24시간 안에 아직 저장하지 않은 카드 (마감이 빠른 순)
