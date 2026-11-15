@@ -3,7 +3,11 @@ import campingIcon from '@/assets/images/category/camping.svg'
 import natureIcon from '@/assets/images/category/nature.svg'
 import nightViewIcon from '@/assets/images/category/night-view.svg'
 import seaIcon from '@/assets/images/category/sea.svg'
-import type { HomeSummary } from '@/types/home'
+import type { ApiResponse } from '@/types/api'
+import type { HomeResponse, HomeSummary } from '@/types/home'
+import { mockFetchPendingCards } from './cards'
+import { mockFetchMe, mockFetchMyCouple } from './couples'
+import { mockFetchNotifications } from './notifications'
 import type { Category, SpotSummary } from '@/types/spot'
 
 // 홈 화면 목업 데이터 (API 연동 전 미리보기·스토리북용)
@@ -15,6 +19,39 @@ export const MOCK_HOME: HomeSummary = {
   unreadNotificationCount: 1,
   couple: { id: 'cpl_01', partnerNickname: '민지' },
   context: { weather: '맑음', temperature: 22, traffic: '원활', recommendedTheme: '바다 드라이브' },
+}
+
+// GET /home 목 응답. 목 커플 · 알림 · 드라이브 카드의 현재 상태로 만든다 (연결 해제 · 알림 읽음 · 카드 저장이 홈에도 반영된다)
+export async function mockFetchHome(): Promise<ApiResponse<HomeResponse>> {
+  const [{ data: me }, { data: connection }, { data: notifications }, pending] = await Promise.all([
+    mockFetchMe(),
+    mockFetchMyCouple(),
+    mockFetchNotifications({ unreadOnly: true, limit: 100 }),
+    mockFetchPendingCards(),
+  ])
+  const couple = connection.connectionStatus === 'CONNECTED' ? connection.couple : null
+
+  return {
+    data: {
+      me,
+      couple,
+      mascotName: couple?.mascotName ?? '붕붕이',
+      unreadNotificationCount: notifications.items.length,
+      activeDriveId: null,
+      pendingCards: couple ? pending.data : [],
+      context: {
+        weather: '맑음',
+        temperatureC: 22,
+        traffic: '원활',
+        recommendedTheme: '바다 드라이브',
+        radiusMeters: 5000,
+        weatherAvailable: true,
+        trafficAvailable: true,
+        observedAt: new Date().toISOString(),
+      },
+    },
+    meta: pending.meta,
+  }
 }
 
 // 장소 사진은 실제로는 API의 이미지 URL로 내려온다. 목 사진은 public/mocks/spots 에 둔다

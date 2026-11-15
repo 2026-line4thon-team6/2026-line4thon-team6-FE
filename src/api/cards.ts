@@ -4,13 +4,12 @@ import {
   mockFetchCard,
   mockFetchCardShare,
   mockFetchDriveCard,
-  mockFetchPendingCards,
   mockSaveCardDraft,
   mockSaveMyReflection,
   mockUploadCardPhoto,
 } from '@/mocks/cards'
 import type { ApiResponse } from '@/types/api'
-import type { Card, CardDraftPatch, CardShare, PendingCard, Reflection, ReflectionPut } from '@/types/card'
+import type { Card, CardDraftPatch, CardShare, Reflection, ReflectionPut } from '@/types/card'
 import { apiFetch, ApiError, USE_MOCK } from './client'
 
 export interface CoupleRequestOptions {
@@ -55,13 +54,6 @@ export function fetchDriveCard(driveId: string): Promise<ApiResponse<Card>> {
   if (USE_MOCK) return mockFetchDriveCard(driveId)
 
   return apiFetch<Card>(`/drives/${encodeURIComponent(driveId)}/card`)
-}
-
-// GET /cards/pending — 24시간 안에 저장하지 않은 카드 (마감이 빠른 순)
-export function fetchPendingCards(): Promise<ApiResponse<PendingCard[]>> {
-  if (USE_MOCK) return mockFetchPendingCards()
-
-  return apiFetch<PendingCard[]>('/cards/pending')
 }
 
 // PATCH /cards/{cardId}/draft — 제목 · 사진 순서 임시저장. photoIds는 전체 순서이고 첫 사진이 대표다

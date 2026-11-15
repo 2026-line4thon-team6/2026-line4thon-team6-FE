@@ -60,6 +60,11 @@ export function createMockNotifications(now: number = Date.now()): Notification[
 }
 
 let store: Notification[] | null = null
+
+// 테스트에서 읽음 상태를 처음으로 되돌린다
+export function resetMockNotifications() {
+  store = null
+}
 let requestCount = 0
 
 const meta = (): ApiMeta => ({ requestId: `req_mock_${++requestCount}`, serverTime: new Date().toISOString() })
