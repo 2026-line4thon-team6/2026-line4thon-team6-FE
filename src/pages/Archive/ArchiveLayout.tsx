@@ -17,7 +17,7 @@ interface ArchiveLayoutProps {
   children: ReactNode
 }
 
-// 마이 > 보관함 3종(찜한 드라이브 코스 · 플레이리스트 · 라디오 사연)의 공통 틀
+// 마이 > 보관함 3종(찜한 드라이브 코스 · 플레이리스트 · 라디오 사연)의 공통 틀. 자주 묻는 질문 화면도 같은 틀을 쓴다
 function ArchiveLayout({
   title,
   status,

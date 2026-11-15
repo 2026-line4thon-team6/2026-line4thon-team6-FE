@@ -185,6 +185,19 @@ describe('마이 화면', () => {
     expect(await screen.findByRole('button', { name: /누적 330km/ })).toBeInTheDocument()
   })
 
+  it("'자주 묻는 질문 (FAQ)'를 누르면 FAQ 화면으로 이동해 답변을 펼쳐 볼 수 있고, 뒤로가면 마이 화면으로 돌아온다", async () => {
+    const user = renderApp('/my')
+
+    await user.click(await screen.findByRole('button', { name: '자주 묻는 질문 (FAQ)' }))
+
+    expect(screen.getByRole('heading', { level: 1, name: '자주 묻는 질문' })).toBeInTheDocument()
+    await user.click(await screen.findByRole('button', { name: '연인과 어떻게 연결하나요?' }))
+    expect(screen.getByText(/마이 화면의 프로필 카드를 눌러/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '뒤로가기' }))
+    expect(await screen.findByRole('button', { name: /누적 330km/ })).toBeInTheDocument()
+  })
+
   it('로그아웃 → 확인하면 로그인 화면으로 이동한다', async () => {
     const user = renderApp('/my')
 
