@@ -1,4 +1,4 @@
-import { mockCancelJob, mockGetJob } from '@/mocks/djPlaylists'
+import { mockCancelJob, mockGetJob } from '@/mocks/jobs'
 import type { ApiResponse } from '@/types/api'
 import type { Job } from '@/types/job'
 import { apiFetch, USE_MOCK } from './client'

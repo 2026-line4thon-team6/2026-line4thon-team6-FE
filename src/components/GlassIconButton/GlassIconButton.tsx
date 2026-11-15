@@ -3,6 +3,7 @@ import backIcon from '@/assets/icons/back.svg'
 import closeIcon from '@/assets/icons/close-glass.svg'
 import exitIcon from '@/assets/icons/exit.svg'
 import locateIcon from '@/assets/icons/locate.svg'
+import menuIcon from '@/assets/icons/menu.svg'
 import pauseIcon from '@/assets/icons/pause.svg'
 import shareIcon from '@/assets/icons/share.svg'
 import trashIcon from '@/assets/icons/trash-fill.svg'
@@ -16,6 +17,7 @@ const ICONS = {
   locate: locateIcon,
   exit: exitIcon,
   pause: pauseIcon,
+  menu: menuIcon,
 }
 
 interface GlassIconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

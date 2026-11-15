@@ -1,0 +1,173 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: flex-end;
+  background-color: rgb(0 0 0 / 25%);
+  animation: fade 0.2s ease-out;
+}
+
+.drawer {
+  display: flex;
+  flex-direction: column;
+  width: calc(100% - 76px);
+  max-width: 314px;
+  height: 100%;
+  padding-top: calc(max(var(--safe-top), 12px) + 5px);
+  overflow-y: auto;
+  border-radius: 30px 0 0 30px;
+  background-color: color('coral-bg');
+  box-shadow: 0 1px 10px rgb(0 0 0 / 10%);
+  outline: none;
+  animation: slide 0.25s ease-out;
+}
+
+.top {
+  display: flex;
+  flex-direction: column;
+  gap: 17px;
+  padding: 0 27px;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  @include typo('title-s-bold');
+  color: color('black');
+}
+
+.search {
+  position: relative;
+}
+
+// iOS Safari는 16px 미만 입력칸을 누르면 화면을 확대한다
+.input {
+  width: 100%;
+  height: 48px;
+  padding: 0 40px 0 15px;
+  border: 4px solid color('divider');
+  border-radius: 20px;
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: -0.02em;
+  color: color('black');
+  background-color: color('white');
+  appearance: none;
+
+  &::placeholder {
+    color: color('gray-400');
+  }
+
+  &::-webkit-search-cancel-button {
+    display: none;
+  }
+
+  &:focus-visible {
+    border-color: color('coral-stroke');
+    outline: none;
+  }
+}
+
+.searchIcon {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  width: 15px;
+  height: 15px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.list {
+  margin-top: 19px;
+  padding-bottom: calc(20px + var(--safe-bottom));
+
+  li {
+    border-bottom: 1.3px solid color('divider');
+  }
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 20px 27px 20px 26px;
+  @include typo('body-m-medium');
+  color: color('black');
+  text-align: left;
+
+  &:active {
+    background-color: color('divider');
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: -2px;
+  }
+}
+
+.storyIcon {
+  flex-shrink: 0;
+  align-self: flex-end;
+  margin-bottom: 2px;
+}
+
+.story {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.chevron {
+  flex-shrink: 0;
+  width: 6px;
+  height: auto;
+  margin-left: 8px;
+  transform: scaleX(-1);
+}
+
+.message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding-top: 60px;
+  @include typo('body-m-15');
+  color: color('gray-600');
+  text-align: center;
+}
+
+.retry {
+  padding: 8px 20px;
+  border-radius: 15px;
+  @include typo('body-s-medium');
+  color: color('coral-pressed');
+  background-color: color('coral-2');
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes slide {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .drawer {
+    animation: none;
+  }
+}

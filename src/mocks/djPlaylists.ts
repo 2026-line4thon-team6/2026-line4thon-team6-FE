@@ -2,6 +2,7 @@ import type { ApiResponse } from '@/types/api'
 import type { AppConfig } from '@/types/appConfig'
 import type { Job } from '@/types/job'
 import type { CreatePlaylistRequest, Playlist, PlaylistTrack } from '@/types/playlist'
+import { mockStartJob } from './jobs'
 import { createMeta, mockApiError } from './utils'
 
 export const MOCK_APP_CONFIG: AppConfig = {
@@ -27,19 +28,10 @@ const SONGS: [string, string, number][] = [
   ['너를 만나', '폴킴', 312],
 ]
 
-let generateMs = 3000
-
-export function setMockGenerateMs(ms: number) {
-  generateMs = ms
-}
-
-const jobs = new Map<string, { job: Job; request: CreatePlaylistRequest; startedAt: number }>()
 const playlists = new Map<string, Playlist>()
 let count = 0
 
 export function resetMockDjPlaylists() {
-  generateMs = 3000
-  jobs.clear()
   playlists.clear()
   count = 0
 }
@@ -52,21 +44,12 @@ export async function mockCreatePlaylist(request: CreatePlaylistRequest): Promis
   if (request.moods.length < 1 || request.moods.length > 2 || !request.weather || request.genres.length > 3) {
     throw mockApiError(422, 'VALIDATION_FAILED', '추천 조건을 확인해 주세요.')
   }
-  const id = `job_mock_${++count}`
-  const job: Job = {
-    id,
-    kind: 'PLAYLIST_GENERATION',
-    status: 'QUEUED',
-    resourceType: 'PLAYLIST',
-    resourceId: null,
-    retryAfterSeconds: 1,
-    createdAt: new Date().toISOString(),
-    finishedAt: null,
-    expiresAt: null,
-    error: null,
-  }
-  jobs.set(id, { job, request, startedAt: Date.now() })
-  return { data: structuredClone(job), meta: createMeta() }
+  const job = mockStartJob('PLAYLIST_GENERATION', 'PLAYLIST', () => {
+    const playlistId = `ply_mock_${++count}`
+    playlists.set(playlistId, buildPlaylist(playlistId, request))
+    return playlistId
+  })
+  return { data: job, meta: createMeta() }
 }
 
 function buildPlaylist(id: string, request: CreatePlaylistRequest): Playlist {
@@ -95,31 +78,6 @@ function buildPlaylist(id: string, request: CreatePlaylistRequest): Playlist {
     createdAt: new Date().toISOString(),
     version: 1,
   }
-}
-
-export async function mockGetJob(jobId: string): Promise<ApiResponse<Job>> {
-  const entry = jobs.get(jobId)
-  if (!entry) throw mockApiError(404, 'RESOURCE_NOT_FOUND', '작업을 찾을 수 없어요.')
-  const { job, request, startedAt } = entry
-  if (job.status === 'QUEUED' || job.status === 'RUNNING') {
-    if (Date.now() - startedAt >= generateMs) {
-      const playlistId = `ply_mock_${jobId}`
-      playlists.set(playlistId, buildPlaylist(playlistId, request))
-      Object.assign(job, { status: 'SUCCEEDED', resourceId: playlistId, finishedAt: new Date().toISOString() })
-    } else {
-      job.status = 'RUNNING'
-    }
-  }
-  return { data: structuredClone(job), meta: createMeta() }
-}
-
-export async function mockCancelJob(jobId: string): Promise<ApiResponse<Job>> {
-  const entry = jobs.get(jobId)
-  if (!entry) throw mockApiError(404, 'RESOURCE_NOT_FOUND', '작업을 찾을 수 없어요.')
-  if (entry.job.status === 'QUEUED' || entry.job.status === 'RUNNING') {
-    Object.assign(entry.job, { status: 'CANCELLED', finishedAt: new Date().toISOString() })
-  }
-  return { data: structuredClone(entry.job), meta: createMeta() }
 }
 
 function getOrThrow(playlistId: string) {

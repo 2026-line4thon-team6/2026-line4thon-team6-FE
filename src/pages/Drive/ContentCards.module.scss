@@ -97,6 +97,14 @@
   white-space: nowrap;
 }
 
+.playing {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  @include typo('caption-bold');
+  color: color('green');
+}
+
 .gameImage {
   position: absolute;
   max-width: none;

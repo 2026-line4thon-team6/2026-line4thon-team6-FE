@@ -3,6 +3,7 @@ import balanceImage from '@/assets/images/contents/balance.webp'
 import memoryImage from '@/assets/images/contents/memory.webp'
 import nonsenseImage from '@/assets/images/contents/nonsense.webp'
 import radioImage from '@/assets/images/contents/radio.webp'
+import RadioWave from '@/components/RadioWave/RadioWave'
 import styles from './ContentCards.module.scss'
 
 export type ContentKind = 'radio' | 'balance' | 'nonsense' | 'memory'
@@ -17,9 +18,10 @@ const GAMES: { kind: ContentKind; title: string; description: string; image: str
 interface ContentCardsProps {
   onPlaylistClick?: () => void
   onContentClick?: (kind: ContentKind) => void
+  radioPlaying?: boolean
 }
 
-function ContentCards({ onPlaylistClick, onContentClick }: ContentCardsProps) {
+function ContentCards({ onPlaylistClick, onContentClick, radioPlaying = false }: ContentCardsProps) {
   return (
     <div className={styles.cards}>
       <button type="button" className={styles.playlist} onClick={onPlaylistClick}>
@@ -41,7 +43,14 @@ function ContentCards({ onPlaylistClick, onContentClick }: ContentCardsProps) {
           <li key={kind}>
             <button type="button" className={styles.game} onClick={() => onContentClick?.(kind)}>
               <span className={styles.gameTitle}>{title}</span>
-              <span className={styles.gameDescription}>{description}</span>
+              {kind === 'radio' && radioPlaying ? (
+                <span className={styles.playing}>
+                  재생 중
+                  <RadioWave />
+                </span>
+              ) : (
+                <span className={styles.gameDescription}>{description}</span>
+              )}
               <img className={styles.gameImage} src={image} alt="" style={{ left, top, width, height }} />
             </button>
           </li>

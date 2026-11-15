@@ -25,6 +25,8 @@ import usePlaceDetail from '@/hooks/usePlaceDetail'
 import usePlaylistLibrary from '@/hooks/usePlaylistLibrary'
 import usePwaInstall from '@/hooks/usePwaInstall'
 import useRadioEpisode from '@/hooks/useRadioEpisode'
+import useRadioGeneration from '@/hooks/useRadioGeneration'
+import useRadioPlayer from '@/hooks/useRadioPlayer'
 import useRadioStories from '@/hooks/useRadioStories'
 import useRecordMap from '@/hooks/useRecordMap'
 import useRecords from '@/hooks/useRecords'
@@ -37,6 +39,11 @@ import { MOCK_CATEGORIES, MOCK_HOME, MOCK_SPOTS } from '@/mocks/home'
 import FavoritesPage from '@/pages/Archive/FavoritesPage'
 import PlaylistsPage from '@/pages/Archive/PlaylistsPage'
 import RadioStoriesPage from '@/pages/Archive/RadioStoriesPage'
+import RadioPlayerProvider from '@/components/RadioPlayerProvider/RadioPlayerProvider'
+import DriveRadioPage from '@/pages/DriveRadio/DriveRadioPage'
+import RadioStoriesDrawer from '@/pages/DriveRadio/RadioStoriesDrawer'
+import { fetchRadioEpisode, RADIO_STORY_MAX_LENGTH } from '@/api/radio'
+import type { RadioEpisode } from '@/types/radio'
 import CouplePage from '@/pages/Couple/CouplePage'
 import CoupleInvitePage from '@/pages/CoupleInvite/CoupleInvitePage'
 import ContentCards from '@/pages/Drive/ContentCards'
@@ -216,6 +223,7 @@ function DriveRoute() {
   const navigate = useNavigate()
   const location = useLocation()
   const { status, drive, rename, pause, resume, end } = useDrive()
+  const { playing: radioPlaying } = useRadioPlayer()
   const map = useDriveMap(drive?.routeId ?? null)
   const driving = drive?.status === 'ACTIVE'
   const restAreas = useDriveRestAreas(drive?.id ?? null, drive?.routeId ?? null, driving)
@@ -269,8 +277,14 @@ function DriveRoute() {
         onEnd={handleEnd}
         locationDenied={map.locationDenied}
         onLocationRetry={map.retryLocation}
-        // TODO: 라디오 · 게임 화면 연결
-        contents={<ContentCards onPlaylistClick={() => navigate('/drive/playlist')} />}
+        // TODO: 게임 화면 연결
+        contents={
+          <ContentCards
+            onPlaylistClick={() => navigate('/drive/playlist')}
+            onContentClick={(kind) => kind === 'radio' && navigate('/drive/radio')}
+            radioPlaying={radioPlaying}
+          />
+        }
         stamps={<StampsTab drive={drive} currentCoordinate={map.current} />}
       />
       {restAreaDetail.detail && <RestAreaDetailModal detail={restAreaDetail.detail} onClose={restAreaDetail.close} />}
@@ -323,6 +337,80 @@ function DjPlaylistRoute() {
       onChange={generation.setPreference}
       onSubmit={() => void generation.submit()}
       onBack={() => navigate(-1)}
+    />
+  )
+}
+
+function DriveRadioRoute() {
+  const navigate = useNavigate()
+  const { drive } = useDrive()
+  const player = useRadioPlayer()
+  const [composing, setComposing] = useState(!player.episode)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const generation = useRadioGeneration(drive?.id ?? null)
+
+  const send = async (mode: 'USER_STORY' | 'RANDOM') => {
+    const episode = await generation.send(mode)
+    if (!episode) return
+    player.start(episode)
+    setComposing(false)
+  }
+
+  const play = async (episode: RadioEpisode) => {
+    setDrawerOpen(false)
+    const detail = await fetchRadioEpisode(episode.id)
+      .then(({ data }) => data)
+      .catch(() => episode)
+    player.start(detail)
+    setComposing(false)
+  }
+
+  return (
+    <>
+      <DriveRadioPage
+        episode={player.episode}
+        composing={composing}
+        playing={player.playing}
+        story={generation.story}
+        maxLength={RADIO_STORY_MAX_LENGTH}
+        generating={generation.generating}
+        error={generation.error}
+        onStoryChange={generation.setStory}
+        onSend={() => void send('USER_STORY')}
+        onRandom={() => void send('RANDOM')}
+        onToggle={player.toggle}
+        onStop={player.stop}
+        onNewStory={() => setComposing(true)}
+        onHalt={() => {
+          player.clear()
+          setComposing(true)
+        }}
+        onMenu={() => setDrawerOpen(true)}
+        onBack={() => navigate('/drive')}
+      />
+      {drawerOpen && <RadioStoriesDrawerRoute onSelect={play} onClose={() => setDrawerOpen(false)} />}
+    </>
+  )
+}
+
+function RadioStoriesDrawerRoute({
+  onSelect,
+  onClose,
+}: {
+  onSelect: (episode: RadioEpisode) => void
+  onClose: () => void
+}) {
+  const stories = useRadioStories()
+  return (
+    <RadioStoriesDrawer
+      status={stories.status}
+      episodes={stories.episodes}
+      query={stories.query}
+      keyword={stories.keyword}
+      onQueryChange={stories.setQuery}
+      onRetry={stories.retry}
+      onSelect={onSelect}
+      onClose={onClose}
     />
   )
 }
@@ -802,80 +890,83 @@ function App() {
     setSpots((prev) => prev.map((spot) => (spot.id === id ? { ...spot, liked } : spot)))
 
   return (
-    <Routes>
-      <Route path={LOGIN_PATH} element={<LoginRoute auth={auth} />} />
-      <Route path="/oauth/callback" element={<OAuthCallbackRoute auth={auth} />} />
-      <Route path="/onboarding" element={<OnboardingFlow auth={auth} />}>
-        <Route index element={<Navigate to="welcome" replace />} />
-        <Route path="welcome" element={<WelcomeStep />} />
-        <Route path="intro" element={<IntroStep />} />
-        <Route path="nickname" element={<NicknameStep />} />
-        <Route path="birthday" element={<BirthdayStep />} />
-        <Route path="gender" element={<GenderStep />} />
-        <Route path="anniversary" element={<AnniversaryStep />} />
-        <Route path="mascot" element={<MascotStep />} />
-      </Route>
-      {/* 약관 문서는 가입 중(로그인 전 동의 화면)에도 볼 수 있다 */}
-      {Object.entries(LEGAL_PATHS).map(([type, path]) => (
-        <Route
-          key={type}
-          path={path}
-          element={<LegalDocumentRoute key={type} type={type as LegalDocumentType} />}
-        />
-      ))}
+    <RadioPlayerProvider>
+      <Routes>
+        <Route path={LOGIN_PATH} element={<LoginRoute auth={auth} />} />
+        <Route path="/oauth/callback" element={<OAuthCallbackRoute auth={auth} />} />
+        <Route path="/onboarding" element={<OnboardingFlow auth={auth} />}>
+          <Route index element={<Navigate to="welcome" replace />} />
+          <Route path="welcome" element={<WelcomeStep />} />
+          <Route path="intro" element={<IntroStep />} />
+          <Route path="nickname" element={<NicknameStep />} />
+          <Route path="birthday" element={<BirthdayStep />} />
+          <Route path="gender" element={<GenderStep />} />
+          <Route path="anniversary" element={<AnniversaryStep />} />
+          <Route path="mascot" element={<MascotStep />} />
+        </Route>
+        {/* 약관 문서는 가입 중(로그인 전 동의 화면)에도 볼 수 있다 */}
+        {Object.entries(LEGAL_PATHS).map(([type, path]) => (
+          <Route
+            key={type}
+            path={path}
+            element={<LegalDocumentRoute key={type} type={type as LegalDocumentType} />}
+          />
+        ))}
 
-      <Route element={<MemberGate auth={auth} />}>
-        <Route
-          path="/"
-          element={
-            <HomeRoute
-              home={home}
-              categories={MOCK_CATEGORIES}
-              spots={spots}
-              pendingPromptSeen={pendingPromptSeen}
-              onPendingPromptSeen={() => setPendingPromptSeen(true)}
-              onLikeToggle={setSpotLiked}
-            />
-          }
-        />
-        <Route path="/map" element={<RecordMapRoute />} />
-        <Route
-          path="/cards/:cardId"
-          element={
-            <RecordDetailRouteByParam myUserId={me.id} myNickname={me.nickname} partnerNickname={partnerNickname} />
-          }
-        />
-        <Route path="/notifications" element={<NotificationsRoute onRead={handleNotificationRead} />} />
-        <Route path="/drive" element={<DriveRoute />} />
-        <Route path="/drive/route" element={<RouteSettingRoute />} />
-        <Route path="/drive/playlist" element={<DjPlaylistRoute />} />
-        <Route path="/my" element={<MyRoute auth={auth} />} />
-        <Route path="/my/couple" element={<CoupleRoute />} />
-        <Route path="/couple/invite" element={<CoupleInviteRoute />} />
-        <Route
-          path="/my/favorites"
-          element={<FavoritesRoute onFavoriteChange={(placeId, favorite) => setSpotLiked(Number(placeId), favorite)} />}
-        />
-        <Route path="/my/playlists" element={<PlaylistsRoute />} />
-        <Route path="/my/stories" element={<RadioStoriesRoute />} />
-        <Route path="/my/stories/:episodeId" element={<RadioStoryRouteByParam />} />
-        <Route
-          path="/drives/:driveId/card"
-          element={<DriveCardRouteByParam userId={me.id} myNickname={me.nickname} partnerNickname={partnerNickname} />}
-        />
-        <Route
-          path="/places/:placeId"
-          element={
-            <PlaceDetailRouteByParam
-              couple={home.couple}
-              mascotName={home.mascotName}
-              // 상세에서 바꾼 찜 상태를 홈 카드에도 반영한다 (목 장소 id는 홈 카드 id의 문자열)
-              onFavoriteChange={(placeId, favorite) => setSpotLiked(Number(placeId), favorite)}
-            />
-          }
-        />
-      </Route>
-    </Routes>
+        <Route element={<MemberGate auth={auth} />}>
+          <Route
+            path="/"
+            element={
+              <HomeRoute
+                home={home}
+                categories={MOCK_CATEGORIES}
+                spots={spots}
+                pendingPromptSeen={pendingPromptSeen}
+                onPendingPromptSeen={() => setPendingPromptSeen(true)}
+                onLikeToggle={setSpotLiked}
+              />
+            }
+          />
+          <Route path="/map" element={<RecordMapRoute />} />
+          <Route
+            path="/cards/:cardId"
+            element={
+              <RecordDetailRouteByParam myUserId={me.id} myNickname={me.nickname} partnerNickname={partnerNickname} />
+            }
+          />
+          <Route path="/notifications" element={<NotificationsRoute onRead={handleNotificationRead} />} />
+          <Route path="/drive" element={<DriveRoute />} />
+          <Route path="/drive/route" element={<RouteSettingRoute />} />
+          <Route path="/drive/playlist" element={<DjPlaylistRoute />} />
+          <Route path="/drive/radio" element={<DriveRadioRoute />} />
+          <Route path="/my" element={<MyRoute auth={auth} />} />
+          <Route path="/my/couple" element={<CoupleRoute />} />
+          <Route path="/couple/invite" element={<CoupleInviteRoute />} />
+          <Route
+            path="/my/favorites"
+            element={<FavoritesRoute onFavoriteChange={(placeId, favorite) => setSpotLiked(Number(placeId), favorite)} />}
+          />
+          <Route path="/my/playlists" element={<PlaylistsRoute />} />
+          <Route path="/my/stories" element={<RadioStoriesRoute />} />
+          <Route path="/my/stories/:episodeId" element={<RadioStoryRouteByParam />} />
+          <Route
+            path="/drives/:driveId/card"
+            element={<DriveCardRouteByParam userId={me.id} myNickname={me.nickname} partnerNickname={partnerNickname} />}
+          />
+          <Route
+            path="/places/:placeId"
+            element={
+              <PlaceDetailRouteByParam
+                couple={home.couple}
+                mascotName={home.mascotName}
+                // 상세에서 바꾼 찜 상태를 홈 카드에도 반영한다 (목 장소 id는 홈 카드 id의 문자열)
+                onFavoriteChange={(placeId, favorite) => setSpotLiked(Number(placeId), favorite)}
+              />
+            }
+          />
+        </Route>
+      </Routes>
+    </RadioPlayerProvider>
   )
 }
 
