@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { completeCard, fetchDriveCard, saveCardDraft, saveMyReflection, uploadCardPhoto } from '@/api/cards'
 import { ApiError } from '@/api/client'
 import type { Card, Reflection } from '@/types/card'
+import { photoRefreshDelay } from '@/utils/photoRefresh'
 import { createIdempotencyKey } from '@/utils/share'
 
 // API 명세 정책 수치 (사진 2장 · 10MiB · JPEG/PNG/WebP · 소감 70자)
@@ -67,6 +68,29 @@ function useDriveCard(driveId: string, myUserId: string) {
       ignore = true
     }
   }, [driveId, myUserId, attempt])
+
+  // 사진 링크(10분 서명 URL)가 만료되기 전에 새 링크만 받아 바꾼다.
+  // 쓰는 중인 내용을 덮지 않도록 카드 버전이 그대로일 때 사진 링크만 바꾼다
+  const photos = state.card?.photos
+  useEffect(() => {
+    if (!photos) return
+    const delay = photoRefreshDelay(photos, Date.now())
+    if (delay === null) return
+    let ignore = false
+    const timer = setTimeout(() => {
+      fetchDriveCard(driveId)
+        .then(({ data }) => {
+          const current = cardRef.current
+          if (ignore || !current || current.version !== data.version) return
+          setCard({ ...current, photos: data.photos })
+        })
+        .catch(() => {})
+    }, delay)
+    return () => {
+      ignore = true
+      clearTimeout(timer)
+    }
+  }, [photos, driveId])
 
   const retry = () => {
     setState({ status: 'loading', card: null })
