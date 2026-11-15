@@ -4,6 +4,7 @@ import currentLocationIcon from '@/assets/icons/current-location.svg'
 import mapPinIcon from '@/assets/icons/map-pin.svg'
 import originDotIcon from '@/assets/icons/origin-dot.svg'
 import carImage from '@/assets/images/drive/map-car.webp'
+import heartImage from '@/assets/images/drive/map-heart.webp'
 import restAreaImage from '@/assets/images/stamp/rest-area.webp'
 import type { Coordinate } from '@/types/route'
 import styles from './DriveMap.module.scss'
@@ -98,7 +99,10 @@ function KakaoDriveMap({
       {current && (
         <CustomOverlayMap position={toLatLng(current)}>
           {currentMarker === 'car' ? (
-            <img className={styles.car} src={carImage} alt="" />
+            <span className={styles.carMarker}>
+              <img className={styles.car} src={carImage} alt="" />
+              <img className={styles.heart} src={heartImage} alt="" />
+            </span>
           ) : (
             <img className={styles.current} src={currentLocationIcon} alt="" />
           )}
