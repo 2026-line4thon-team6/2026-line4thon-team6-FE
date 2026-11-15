@@ -23,6 +23,7 @@ import useDriveCard from '@/hooks/useDriveCard'
 import useNotifications from '@/hooks/useNotifications'
 import useHome from '@/hooks/useHome'
 import usePendingCards from '@/hooks/usePendingCards'
+import useRecommendations from '@/hooks/useRecommendations'
 import usePlaceDetail from '@/hooks/usePlaceDetail'
 import usePlaylistLibrary from '@/hooks/usePlaylistLibrary'
 import usePwaInstall from '@/hooks/usePwaInstall'
@@ -38,7 +39,6 @@ import useRouteRestAreas from '@/hooks/useRouteRestAreas'
 import useRouteSetting from '@/hooks/useRouteSetting'
 import useStartDrive, { type DriveLocationState } from '@/hooks/useStartDrive'
 import useTimeOfDay from '@/hooks/useTimeOfDay'
-import { MOCK_CATEGORIES, MOCK_SPOTS } from '@/mocks/home'
 import FavoritesPage from '@/pages/Archive/FavoritesPage'
 import PlaylistsPage from '@/pages/Archive/PlaylistsPage'
 import RadioStoriesPage from '@/pages/Archive/RadioStoriesPage'
@@ -88,10 +88,10 @@ import {
 import { LOGIN_PATH } from '@/routes/paths'
 import type { PendingCard } from '@/types/card'
 import type { HomeSummary } from '@/types/home'
+import type { PlaceCategory, PlaceSummary } from '@/types/place'
 import type { LegalDocumentType } from '@/types/legal'
 import type { Notification } from '@/types/notification'
 import type { RecordSummary } from '@/types/record'
-import type { Category, SpotSummary } from '@/types/spot'
 import { todayInSeoul } from '@/utils/calendar'
 import { formatDate } from '@/utils/formatDate'
 import { distanceMeters } from '@/utils/location'
@@ -925,12 +925,14 @@ interface HomeRouteProps {
   // 홈에 다시 들어오면 새로 불러온다 (카드 저장 · 커플 변경 반영)
   onEnter: () => void
   myUserId: string
-  categories: Category[]
-  spots: SpotSummary[]
+  // 추천 카테고리와 그 장소 (GET /places/recommendations). 불러오는 중이면 null
+  category: PlaceCategory
+  places: PlaceSummary[] | null
+  onCategoryChange: (category: PlaceCategory) => void
   // 미작성 카드 팝업은 앱을 켠 뒤 한 번만 띄운다. 이후에는 배너로만 알린다
   pendingPromptSeen: boolean
   onPendingPromptSeen: () => void
-  onLikeToggle: (id: number, liked: boolean) => void
+  onLikeToggle: (id: string, liked: boolean) => void
 }
 
 // 홈에 들어올 때마다 홈 데이터(미작성 카드 포함)를 새로 불러온다
@@ -940,8 +942,9 @@ function HomeRoute({
   pendingReceivedAt,
   onEnter,
   myUserId,
-  categories,
-  spots,
+  category,
+  places,
+  onCategoryChange,
   pendingPromptSeen,
   onPendingPromptSeen,
   onLikeToggle,
@@ -967,8 +970,9 @@ function HomeRoute({
       <HomePage
         timeOfDay={timeOfDay}
         home={home}
-        categories={categories}
-        spots={spots}
+        category={category}
+        places={places}
+        onCategoryChange={onCategoryChange}
         carConnected
         pendingCard={summary}
         activeDrive={activeDrive}
@@ -1050,12 +1054,12 @@ function DriveCardRouteByParam(props: Omit<DriveCardRouteProps, 'driveId'>) {
 }
 
 // 홈 데이터(GET /home)는 로그인한 뒤 앱 전체에서 한 번 불러와 커플 · 붕붕이 이름을 여러 화면이 같이 쓴다
-// 추천 장소는 아직 목 데이터 (GET /places/recommendations 연동 시 교체)
 function App() {
   const auth = useAuth()
   const homeData = useHome(auth.status === 'signedIn' ? auth.user : null)
   const home = homeData.summary
-  const [spots, setSpots] = useState(MOCK_SPOTS)
+  // 추천 장소는 홈을 떠났다 와도 다시 받지 않도록 App에 둔다. 상세 · 보관함의 찜 변경도 여기에 맞춘다
+  const recommendations = useRecommendations(auth.status === 'signedIn' && auth.user !== null)
   const [pendingPromptSeen, setPendingPromptSeen] = useState(false)
   // 로그인한 사용자(GET /me)를 먼저 쓰고, 없으면 홈 응답의 내 정보를 쓴다
   const me = { id: auth.user?.id ?? home.userId, nickname: auth.user?.nickname ?? home.nickname }
@@ -1063,9 +1067,6 @@ function App() {
 
   // 알림을 읽으면 홈을 다시 불러와 새 알림 표시를 맞춘다
   const handleNotificationRead = () => void homeData.reload()
-
-  const setSpotLiked = (id: number, liked: boolean) =>
-    setSpots((prev) => prev.map((spot) => (spot.id === id ? { ...spot, liked } : spot)))
 
   return (
     <RadioPlayerProvider>
@@ -1101,11 +1102,12 @@ function App() {
                 pendingReceivedAt={homeData.receivedAt}
                 onEnter={() => void homeData.reload()}
                 myUserId={me.id}
-                categories={MOCK_CATEGORIES}
-                spots={spots}
+                category={recommendations.category}
+                places={recommendations.places}
+                onCategoryChange={recommendations.setCategory}
                 pendingPromptSeen={pendingPromptSeen}
                 onPendingPromptSeen={() => setPendingPromptSeen(true)}
-                onLikeToggle={setSpotLiked}
+                onLikeToggle={(placeId, liked) => void recommendations.toggleFavorite(placeId, liked)}
               />
             }
           />
@@ -1138,7 +1140,7 @@ function App() {
           <Route path="/couple/invite" element={<CoupleInviteRoute />} />
           <Route
             path="/my/favorites"
-            element={<FavoritesRoute onFavoriteChange={(placeId, favorite) => setSpotLiked(Number(placeId), favorite)} />}
+            element={<FavoritesRoute onFavoriteChange={(placeId, favorite) => recommendations.syncFavorite(placeId, favorite)} />}
           />
           <Route path="/my/playlists" element={<PlaylistsRoute />} />
           <Route path="/my/stories" element={<RadioStoriesRoute />} />
@@ -1154,8 +1156,8 @@ function App() {
                 couple={home.couple}
                 mascotName={home.mascotName}
                 myUserId={me.id}
-                // 상세에서 바꾼 찜 상태를 홈 카드에도 반영한다 (목 장소 id는 홈 카드 id의 문자열)
-                onFavoriteChange={(placeId, favorite) => setSpotLiked(Number(placeId), favorite)}
+                // 상세에서 바꾼 찜 상태를 홈 카드에도 반영한다
+                onFavoriteChange={(placeId, favorite) => recommendations.syncFavorite(placeId, favorite)}
               />
             }
           />

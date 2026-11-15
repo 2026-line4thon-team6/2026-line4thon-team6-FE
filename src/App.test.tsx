@@ -109,7 +109,8 @@ describe('홈 · 알림 → 장소 상세 이동', () => {
   it('홈의 장소 카드를 탭하면 그 장소의 상세 화면으로 이동하고, 뒤로가면 홈으로 돌아온다', async () => {
     const user = renderApp()
 
-    await user.click(screen.getByRole('button', { name: '강릉 헌화로' }))
+    // 추천 장소는 GET /places/recommendations 로 불러온다
+    await user.click(await screen.findByRole('button', { name: '강릉 헌화로' }))
 
     expect(await screen.findByRole('heading', { level: 1, name: '강릉 헌화로' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: '뒤로가기' }))
@@ -119,7 +120,7 @@ describe('홈 · 알림 → 장소 상세 이동', () => {
 
   it('상세에서 찜하면 홈으로 돌아왔을 때 카드의 하트에도 반영된다', async () => {
     const user = renderApp()
-    await user.click(screen.getByRole('button', { name: '강릉 헌화로' }))
+    await user.click(await screen.findByRole('button', { name: '강릉 헌화로' }))
     await screen.findByRole('heading', { level: 1, name: '강릉 헌화로' })
 
     await user.click(screen.getByRole('button', { name: '좋아요' }))
@@ -131,6 +132,17 @@ describe('홈 · 알림 → 장소 상세 이동', () => {
     expect(card!.querySelector('button[aria-pressed="true"]')).not.toBeNull()
   })
 
+  it('홈 카드의 하트를 누르면 찜이 저장되어 상세 화면에도 찜으로 보인다', async () => {
+    const user = renderApp()
+    const card = (await screen.findByRole('button', { name: '강릉 헌화로' })).closest('article')!
+
+    await user.click(within(card).getByRole('button', { name: '좋아요' }))
+    await user.click(within(card).getByRole('button', { name: '강릉 헌화로' }))
+
+    await screen.findByRole('heading', { level: 1, name: '강릉 헌화로' })
+    expect(await screen.findByRole('button', { name: '좋아요 취소' })).toBeInTheDocument()
+  })
+
   it('공유받은 장소 알림을 탭하면 그 장소의 상세 화면으로 이동한다', async () => {
     const user = renderApp('/notifications')
 
@@ -140,7 +152,7 @@ describe('홈 · 알림 → 장소 상세 이동', () => {
   })
 
   it('연인에게 보내기 → 보내기 → 전송 완료 안내까지 이어진다', async () => {
-    const user = renderApp('/places/1')
+    const user = renderApp('/places/plc_oido')
     await screen.findByRole('heading', { level: 1, name: '시흥 오이도' })
 
     await user.click(screen.getByRole('button', { name: '연인에게 보내기' }))
@@ -604,7 +616,7 @@ describe('드라이브 모드 진입', () => {
   })
 
   it('장소 상세의 드라이브 시작하기에서도 드라이브명 시트가 열린다', async () => {
-    const user = renderApp('/places/1')
+    const user = renderApp('/places/plc_oido')
     await screen.findByRole('heading', { level: 1, name: '시흥 오이도' })
 
     await user.click(screen.getByRole('button', { name: '드라이브 시작하기' }))

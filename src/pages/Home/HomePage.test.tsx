@@ -1,13 +1,34 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import type { ComponentProps } from 'react'
+import { useState, type ComponentProps } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { MOCK_CATEGORIES, MOCK_HOME, MOCK_SPOTS } from '@/mocks/home'
-import type { SpotSummary } from '@/types/spot'
+import { MOCK_HOME } from '@/mocks/home'
+import { MOCK_PLACES } from '@/mocks/places'
+import type { PlaceCategory, PlaceSummary } from '@/types/place'
 import HomePage from './HomePage'
 
 // 기능명세서 '1️⃣ 메인 홈', '2️⃣ 스마트 탐색 & 큐레이션' 기준
 type Props = ComponentProps<typeof HomePage>
+
+// 카테고리 선택은 화면 밖(App의 useRecommendations)이 들고 있으므로, 테스트에서는 목 장소를 카테고리로 걸러 넘긴다
+// places를 직접 주면 카테고리와 상관없이 그 목록을 쓴다
+function Harness({ places, ...props }: Partial<Props>) {
+  const [category, setCategory] = useState<PlaceCategory>('SEA')
+  return (
+    <HomePage
+      home={MOCK_HOME}
+      carConnected
+      timeOfDay="evening"
+      {...props}
+      category={category}
+      places={places !== undefined ? places : MOCK_PLACES.filter((place) => place.category === category)}
+      onCategoryChange={(next) => {
+        props.onCategoryChange?.(next)
+        setCategory(next)
+      }}
+    />
+  )
+}
 
 function renderHome(props: Partial<Props> = {}) {
   const handlers = {
@@ -16,18 +37,9 @@ function renderHome(props: Partial<Props> = {}) {
     onSpotClick: vi.fn(),
     onLikeToggle: vi.fn(),
     onTabChange: vi.fn(),
+    onCategoryChange: vi.fn(),
   }
-  render(
-    <HomePage
-      home={MOCK_HOME}
-      categories={MOCK_CATEGORIES}
-      spots={MOCK_SPOTS}
-      carConnected
-      timeOfDay="evening"
-      {...handlers}
-      {...props}
-    />,
-  )
+  render(<Harness {...handlers} {...props} />)
   return { user: userEvent.setup(), ...handlers }
 }
 
@@ -182,10 +194,11 @@ describe('스마트 탐색 & 큐레이션', () => {
   })
 
   it('칩을 탭하면 그 칩이 강조되고 해당 테마의 장소로 목록이 바뀐다', async () => {
-    const { user } = renderHome()
+    const { user, onCategoryChange } = renderHome()
 
     await user.click(within(curation()).getByRole('button', { name: '근교 카페' }))
 
+    expect(onCategoryChange).toHaveBeenCalledWith('NEARBY_CAFE')
     expect(within(curation()).getByRole('button', { name: '근교 카페' })).toHaveAttribute('aria-pressed', 'true')
     expect(within(curation()).getByRole('button', { name: '바다' })).toHaveAttribute('aria-pressed', 'false')
     expect(spotNames()).toEqual(['남양주 북한강 카페거리', '파주 헤이리 예술마을', '양평 서종 카페거리'])
@@ -208,26 +221,20 @@ describe('스마트 탐색 & 큐레이션', () => {
     }
   })
 
-  it('장소가 없는 카테고리는 안내 문구를 표시한다', async () => {
-    const { user } = renderHome({ spots: MOCK_SPOTS.filter((spot) => spot.categoryId !== 5) })
-
-    await user.click(within(curation()).getByRole('button', { name: '차박' }))
+  it('추천 장소를 불러오는 중이거나 없으면 안내 문구를 표시한다', () => {
+    renderHome({ places: null })
 
     expect(spotNames()).toEqual([])
     expect(within(curation()).getByText('추천 장소를 준비하고 있어요.')).toBeInTheDocument()
   })
 
   it('장소 카드는 최대 7개까지만 표시한다', () => {
-    const spots: SpotSummary[] = Array.from({ length: 10 }, (_, index) => ({
-      id: index + 1,
+    const places: PlaceSummary[] = Array.from({ length: 10 }, (_, index) => ({
+      ...MOCK_PLACES[0],
+      id: `plc_${index + 1}`,
       name: `장소 ${index + 1}`,
-      region: '경기 시흥시',
-      travelTime: '약 1시간',
-      tags: ['바다'],
-      categoryId: 1,
-      liked: false,
     }))
-    renderHome({ spots })
+    renderHome({ places })
 
     expect(spotNames()).toEqual(['장소 1', '장소 2', '장소 3', '장소 4', '장소 5', '장소 6', '장소 7'])
   })
@@ -242,12 +249,20 @@ describe('스마트 탐색 & 큐레이션', () => {
     expect(card).toHaveTextContent('#해안도로')
   })
 
+  it('예상 소요 시간을 모르면(null) 위치만 표시한다', () => {
+    renderHome({ places: [{ ...MOCK_PLACES[0], estimatedDurationSeconds: null }] })
+
+    const card = within(curation()).getByRole('article')
+    expect(card).toHaveTextContent('경기 시흥시')
+    expect(card).not.toHaveTextContent('·')
+  })
+
   it('장소 카드를 탭하면 해당 장소의 상세로 이동을 요청한다', async () => {
     const { user, onSpotClick } = renderHome()
 
     await user.click(within(curation()).getByRole('button', { name: '강릉 헌화로' }))
 
-    expect(onSpotClick).toHaveBeenCalledWith(2)
+    expect(onSpotClick).toHaveBeenCalledWith('plc_heonhwaro')
   })
 
   it('하트를 탭하면 찜 상태 변경을 요청하고 상세로는 이동하지 않는다', async () => {
@@ -257,13 +272,13 @@ describe('스마트 탐색 & 큐레이션', () => {
     await user.click(within(liked).getByRole('button', { name: '좋아요 취소' }))
     await user.click(within(notLiked).getByRole('button', { name: '좋아요' }))
 
-    expect(onLikeToggle).toHaveBeenNthCalledWith(1, 1, false)
-    expect(onLikeToggle).toHaveBeenNthCalledWith(2, 2, true)
+    expect(onLikeToggle).toHaveBeenNthCalledWith(1, 'plc_oido', false)
+    expect(onLikeToggle).toHaveBeenNthCalledWith(2, 'plc_heonhwaro', true)
     expect(onSpotClick).not.toHaveBeenCalled()
   })
 
-  it('카테고리가 없어도 화면이 깨지지 않는다', () => {
-    renderHome({ categories: [], spots: [] })
+  it('추천 장소가 비어 있어도 화면이 깨지지 않는다', () => {
+    renderHome({ places: [] })
 
     expect(within(curation()).getByText('추천 장소를 준비하고 있어요.')).toBeInTheDocument()
   })
@@ -331,7 +346,7 @@ describe('가로 목록 마우스 드래그', () => {
       { keys: '[/MouseLeft]', target: card, coords: { clientX: 302, clientY: 100 } },
     ])
 
-    expect(onSpotClick).toHaveBeenCalledWith(2)
+    expect(onSpotClick).toHaveBeenCalledWith('plc_heonhwaro')
   })
 
   it('카테고리 칩 목록도 마우스로 끌어서 스크롤할 수 있다', async () => {

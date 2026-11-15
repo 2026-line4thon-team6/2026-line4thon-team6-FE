@@ -4,8 +4,8 @@ import { fn } from 'storybook/test'
 import { mockFetchPlaceDetail } from '@/mocks/places'
 import PlaceDetailPage from './PlaceDetailPage'
 
-const { data: OIDO } = await mockFetchPlaceDetail('1')
-const { data: HEONHWARO } = await mockFetchPlaceDetail('2')
+const { data: OIDO } = await mockFetchPlaceDetail('plc_oido')
+const { data: HEONHWARO } = await mockFetchPlaceDetail('plc_heonhwaro')
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
