@@ -7,7 +7,9 @@ import { prepareDrive } from '@/api/drives'
 import { MOCK_PARTNER_INVITE_CODE, mockEndSession, mockFetchMe, resetMockCouple } from '@/mocks/couples'
 import { resetMockPlaces } from '@/mocks/places'
 import { resetMockCards } from '@/mocks/cards'
-import { resetMockDjPlaylists, setMockGenerateMs } from '@/mocks/djPlaylists'
+import { resetMockDjPlaylists } from '@/mocks/djPlaylists'
+import { resetMockRadio } from '@/mocks/radio'
+import { resetMockJobs, setMockGenerateMs } from '@/mocks/jobs'
 import { resetMockDrives } from '@/mocks/drives'
 import { resetMockStamps } from '@/mocks/restAreas'
 import { resetMockRoutes } from '@/mocks/routes'
@@ -56,6 +58,8 @@ beforeEach(() => {
   resetMockDrives()
   resetMockStamps()
   resetMockDjPlaylists()
+  resetMockJobs()
+  resetMockRadio()
   resetMockPlaces()
   localStorage.clear()
   sessionStorage.clear()
@@ -835,6 +839,42 @@ describe('드라이브 주행 · 마치기', () => {
 
     await user.click(screen.getByRole('button', { name: '다시 만들기' }))
     expect(await screen.findByRole('button', { name: /AI 플레이리스트 만들기/ })).toBeInTheDocument()
+  })
+
+  it('라디오: 카드 → 사연 입력 → 보내기 → 재생 중 → 중단하기', async () => {
+    setMockGenerateMs(300)
+    const user = await startDriving()
+
+    await user.click(screen.getByRole('button', { name: /라디오/ }))
+    const send = await screen.findByRole('button', { name: '사연 보내기' })
+    expect(send).toBeDisabled()
+
+    await user.type(screen.getByRole('textbox', { name: '사연' }), '운전해줘서 고마워')
+    expect(screen.getByText('9 / 300')).toBeInTheDocument()
+    await user.click(send)
+
+    expect(await screen.findByRole('heading', { name: '사연 재생 중' }, { timeout: 3000 })).toBeInTheDocument()
+    expect(screen.getByText(/“운전해줘서 고마워”/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '일시정지' }))
+    expect(screen.getByRole('button', { name: '재생' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '중단하기' }))
+    expect(screen.getByRole('heading', { name: '사연 입력하기' })).toBeInTheDocument()
+  })
+
+  it('라디오: 보낸 사연 목록에서 사연을 고르면 재생되고, 드라이브 카드에 재생 중이 뜬다', async () => {
+    const user = await startDriving()
+
+    await user.click(screen.getByRole('button', { name: /라디오/ }))
+    await user.click(await screen.findByRole('button', { name: '보낸 사연 목록' }))
+    const drawer = await screen.findByRole('dialog', { name: '보낸 사연 목록' })
+    await user.click(await within(drawer).findByRole('button', { name: /백일이 됐어/ }))
+
+    expect(await screen.findByRole('heading', { name: '사연 재생 중' })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '뒤로가기' }))
+    expect(await screen.findByRole('button', { name: /라디오\s*재생 중/ })).toBeInTheDocument()
   })
 
   it('드라이브 마치기 팝업에서 경로 수정을 누르면 경로 설정 화면으로 간다', async () => {

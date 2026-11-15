@@ -1,3 +1,9 @@
+export interface CreateRadioEpisodeRequest {
+  mode: 'USER_STORY' | 'RANDOM'
+  story?: string
+  driveId?: string
+}
+
 // API 명세 RadioEpisode (GET /radio/episodes · /radio/episodes/{episodeId})
 export interface RadioEpisode {
   id: string

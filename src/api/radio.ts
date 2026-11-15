@@ -1,7 +1,20 @@
-import { mockFetchRadioEpisode, mockFetchRadioHistory } from '@/mocks/radio'
+import { mockCreateRadioEpisode, mockFetchRadioEpisode, mockFetchRadioHistory } from '@/mocks/radio'
 import type { ApiResponse, CursorPage } from '@/types/api'
-import type { RadioEpisode } from '@/types/radio'
+import type { Job } from '@/types/job'
+import type { CreateRadioEpisodeRequest, RadioEpisode } from '@/types/radio'
 import { apiFetch, USE_MOCK } from './client'
+
+export const RADIO_STORY_MAX_LENGTH = 300
+
+export function createRadioEpisode(body: CreateRadioEpisodeRequest, idempotencyKey: string): Promise<ApiResponse<Job>> {
+  if (USE_MOCK) return mockCreateRadioEpisode(body)
+
+  return apiFetch<Job>('/radio/episodes', {
+    method: 'POST',
+    headers: { 'Idempotency-Key': idempotencyKey },
+    body: JSON.stringify(body),
+  })
+}
 
 // 검색어 최대 길이 (API 명세 q maxLength)
 export const RADIO_SEARCH_MAX_LENGTH = 100
