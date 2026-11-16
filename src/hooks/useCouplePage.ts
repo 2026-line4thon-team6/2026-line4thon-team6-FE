@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ApiError } from '@/api/client'
 import { disconnectCouple, fetchMyCouple, renameMascot as renameMascotApi, updateCoupleStartDate } from '@/api/couples'
+import { cancelPreparedDrive, getActiveDrive } from '@/api/drives'
 import { fetchMe, updateMe } from '@/api/me'
 import type { Couple } from '@/types/couple'
 import type { Me, UpdateMeRequest } from '@/types/me'
@@ -21,6 +22,13 @@ interface State {
 }
 
 const INITIAL: State = { status: 'loading', couple: null, me: null }
+
+// 연결 해제 결과. 성공이면 null, 실패면 안내 문구. activeDrive면 진행 중인 드라이브 때문에 막힌 것이라 정리 버튼을 보여 준다
+export type DisconnectResult = { message: string; activeDrive: boolean } | null
+
+// 연결 해제를 막는 드라이브 정리 결과
+// cancelled: 준비 중이던 드라이브를 취소함 · goDrive: 출발한 드라이브라 드라이브 화면에서 마쳐야 함 · none: 이미 없음
+export type ClearDriveOutcome = 'cancelled' | 'goDrive' | 'none'
 
 const toMessage = (reason: unknown) => (reason instanceof ApiError ? reason.message : MESSAGES.unknown)
 const codeOf = (reason: unknown) => (reason instanceof ApiError ? reason.code : null)
@@ -122,23 +130,38 @@ function useCouplePage() {
     }
   }
 
-  const disconnect = async () => {
+  const disconnect = async (): Promise<DisconnectResult> => {
     const couple = coupleRef.current
-    if (!couple) return MESSAGES.unknown
+    if (!couple) return { message: MESSAGES.unknown, activeDrive: false }
     try {
       await disconnectCouple({ coupleId: couple.id })
       return null
     } catch (reason) {
-      if (codeOf(reason) === 'ACTIVE_DRIVE_EXISTS') return MESSAGES.activeDrive
+      if (codeOf(reason) === 'ACTIVE_DRIVE_EXISTS') return { message: MESSAGES.activeDrive, activeDrive: true }
       if (isContextChanged(reason)) {
         await reloadConnection()
-        return MESSAGES.contextChanged
+        return { message: MESSAGES.contextChanged, activeDrive: false }
       }
-      return toMessage(reason)
+      return { message: toMessage(reason), activeDrive: false }
     }
   }
 
-  return { ...state, retry, changeStartDate, renameMascot, updateProfile, disconnect }
+  // 드라이브를 준비만 하고 나가면(경로 설정 중 이탈 등) 준비 상태가 남아 연결 해제를 막는데, 드라이브 화면에는
+  // 준비 중인 드라이브를 끝낼 버튼이 없다. 준비 중이면 여기서 바로 취소하고, 출발한 드라이브는 드라이브 화면에서 마치게 한다
+  const clearActiveDrive = async (): Promise<ClearDriveOutcome> => {
+    const { data } = await getActiveDrive()
+    const drive = data.drive
+    if (!drive || drive.status === 'ENDED' || drive.status === 'CANCELLED') return 'none'
+    if (drive.status !== 'PREPARING') return 'goDrive'
+    await cancelPreparedDrive(
+      drive.id,
+      { expectedVersion: drive.controlVersion },
+      { coupleId: drive.coupleId, idempotencyKey: crypto.randomUUID() },
+    )
+    return 'cancelled'
+  }
+
+  return { ...state, retry, changeStartDate, renameMascot, updateProfile, disconnect, clearActiveDrive }
 }
 
 export default useCouplePage

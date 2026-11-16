@@ -852,7 +852,7 @@ function MyRoute({ auth }: { auth: Auth }) {
 function CoupleRoute() {
   const navigate = useNavigate()
   const goBack = useGoBack('/my')
-  const { retry, changeStartDate, renameMascot, updateProfile, disconnect, ...state } = useCouplePage()
+  const { retry, changeStartDate, renameMascot, updateProfile, disconnect, clearActiveDrive, ...state } = useCouplePage()
 
   return (
     <CouplePage
@@ -864,6 +864,8 @@ function CoupleRoute() {
       onUpdateProfile={updateProfile}
       onDisconnect={disconnect}
       onDisconnected={() => navigate('/my', { replace: true })}
+      onClearActiveDrive={clearActiveDrive}
+      onGoDrive={() => navigate('/drive')}
     />
   )
 }

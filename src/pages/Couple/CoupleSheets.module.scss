@@ -46,3 +46,10 @@
   @include typo('caption');
   color: color('red');
 }
+
+// 드라이브를 정리한 뒤 다음 할 일을 알려 주는 안내 (오류가 아니라 회색)
+.notice {
+  margin-top: 12px;
+  @include typo('caption');
+  color: color('gray-600');
+}

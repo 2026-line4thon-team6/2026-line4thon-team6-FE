@@ -2,6 +2,7 @@ import { useState } from 'react'
 import chevronIcon from '@/assets/icons/chevron-gray.svg'
 import Button from '@/components/Button/Button'
 import GlassIconButton from '@/components/GlassIconButton/GlassIconButton'
+import type { ClearDriveOutcome, DisconnectResult } from '@/hooks/useCouplePage'
 import type { Couple } from '@/types/couple'
 import type { Me, UpdateMeRequest } from '@/types/me'
 import { toDotDate, todayString } from '@/utils/coupleDate'
@@ -27,7 +28,11 @@ interface CouplePageProps {
   onChangeStartDate: (startDate: string) => Promise<string | null>
   onRenameMascot: (name: string) => Promise<string | null>
   onUpdateProfile: (body: UpdateMeRequest) => Promise<string | null>
-  onDisconnect: () => Promise<string | null>
+  onDisconnect: () => Promise<DisconnectResult>
+  // 연결 해제를 막는 드라이브를 정리한다 (준비 중이면 취소, 출발했으면 goDrive)
+  onClearActiveDrive: () => Promise<ClearDriveOutcome>
+  // 출발한 드라이브를 마치러 드라이브 화면으로 간다
+  onGoDrive: () => void
   // 연결 해제가 끝났을 때 (마이 화면으로 이동)
   onDisconnected: () => void
 }
@@ -45,6 +50,8 @@ function CouplePage({
   onUpdateProfile,
   onDisconnect,
   onDisconnected,
+  onClearActiveDrive,
+  onGoDrive,
 }: CouplePageProps) {
   const [overlay, setOverlay] = useState<Overlay>(null)
   const close = () => setOverlay(null)
@@ -180,13 +187,15 @@ function CouplePage({
       {overlay === 'disconnect' && (
         <DisconnectSheet
           onDisconnect={async () => {
-            const error = await onDisconnect()
-            if (!error) {
+            const result = await onDisconnect()
+            if (!result) {
               close()
               onDisconnected()
             }
-            return error
+            return result
           }}
+          onClearActiveDrive={onClearActiveDrive}
+          onGoDrive={onGoDrive}
           onClose={close}
         />
       )}

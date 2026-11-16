@@ -17,6 +17,8 @@ function renderPage(props: Partial<Props> = {}) {
     onUpdateProfile: vi.fn().mockResolvedValue(null),
     onDisconnect: vi.fn().mockResolvedValue(null),
     onDisconnected: vi.fn(),
+    onClearActiveDrive: vi.fn().mockResolvedValue('cancelled'),
+    onGoDrive: vi.fn(),
   }
   render(
     <CouplePage
@@ -182,16 +184,60 @@ describe('커플 연결', () => {
 
   it('해제에 실패하면 시트에 안내를 띄우고, 취소하면 닫힌다', async () => {
     const { user, onDisconnected } = renderPage({
-      onDisconnect: vi.fn().mockResolvedValue('진행 중인 드라이브를 먼저 끝낸 뒤 해제해 주세요.'),
+      onDisconnect: vi.fn().mockResolvedValue({ message: '커플 연결 상태가 바뀌었어요.', activeDrive: false }),
     })
 
     await user.click(screen.getByRole('button', { name: /커플 연결 끊기/ }))
     await user.click(screen.getByRole('button', { name: '연결 해제' }))
-    expect(screen.getByRole('alert')).toHaveTextContent('진행 중인 드라이브를 먼저 끝낸 뒤 해제해 주세요.')
+    expect(screen.getByRole('alert')).toHaveTextContent('커플 연결 상태가 바뀌었어요.')
+    expect(screen.queryByRole('button', { name: '진행 중인 드라이브 정리하기' })).not.toBeInTheDocument()
     expect(onDisconnected).not.toHaveBeenCalled()
 
     await user.click(screen.getByRole('button', { name: '취소' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  describe('진행 중인 드라이브 때문에 막혔을 때', () => {
+    const blocked = { message: '진행 중인 드라이브를 먼저 끝낸 뒤 해제해 주세요.', activeDrive: true }
+
+    it('준비 중이던 드라이브를 정리하면 다시 해제하라고 안내한다', async () => {
+      const { user, onClearActiveDrive } = renderPage({ onDisconnect: vi.fn().mockResolvedValue(blocked) })
+
+      await user.click(screen.getByRole('button', { name: /커플 연결 끊기/ }))
+      await user.click(screen.getByRole('button', { name: '연결 해제' }))
+      await user.click(screen.getByRole('button', { name: '진행 중인 드라이브 정리하기' }))
+
+      expect(onClearActiveDrive).toHaveBeenCalled()
+      expect(screen.getByRole('status')).toHaveTextContent('준비 중이던 드라이브를 취소했어요. 연결 해제를 다시 눌러 주세요.')
+      expect(screen.queryByRole('button', { name: '진행 중인 드라이브 정리하기' })).not.toBeInTheDocument()
+    })
+
+    it('출발한 드라이브면 드라이브 화면으로 보낸다', async () => {
+      const { user, onGoDrive } = renderPage({
+        onDisconnect: vi.fn().mockResolvedValue(blocked),
+        onClearActiveDrive: vi.fn().mockResolvedValue('goDrive'),
+      })
+
+      await user.click(screen.getByRole('button', { name: /커플 연결 끊기/ }))
+      await user.click(screen.getByRole('button', { name: '연결 해제' }))
+      await user.click(screen.getByRole('button', { name: '진행 중인 드라이브 정리하기' }))
+
+      expect(onGoDrive).toHaveBeenCalled()
+    })
+
+    it('정리하지 못하면 다시 시도할 수 있게 안내한다', async () => {
+      const { user } = renderPage({
+        onDisconnect: vi.fn().mockResolvedValue(blocked),
+        onClearActiveDrive: vi.fn().mockRejectedValue(new Error('network')),
+      })
+
+      await user.click(screen.getByRole('button', { name: /커플 연결 끊기/ }))
+      await user.click(screen.getByRole('button', { name: '연결 해제' }))
+      await user.click(screen.getByRole('button', { name: '진행 중인 드라이브 정리하기' }))
+
+      expect(screen.getByRole('alert')).toHaveTextContent('드라이브를 정리하지 못했어요. 잠시 후 다시 시도해 주세요.')
+      expect(screen.getByRole('button', { name: '진행 중인 드라이브 정리하기' })).toBeInTheDocument()
+    })
   })
 })
 
