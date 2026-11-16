@@ -87,4 +87,26 @@ describe('useRecordMap', () => {
 
     expect(result.current.markers).toEqual([THIRD])
   })
+
+  it('썸네일 링크가 만료되기 전(9분 뒤)에 마커를 조용히 다시 받는다', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const fresh = { ...FIRST, latestCard: { ...FIRST.latestCard, thumbnailUrl: 'https://cdn.test/fresh.webp' } }
+      vi.mocked(fetchRecordMap)
+        .mockResolvedValueOnce(page([FIRST], 1))
+        .mockResolvedValueOnce(page([fresh], 1))
+
+      const { result } = renderHook(() => useRecordMap())
+      await waitFor(() => expect(result.current.status).toBe('ready'))
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(9 * 60 * 1000)
+      })
+
+      await waitFor(() => expect(result.current.markers[0].latestCard.thumbnailUrl).toBe('https://cdn.test/fresh.webp'))
+      expect(result.current.status).toBe('ready')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })
