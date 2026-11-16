@@ -6,6 +6,7 @@ import {
   mockFetchDriveCard,
   mockSaveCardDraft,
   mockSaveMyReflection,
+  mockDiscardUploadedPhoto,
   mockUploadCardPhoto,
 } from '@/mocks/cards'
 import type { ApiResponse } from '@/types/api'
@@ -110,8 +111,25 @@ interface MediaUpload {
   maxBytes: number
 }
 
-// 사진 한 장 업로드: POST /media/uploads 로 업로드 주소를 받고 스토리지에 바로 PUT 한다.
-// 스토리지에는 requiredHeaders만 보내고 서비스 Authorization은 붙이지 않는다. 카드에 붙일 mediaId를 돌려준다
+function readBytes(file: Blob): Promise<ArrayBuffer> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as ArrayBuffer)
+    reader.onerror = () => reject(reader.error)
+    reader.readAsArrayBuffer(file)
+  })
+}
+
+// 서버가 받은 바이트와 같은지 확인하는 해시. crypto.subtle은 https · localhost에서만 쓸 수 있다
+async function sha256Hex(file: Blob): Promise<string> {
+  // 복사해서 넘긴다. 테스트(jsdom)의 FileReader 결과는 다른 realm의 ArrayBuffer라 그대로는 digest가 받지 않는다
+  const digest = await crypto.subtle.digest('SHA-256', new Uint8Array(new Uint8Array(await readBytes(file))))
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
+}
+
+// 사진 한 장 업로드: POST /media/uploads 로 업로드 주소를 받고 → 그 주소(백엔드의 /media/{id}/content)에 파일을 PUT 하고
+// → POST /media/{id}/complete 로 파일 해시를 보내 READY 상태로 만든다. READY가 아니면 카드에 붙일 때 MEDIA_NOT_READY로 거절된다.
+// 업로드 주소는 쿼리의 토큰으로 인증하므로 requiredHeaders만 보내고 Authorization은 붙이지 않는다. 카드에 붙일 mediaId를 돌려준다
 export async function uploadCardPhoto(file: File, { coupleId, idempotencyKey }: IdempotentRequestOptions): Promise<string> {
   if (USE_MOCK) return mockUploadCardPhoto(file)
 
@@ -122,6 +140,20 @@ export async function uploadCardPhoto(file: File, { coupleId, idempotencyKey }: 
   })
 
   const response = await fetch(data.uploadUrl, { method: data.method, headers: data.requiredHeaders, body: file })
-  if (!response.ok) throw new ApiError(response.status, null)
+  if (!response.ok) throw new ApiError(response.status, await response.json().catch(() => null))
+
+  // 완료 요청은 업로드 요청과 다른 동작이라 키를 따로 쓴다. 같은 업로드를 재시도하면 같은 키가 나온다
+  await apiFetch(`/media/${encodeURIComponent(data.mediaId)}/complete`, {
+    method: 'POST',
+    headers: { 'X-Couple-Id': coupleId, 'Idempotency-Key': `${idempotencyKey}-complete` },
+    body: JSON.stringify({ sha256: await sha256Hex(file) }),
+  })
   return data.mediaId
+}
+
+// DELETE /media/{mediaId} — 올렸지만 카드에 붙이지 못한 사진을 지운다. 카드에 붙은 사진은 409(MEDIA_IN_USE)라 draft PATCH로 뺀다
+export async function discardUploadedPhoto(mediaId: string, { coupleId }: CoupleRequestOptions): Promise<void> {
+  if (USE_MOCK) return mockDiscardUploadedPhoto(mediaId)
+
+  await apiFetch(`/media/${encodeURIComponent(mediaId)}`, { method: 'DELETE', headers: { 'X-Couple-Id': coupleId } })
 }

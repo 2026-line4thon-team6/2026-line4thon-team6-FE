@@ -123,6 +123,10 @@ export async function mockUploadCardPhoto(file: File): Promise<string> {
   return mediaId
 }
 
+export async function mockDiscardUploadedPhoto(mediaId: string): Promise<void> {
+  uploads.delete(mediaId)
+}
+
 export async function mockSaveCardDraft(cardId: string, patch: CardDraftPatch): Promise<ApiResponse<Card>> {
   const current = getCard(cardId)
   checkVersion(patch.expectedVersion, current.version)

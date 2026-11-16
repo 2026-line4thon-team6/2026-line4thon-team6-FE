@@ -96,3 +96,71 @@ describe('fetchCardShare', () => {
     expect(data).toEqual({ url: 'https://bunbungus.app/cards/crd_01', access: 'COUPLE_ONLY', expiresAt: null })
   })
 })
+
+describe('uploadCardPhoto', () => {
+  const json = (status: number, body: unknown) =>
+    new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
+  const ticket = {
+    mediaId: 'med_01',
+    uploadUrl: 'https://api.test/api/v1/media/med_01/content?token=t',
+    method: 'PUT',
+    requiredHeaders: { 'Content-Type': 'image/jpeg' },
+    expiresAt: '',
+    maxBytes: 10485760,
+  }
+
+  it('업로드 주소로 올린 뒤 파일 해시로 업로드 완료를 알려야 카드에 붙일 수 있는 mediaId를 돌려준다', async () => {
+    fetchMock
+      .mockResolvedValueOnce(json(201, { data: ticket, meta: {} }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(json(200, { data: { id: 'med_01', status: 'READY' }, meta: {} }))
+    const { uploadCardPhoto } = await loadWithBackend()
+
+    const mediaId = await uploadCardPhoto(new File(['abc'], 'a.jpg', { type: 'image/jpeg' }), {
+      coupleId: 'cpl_01',
+      idempotencyKey: 'upload-key-0000001',
+    })
+
+    expect(mediaId).toBe('med_01')
+    const [putUrl, putInit] = fetchMock.mock.calls[1] as [string, RequestInit]
+    expect(putUrl).toBe(ticket.uploadUrl)
+    expect(new Headers(putInit.headers).get('Authorization')).toBeNull()
+
+    const [completeUrl, completeInit] = fetchMock.mock.calls[2] as [string, RequestInit]
+    expect(new URL(completeUrl).pathname).toBe('/api/v1/media/med_01/complete')
+    expect(completeInit.method).toBe('POST')
+    const headers = new Headers(completeInit.headers)
+    expect(headers.get('X-Couple-Id')).toBe('cpl_01')
+    expect(headers.get('Idempotency-Key')).not.toBe('upload-key-0000001')
+    // 'abc'의 SHA-256 (소문자 16진수)
+    expect(JSON.parse(String(completeInit.body))).toEqual({
+      sha256: 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
+    })
+  })
+
+  it('파일을 올리다 실패하면 서버가 준 오류 코드를 담아 던지고 완료 요청은 보내지 않는다', async () => {
+    fetchMock
+      .mockResolvedValueOnce(json(201, { data: ticket, meta: {} }))
+      .mockResolvedValueOnce(json(413, { error: { code: 'FILE_TOO_LARGE', message: '너무 커요', details: [], retryable: false }, meta: {} }))
+    const { uploadCardPhoto } = await loadWithBackend()
+
+    await expect(
+      uploadCardPhoto(new File(['abc'], 'a.jpg', { type: 'image/jpeg' }), { coupleId: 'cpl_01', idempotencyKey: 'upload-key-0000001' }),
+    ).rejects.toMatchObject({ status: 413, code: 'FILE_TOO_LARGE' })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('discardUploadedPhoto', () => {
+  it('카드에 붙이지 못한 사진을 커플 id와 함께 DELETE /media/{mediaId} 로 지운다', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 204 }))
+    const { discardUploadedPhoto } = await loadWithBackend()
+
+    await discardUploadedPhoto('med_01', { coupleId: 'cpl_01' })
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(new URL(url).pathname).toBe('/api/v1/media/med_01')
+    expect(init.method).toBe('DELETE')
+    expect(new Headers(init.headers).get('X-Couple-Id')).toBe('cpl_01')
+  })
+})
