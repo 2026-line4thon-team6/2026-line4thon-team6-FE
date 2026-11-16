@@ -598,6 +598,16 @@ describe('기록 지도 → 기록 상세', () => {
     expect(screen.queryByText('자라섬 캠핑 드라이브')).not.toBeInTheDocument()
   })
 
+  // 기능명세서 🔟: 뒤로가기는 기록 지도로 간다. 공유 링크처럼 주소로 바로 열었을 때도 홈이 아니라 기록 지도로 간다
+  it('기록 주소로 바로 들어와서 뒤로가기를 누르면 기록 지도로 간다', async () => {
+    const user = renderApp('/cards/crd_01')
+    await screen.findByRole('heading', { name: '2026년 11월 8일' })
+
+    await user.click(screen.getByRole('button', { name: '뒤로가기' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: '우리 어디까지 가봤지?' })).toBeInTheDocument()
+  })
+
   it('없는 기록 주소로 들어오면 볼 수 없는 기록이라고 안내한다', async () => {
     renderApp('/cards/crd_none')
 

@@ -730,7 +730,8 @@ interface RecordDetailRouteProps {
 function RecordDetailRoute({ cardId, myUserId, myNickname, partnerNickname }: RecordDetailRouteProps) {
   const navigate = useNavigate()
   const location = useLocation()
-  const goBack = useGoBack()
+  // 기능명세서 🔟: 뒤로가기는 기록 지도로 간다. 공유 링크로 바로 열었을 때도 홈이 아니라 기록 지도로 보낸다
+  const goBack = useGoBack('/map')
   const { status, card, retry, remove } = useCardDetail(cardId)
 
   const handleDelete = async () => {
