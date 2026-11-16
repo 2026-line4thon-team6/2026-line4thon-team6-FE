@@ -5,6 +5,7 @@ import { createPlaylist, editPlaylistTracks, getPlaylist, setPlaylistSaved } fro
 import type { AppConfig } from '@/types/appConfig'
 import type { Playlist } from '@/types/playlist'
 import type { PlaylistPreference } from '@/pages/DjPlaylist/PlaylistPreferencePage'
+import { rememberDrivePlaylist } from './useDrivePlaylist'
 import { createIdempotencyKey } from '@/utils/share'
 
 export type GenerationStep = 'select' | 'generating' | 'done'
@@ -39,6 +40,7 @@ function usePlaylistGeneration(driveId: string | null) {
         if (job.status === 'SUCCEEDED' && job.resourceId) {
           const { data } = await getPlaylist(job.resourceId)
           if (ignore) return
+          if (driveId) rememberDrivePlaylist(driveId, data.id)
           setPlaylist(data)
           setStep('done')
         } else if (job.status === 'FAILED' || job.status === 'CANCELLED') {
@@ -59,7 +61,7 @@ function usePlaylistGeneration(driveId: string | null) {
       ignore = true
       clearTimeout(timer)
     }
-  }, [step, jobId])
+  }, [step, jobId, driveId])
 
   const submit = async () => {
     if (!preference.weather || preference.moods.length === 0) return

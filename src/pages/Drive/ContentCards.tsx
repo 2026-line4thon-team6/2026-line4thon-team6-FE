@@ -3,7 +3,9 @@ import balanceImage from '@/assets/images/contents/balance.webp'
 import memoryImage from '@/assets/images/contents/memory.webp'
 import nonsenseImage from '@/assets/images/contents/nonsense.webp'
 import radioImage from '@/assets/images/contents/radio.webp'
+import PlaylistSummaryCard from '@/components/PlaylistSummaryCard/PlaylistSummaryCard'
 import RadioWave from '@/components/RadioWave/RadioWave'
+import type { CardPlaylist } from '@/types/card'
 import styles from './ContentCards.module.scss'
 
 export type ContentKind = 'radio' | 'balance' | 'nonsense' | 'memory'
@@ -19,24 +21,29 @@ interface ContentCardsProps {
   onPlaylistClick?: () => void
   onContentClick?: (kind: ContentKind) => void
   radioPlaying?: boolean
+  playlist?: CardPlaylist | null
 }
 
-function ContentCards({ onPlaylistClick, onContentClick, radioPlaying = false }: ContentCardsProps) {
+function ContentCards({ onPlaylistClick, onContentClick, radioPlaying = false, playlist = null }: ContentCardsProps) {
   return (
     <div className={styles.cards}>
-      <button type="button" className={styles.playlist} onClick={onPlaylistClick}>
-        <span className={styles.playlistLabel}>DJ 플레이리스트</span>
-        <span className={styles.playlistRow}>
-          <span className={styles.playlistText}>
-            둘의 취향에 맞는
-            <br />
-            플레이리스트를 만들러 가볼까요?
+      {playlist ? (
+        <PlaylistSummaryCard playlist={playlist} />
+      ) : (
+        <button type="button" className={styles.playlist} onClick={onPlaylistClick}>
+          <span className={styles.playlistLabel}>DJ 플레이리스트</span>
+          <span className={styles.playlistRow}>
+            <span className={styles.playlistText}>
+              둘의 취향에 맞는
+              <br />
+              플레이리스트를 만들러 가볼까요?
+            </span>
+            <span className={styles.arrow} aria-hidden>
+              <img src={chevronIcon} alt="" />
+            </span>
           </span>
-          <span className={styles.arrow} aria-hidden>
-            <img src={chevronIcon} alt="" />
-          </span>
-        </span>
-      </button>
+        </button>
+      )}
 
       <ul className={styles.games}>
         {GAMES.map(({ kind, title, description, image, box: [left, top, width, height] }) => (

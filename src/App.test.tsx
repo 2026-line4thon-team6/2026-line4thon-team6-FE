@@ -1088,6 +1088,17 @@ describe('드라이브 주행 · 마치기', () => {
 
     expect(await screen.findByRole('button', { name: '드라이브 마치기' })).toBeInTheDocument()
     expect((await mockGetPlaylist('ply_mock_1')).data.savedByMe).toBe(true)
+    const card = await screen.findByRole('region', { name: '함께 들었던 플레이리스트' })
+    expect(within(card).getByText('노을처럼 따뜻한 우리')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /DJ 플레이리스트/ })).not.toBeInTheDocument()
+  })
+
+  it('드라이브 화면의 뒤로 가기를 누르면 홈으로 간다', async () => {
+    const user = await startDriving()
+
+    await user.click(screen.getByRole('button', { name: '뒤로 가기' }))
+
+    expect(await screen.findByRole('button', { name: /기록 중인 드라이브가 있어요/ })).toBeInTheDocument()
   })
 
   it('라디오: 카드 → 사연 입력 → 보내기 → 재생 중 → 중단하기', async () => {
