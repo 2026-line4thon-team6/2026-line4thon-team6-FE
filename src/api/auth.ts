@@ -1,9 +1,10 @@
 import { mockCompleteOnboarding, mockHasSession, mockLogin, mockLogout, mockRestoreSession } from '@/mocks/couples'
 import type { ApiResponse } from '@/types/api'
-import type { AuthAuthorization, AuthProvider, AuthTokenResult, OnboardingRequest } from '@/types/auth'
+import type { AuthAuthorization, AuthProvider, AuthRefreshResult, AuthTokenResult, OnboardingRequest } from '@/types/auth'
 import type { Me } from '@/types/me'
 import { createCodeChallenge, createCodeVerifier } from '@/utils/pkce'
-import { ApiError, apiFetch, setAccessToken, USE_MOCK } from './client'
+import { createIdempotencyKey } from '@/utils/share'
+import { ApiError, apiFetch, isAccessTokenExpired, setAccessToken, setTokenRefresher, USE_MOCK } from './client'
 
 // 기기에 남겨 두는 서비스 토큰. 로그아웃하지 않으면 계속 로그인 상태를 유지한다 (기능명세서 L1)
 const TOKEN_KEY = 'bbus.auth'
@@ -44,7 +45,7 @@ function write(storage: () => Storage, key: string, value: unknown) {
 const local = () => localStorage
 const session = () => sessionStorage
 
-function saveTokens(result: AuthTokenResult) {
+function saveTokens(result: AuthRefreshResult) {
   write(local, TOKEN_KEY, { accessToken: result.accessToken, refreshToken: result.refreshToken })
   setAccessToken(result.accessToken)
 }
@@ -54,6 +55,51 @@ function clearTokens() {
   setAccessToken(null)
 }
 
+// 리프레시 토큰까지 만료되거나 무효가 되어 세션이 끊겼을 때 앱에 알린다 (로그인 화면으로 보낸다)
+const sessionExpiredListeners = new Set<() => void>()
+
+export function onSessionExpired(listener: () => void) {
+  sessionExpiredListeners.add(listener)
+  return () => {
+    sessionExpiredListeners.delete(listener)
+  }
+}
+
+function expireSession() {
+  clearTokens()
+  sessionExpiredListeners.forEach((listener) => listener())
+}
+
+// POST /auth/refresh — 저장된 리프레시 토큰으로 새 토큰 쌍을 받는다. 서버가 리프레시 토큰을 회전시키므로 둘 다 저장한다.
+// 리프레시 토큰이 만료 · 재사용(401)되면 세션을 끝낸다. 네트워크 오류 · 503 등은 세션을 남겨 두고 다음 요청에서 다시 시도한다
+async function refreshTokens(expiredToken: string): Promise<string> {
+  const tokens = read<StoredTokens>(local, TOKEN_KEY)
+  if (!tokens) {
+    expireSession()
+    throw new ApiError(401, null)
+  }
+  // 다른 탭이 이미 갱신했으면 저장된 새 토큰을 쓴다. 회전된 리프레시 토큰을 다시 쓰면 서버가 세션 전체를 끊는다
+  if (tokens.accessToken !== expiredToken) {
+    setAccessToken(tokens.accessToken)
+    return tokens.accessToken
+  }
+
+  try {
+    const { data } = await apiFetch<AuthRefreshResult>('/auth/refresh', {
+      method: 'POST',
+      headers: { 'Idempotency-Key': await refreshIdempotencyKey(tokens.refreshToken) },
+      body: JSON.stringify({ refreshToken: tokens.refreshToken }),
+    })
+    saveTokens(data)
+    return data.accessToken
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) expireSession()
+    throw error
+  }
+}
+
+if (!USE_MOCK) setTokenRefresher(refreshTokens)
+
 // 로그아웃할 때 현재 기기만 끊기 위한 기기 id
 function getDeviceId() {
   const saved = read<string>(local, DEVICE_KEY)
@@ -61,6 +107,14 @@ function getDeviceId() {
   const id = crypto.randomUUID()
   write(local, DEVICE_KEY, id)
   return id
+}
+
+// 같은 리프레시 토큰이면 언제나 같은 키를 만든다. 응답을 못 받고 다시 보내거나 다른 탭이 동시에 갱신해도
+// 서버가 30초 안의 같은 키 요청에는 앞선 결과를 돌려준다 (다른 키로 옛 토큰을 다시 쓰면 세션 전체가 끊긴다)
+async function refreshIdempotencyKey(refreshToken: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new Uint8Array(new TextEncoder().encode(refreshToken)))
+  const hex = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
+  return `refresh-${hex}`
 }
 
 // POST /auth/authorizations — 로그인 세션을 만들고 공급자 로그인 화면 주소를 돌려준다 (PKCE S256)
@@ -84,6 +138,7 @@ export async function completeSocialLogin({ code, state }: { code: string; state
 
   const { data } = await apiFetch<AuthTokenResult>('/auth/token', {
     method: 'POST',
+    headers: { 'Idempotency-Key': createIdempotencyKey() },
     body: JSON.stringify({ authSessionId: pending.authSessionId, authorizationCode: code, state, codeVerifier: pending.codeVerifier }),
   })
   saveTokens(data)
@@ -108,7 +163,7 @@ export function hasStoredSession() {
 }
 
 // 앱을 열 때 저장된 세션으로 내 계정을 불러온다. 세션이 없거나 만료됐으면 null
-// TODO: 액세스 토큰 만료(ACCESS_TOKEN_EXPIRED) 시 POST /auth/refresh로 갱신한다
+// 액세스 토큰이 만료됐으면 apiFetch가 리프레시 토큰으로 갱신해 다시 불러온다
 export async function restoreSession(): Promise<Me | null> {
   try {
     if (USE_MOCK) return (await mockRestoreSession()).data
@@ -119,6 +174,8 @@ export async function restoreSession(): Promise<Me | null> {
     return (await apiFetch<Me>('/me')).data
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
+      // 갱신이 일시 장애(503 · 네트워크)로 실패해 세션이 남아 있으면 지우지 않고 오류를 던진다 (다음에 다시 시도)
+      if (isAccessTokenExpired(error) && hasStoredSession()) throw error
       clearTokens()
       return null
     }
