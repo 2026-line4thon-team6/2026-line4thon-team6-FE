@@ -11,7 +11,8 @@ interface RecordCalendarSheetProps {
   selectedDate: string | null
   // 서울 기준 오늘 (YYYY-MM-DD). 이 날이 있는 달보다 뒤로는 넘길 수 없다
   today: string
-  onSelect: (date: string) => void
+  // 고른 날짜와 그날의 기록 수. 여러 개면 기록 지도가 목록형으로 나열한다 (기능명세서 9️⃣)
+  onSelect: (date: string, count: number) => void
   onClose: () => void
 }
 
@@ -22,7 +23,7 @@ function RecordCalendarSheet({ selectedDate, today, onSelect, onClose }: RecordC
   const ref = useOverlay<HTMLDivElement>(onClose)
   const lastMonth = toMonth(today)
   const [month, setMonth] = useState(() => toMonth(selectedDate ?? today))
-  const { status, recordDates, retry } = useRecordCalendar(month)
+  const { status, recordCounts, retry } = useRecordCalendar(month)
 
   return (
     <div className={styles.overlay}>
@@ -64,8 +65,8 @@ function RecordCalendarSheet({ selectedDate, today, onSelect, onClose }: RecordC
                   className={[styles.day, selected && styles.selected].filter(Boolean).join(' ')}
                   aria-label={formatDate(date)}
                   aria-pressed={selected}
-                  disabled={!recordDates.has(date)}
-                  onClick={() => onSelect(date)}
+                  disabled={!recordCounts.has(date)}
+                  onClick={() => onSelect(date, recordCounts.get(date) ?? 0)}
                 >
                   {Number(date.slice(8))}
                 </button>

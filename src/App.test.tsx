@@ -18,7 +18,8 @@ import { resetMockNotifications } from '@/mocks/notifications'
 import { resetMockSearchHistory } from '@/mocks/search'
 import { resetMockRecordDeletions } from './mocks/records'
 import App from './App'
-import type { RecordMapMarker } from './types/record'
+import type { ApiResponse } from './types/api'
+import type { RecordCalendar, RecordMapMarker } from './types/record'
 
 vi.mock('./components/DriveMap/DriveMap', () => ({ default: () => <div data-testid="drive-map" /> }))
 
@@ -36,8 +37,21 @@ vi.mock('./pages/RecordMap/RecordMapView', async () => {
   }
 })
 
+// 목 데이터에는 같은 날짜에 기록이 여러 개인 날이 없어, 필요한 테스트에서만 달력 응답(날짜별 기록 수)을 바꿔 끼운다
+const calendarOverride = vi.hoisted(() => ({ current: null as ((month: string) => Promise<ApiResponse<RecordCalendar>>) | null }))
+vi.mock('./api/records', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./api/records')>()
+  return {
+    ...actual,
+    fetchRecordCalendar: (month: string) => calendarOverride.current?.(month) ?? actual.fetchRecordCalendar(month),
+  }
+})
+
 // 목 서버에서 지운 기록이 다른 테스트에 남지 않게 한다
-afterEach(() => resetMockRecordDeletions())
+afterEach(() => {
+  resetMockRecordDeletions()
+  calendarOverride.current = null
+})
 
 // 백엔드 주소가 없는 테스트 환경에서는 목 데이터로 응답한다
 function renderApp(path = '/') {
@@ -577,6 +591,46 @@ describe('홈 ↔ 기록 지도 이동', () => {
     )
     expect(screen.queryByRole('button', { name: '날짜 검색 해제' })).not.toBeInTheDocument()
     vi.useRealTimers()
+  })
+
+  // 기능명세서 9️⃣: 날짜를 고르면 기록 지도(날짜 필터)로 가고, 같은 날짜에 기록이 여러 개일 때만 목록형으로 나열한다
+  describe('지도형에서 날짜를 고를 때', () => {
+    async function pickOctober24(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(screen.getByRole('button', { name: '날짜로 검색' }))
+      const calendar = screen.getByRole('dialog', { name: '날짜로 기록 검색' })
+      await user.click(within(calendar).getByRole('button', { name: '이전 달' }))
+      await user.click(await within(calendar).findByRole('button', { name: '2026년 10월 24일' }))
+    }
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-11-13T03:00:00Z'))
+    })
+    afterEach(() => vi.useRealTimers())
+
+    it('그날 기록이 하나면 지도형을 그대로 둔다', async () => {
+      const user = renderApp('/map')
+      await screen.findByText('총 12번의 드라이브를 함께했어요')
+
+      await pickOctober24(user)
+
+      expect(screen.getByRole('button', { name: '지도형' })).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getByTestId('map')).toBeInTheDocument()
+    })
+
+    it('그날 기록이 여러 개면 목록형으로 바꿔 나열한다', async () => {
+      calendarOverride.current = async (month) => ({
+        data: { month, days: [{ date: '2026-10-24', count: 2 }] },
+        meta: { requestId: 'req_test', serverTime: '2026-11-13T03:00:00Z' },
+      })
+      const user = renderApp('/map')
+      await screen.findByText('총 12번의 드라이브를 함께했어요')
+
+      await pickOctober24(user)
+
+      expect(screen.getByRole('button', { name: '목록형' })).toHaveAttribute('aria-pressed', 'true')
+      expect(await screen.findByRole('list', { name: '드라이브 기록 목록' })).toBeInTheDocument()
+    })
   })
 })
 

@@ -665,10 +665,12 @@ function RecordMapRoute() {
     await shareTo(channel, { url, title: card.title })
   }
 
-  const handleDateSelect = (nextDate: string) => {
+  // 기능명세서 9️⃣: 같은 날짜에 기록이 여러 개면 목록형으로 나열한다. 하나면 보던 화면 그대로 둔다
+  const handleDateSelect = (nextDate: string, count: number) => {
     setDate(nextDate)
     setQuery('')
     setCalendarOpen(false)
+    if (count > 1) setView('list')
   }
 
   const retry = () => {

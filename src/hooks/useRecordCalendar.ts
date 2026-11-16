@@ -3,12 +3,13 @@ import { fetchRecordCalendar } from '@/api/records'
 
 interface State {
   status: 'loading' | 'ready' | 'error'
-  recordDates: Set<string>
+  // 기록이 있는 날짜(YYYY-MM-DD)와 그날의 기록 수
+  recordCounts: Map<string, number>
 }
 
-const INITIAL: State = { status: 'loading', recordDates: new Set() }
+const INITIAL: State = { status: 'loading', recordCounts: new Map() }
 
-// 날짜 검색 달력에서 그 달(YYYY-MM)에 기록이 있는 날짜를 불러온다 (GET /records/calendar).
+// 날짜 검색 달력에서 그 달(YYYY-MM)에 기록이 있는 날짜와 그날의 기록 수를 불러온다 (GET /records/calendar).
 // 달이 바뀌면 이전 달 날짜를 바로 비우고, 늦게 도착한 이전 달 응답은 버린다
 function useRecordCalendar(month: string) {
   const [state, setState] = useState<State>(INITIAL)
@@ -27,10 +28,10 @@ function useRecordCalendar(month: string) {
 
     fetchRecordCalendar(month)
       .then(({ data }) => {
-        if (!ignore) setState({ status: 'ready', recordDates: new Set(data.days.map((day) => day.date)) })
+        if (!ignore) setState({ status: 'ready', recordCounts: new Map(data.days.map((day) => [day.date, day.count])) })
       })
       .catch(() => {
-        if (!ignore) setState({ status: 'error', recordDates: new Set() })
+        if (!ignore) setState({ status: 'error', recordCounts: new Map() })
       })
 
     return () => {
