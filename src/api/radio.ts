@@ -1,8 +1,8 @@
 import { mockCreateRadioEpisode, mockFetchRadioEpisode, mockFetchRadioHistory } from '@/mocks/radio'
-import type { ApiResponse, CursorPage } from '@/types/api'
+import type { ApiResponse, CursorPage, CursorParams } from '@/types/api'
 import type { Job } from '@/types/job'
 import type { CreateRadioEpisodeRequest, RadioEpisode } from '@/types/radio'
-import { apiFetch, USE_MOCK } from './client'
+import { apiFetch, USE_MOCK, withQuery } from './client'
 
 export const RADIO_STORY_MAX_LENGTH = 300
 
@@ -19,12 +19,18 @@ export function createRadioEpisode(body: CreateRadioEpisodeRequest, idempotencyK
 // 검색어 최대 길이 (API 명세 q maxLength)
 export const RADIO_SEARCH_MAX_LENGTH = 100
 
-// GET /radio/episodes — 내가 보낸 사연 최신순. q는 원사연 · 방송문구에서 찾는다
-export function fetchRadioHistory(q?: string): Promise<ApiResponse<CursorPage<RadioEpisode>>> {
+// GET /radio/episodes — 내가 보낸 사연 최신순. q는 원사연 · 방송문구에서 찾는다.
+// 다음 페이지는 같은 q와 함께 보내야 한다 (커서가 검색어에 묶여 있다)
+export function fetchRadioHistory(
+  q?: string,
+  params: CursorParams = {},
+): Promise<ApiResponse<CursorPage<RadioEpisode>>> {
   const keyword = q?.trim()
-  if (USE_MOCK) return mockFetchRadioHistory(keyword)
+  if (USE_MOCK) return mockFetchRadioHistory(keyword, params)
 
-  return apiFetch<CursorPage<RadioEpisode>>(`/radio/episodes${keyword ? `?q=${encodeURIComponent(keyword)}` : ''}`)
+  return apiFetch<CursorPage<RadioEpisode>>(
+    withQuery('/radio/episodes', { q: keyword, cursor: params.cursor, limit: params.limit }),
+  )
 }
 
 // GET /radio/episodes/{episodeId} — 생성자 본인의 사연 한 개 (방송 문구 · 임시 음성 URL).

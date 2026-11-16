@@ -5,16 +5,16 @@ import {
   mockSetPlaylistSaved,
 } from '@/mocks/djPlaylists'
 import { mockFetchPlaylistLibrary } from '@/mocks/playlists'
-import type { ApiResponse } from '@/types/api'
+import type { ApiResponse, CursorParams } from '@/types/api'
 import type { Job } from '@/types/job'
 import type { CreatePlaylistRequest, Playlist, SavedPlaylistPage } from '@/types/playlist'
-import { apiFetch, USE_MOCK } from './client'
+import { apiFetch, USE_MOCK, withQuery } from './client'
 
-// GET /me/playlists — 내가 저장 아이콘으로 보관한 플레이리스트. totalCount는 전체 저장 개수
-export function fetchPlaylistLibrary(): Promise<ApiResponse<SavedPlaylistPage>> {
-  if (USE_MOCK) return mockFetchPlaylistLibrary()
+// GET /me/playlists — 내가 저장 아이콘으로 보관한 플레이리스트. totalCount는 페이지와 관계없이 전체 저장 개수
+export function fetchPlaylistLibrary(params: CursorParams = {}): Promise<ApiResponse<SavedPlaylistPage>> {
+  if (USE_MOCK) return mockFetchPlaylistLibrary(params)
 
-  return apiFetch<SavedPlaylistPage>('/me/playlists')
+  return apiFetch<SavedPlaylistPage>(withQuery('/me/playlists', { cursor: params.cursor, limit: params.limit }))
 }
 
 export function createPlaylist(body: CreatePlaylistRequest, idempotencyKey: string): Promise<ApiResponse<Job>> {

@@ -2,21 +2,23 @@ import {
   mockFetchFavorites,
   mockFetchPlaceDetail,
   mockFetchPlaceShare,
+  mockFetchPublicPlace,
   mockFetchRecommendations,
   mockSendPlaceToPartner,
   mockSetPlaceFavorite,
 } from '@/mocks/places'
-import type { ApiResponse, CursorPage } from '@/types/api'
+import type { ApiResponse, CursorPage, CursorParams } from '@/types/api'
 import type {
   PlaceCategory,
   PlaceDetail,
   PlaceRecommendations,
   PlaceShare,
   PlaceSummary,
+  PublicPlace,
   SendToPartnerResult,
 } from '@/types/place'
 import type { Coordinate } from '@/types/route'
-import { apiFetch, USE_MOCK } from './client'
+import { apiFetch, USE_MOCK, withQuery } from './client'
 
 const path = (placeId: string) => `/places/${encodeURIComponent(placeId)}`
 
@@ -53,6 +55,14 @@ export function fetchPlaceShare(placeId: string): Promise<ApiResponse<PlaceShare
   return apiFetch<PlaceShare>(`${path(placeId)}/share`)
 }
 
+// GET /public/places/{placeId} — 공유 링크를 받은 사람이 로그인 없이 보는 장소 정보.
+// 인증이 필요 없는 주소라 토큰 없이 부른다 (apiFetch는 토큰이 있을 때만 Authorization을 붙인다)
+export function fetchPublicPlace(placeId: string): Promise<ApiResponse<PublicPlace>> {
+  if (USE_MOCK) return mockFetchPublicPlace(placeId)
+
+  return apiFetch<PublicPlace>(`/public${path(placeId)}`)
+}
+
 // PUT · DELETE /me/favorite-places/{placeId} — 둘 다 멱등이라 같은 요청을 반복해도 안전하다
 export async function setPlaceFavorite(placeId: string, favorite: boolean): Promise<void> {
   if (USE_MOCK) return mockSetPlaceFavorite(placeId, favorite)
@@ -60,11 +70,17 @@ export async function setPlaceFavorite(placeId: string, favorite: boolean): Prom
   await apiFetch(`/me/favorite-places/${encodeURIComponent(placeId)}`, { method: favorite ? 'PUT' : 'DELETE' })
 }
 
-// GET /me/favorite-places — 내가 찜한 장소. category를 생략하면 전체 (보관함의 카테고리 칩 필터)
-export function fetchFavorites(category?: PlaceCategory): Promise<ApiResponse<CursorPage<PlaceSummary>>> {
-  if (USE_MOCK) return mockFetchFavorites(category)
+// GET /me/favorite-places — 내가 찜한 장소. category를 생략하면 전체 (보관함의 카테고리 칩 필터).
+// 다음 페이지는 같은 category와 함께 보내야 한다 (커서가 카테고리에 묶여 있다)
+export function fetchFavorites(
+  category?: PlaceCategory,
+  params: CursorParams = {},
+): Promise<ApiResponse<CursorPage<PlaceSummary>>> {
+  if (USE_MOCK) return mockFetchFavorites(category, params)
 
-  return apiFetch<CursorPage<PlaceSummary>>(`/me/favorite-places${category ? `?category=${category}` : ''}`)
+  return apiFetch<CursorPage<PlaceSummary>>(
+    withQuery('/me/favorite-places', { category, cursor: params.cursor, limit: params.limit }),
+  )
 }
 
 export interface SendToPartnerOptions {

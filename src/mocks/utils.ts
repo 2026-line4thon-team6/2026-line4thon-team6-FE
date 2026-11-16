@@ -50,7 +50,9 @@ export function encodePolyline(points: Coordinate[]) {
   return result
 }
 
+// 목 서버의 커서는 다음 페이지 시작 위치(숫자 문자열). 서버처럼 잘못된 cursor는 400으로 막는다
 export function paginate<T>(all: T[], cursor: string | undefined, limit = 20) {
+  if (cursor && !/^\d+$/.test(cursor)) throw mockApiError(400, 'BAD_REQUEST', '유효한 cursor를 보내 주세요.')
   const start = cursor ? Number(cursor) : 0
   const items = all.slice(start, start + limit)
   const hasMore = start + limit < all.length

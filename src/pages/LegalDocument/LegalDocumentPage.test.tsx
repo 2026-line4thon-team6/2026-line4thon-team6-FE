@@ -52,4 +52,13 @@ describe('LegalDocumentPage', () => {
 
     expect(onRetry).toHaveBeenCalled()
   })
+
+  it('아직 등록되지 않은 문서면 준비 중이라고 안내하고, 다시 시도 버튼은 두지 않는다', () => {
+    renderPage({ type: 'OPEN_SOURCE', status: 'notFound', document: null })
+
+    expect(screen.getByRole('heading', { level: 1, name: '오픈소스 라이선스' })).toBeInTheDocument()
+    expect(screen.getByText('아직 준비 중인 문서예요.')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '다시 시도' })).not.toBeInTheDocument()
+  })
 })

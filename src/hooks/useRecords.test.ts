@@ -93,4 +93,30 @@ describe('useRecords', () => {
     await waitFor(() => expect(result.current.status).toBe('ready'))
     expect(result.current.records).toEqual([FIRST])
   })
+
+  it('썸네일 링크가 만료되기 전(9분 뒤)에 지금까지 불러온 만큼 조용히 다시 받는다', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const fresh = { ...FIRST, thumbnailUrl: 'https://cdn.test/fresh.webp' }
+      vi.mocked(fetchRecords)
+        .mockResolvedValueOnce(page([FIRST], { total: 3, filtered: 3 }, 'c1'))
+        .mockResolvedValueOnce(page([SECOND], { total: 3, filtered: 3 }, 'c2'))
+        .mockResolvedValueOnce(page([fresh, SECOND], { total: 3, filtered: 3 }, 'c2'))
+
+      const { result } = renderHook(() => useRecords())
+      await waitFor(() => expect(result.current.status).toBe('ready'))
+      await act(() => result.current.loadMore())
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(9 * 60 * 1000)
+      })
+
+      await waitFor(() => expect(result.current.records[0].thumbnailUrl).toBe('https://cdn.test/fresh.webp'))
+      expect(vi.mocked(fetchRecords).mock.calls[2][0]).toEqual({ limit: 20 })
+      expect(result.current.status).toBe('ready')
+      expect(result.current.hasMore).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })

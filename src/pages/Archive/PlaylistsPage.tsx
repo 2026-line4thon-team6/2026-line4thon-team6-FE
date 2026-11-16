@@ -1,10 +1,10 @@
 import playlistIcon from '@/assets/icons/playlist.svg'
 import type { SavedPlaylist } from '@/types/playlist'
 import { formatDuration } from '@/utils/formatDuration'
-import ArchiveLayout from './ArchiveLayout'
+import ArchiveLayout, { type LoadMoreProps } from './ArchiveLayout'
 import styles from './PlaylistsPage.module.scss'
 
-interface PlaylistsPageProps {
+interface PlaylistsPageProps extends LoadMoreProps {
   status: 'loading' | 'ready' | 'error'
   playlists: SavedPlaylist[]
   totalCount: number
@@ -14,7 +14,15 @@ interface PlaylistsPageProps {
 }
 
 // 마이 > 플레이리스트 보관함
-function PlaylistsPage({ status, playlists, totalCount, onBack, onRetry, onPlaylistClick }: PlaylistsPageProps) {
+function PlaylistsPage({
+  status,
+  playlists,
+  totalCount,
+  onBack,
+  onRetry,
+  onPlaylistClick,
+  ...loadMore
+}: PlaylistsPageProps) {
   return (
     <ArchiveLayout
       title="플레이리스트 보관함"
@@ -24,6 +32,7 @@ function PlaylistsPage({ status, playlists, totalCount, onBack, onRetry, onPlayl
       emptyMessage={playlists.length > 0 ? null : '아직 저장한 플레이리스트가 없어요.'}
       onBack={onBack}
       onRetry={onRetry}
+      {...loadMore}
     >
       <div className={styles.content}>
         <h2 className={styles.count}>

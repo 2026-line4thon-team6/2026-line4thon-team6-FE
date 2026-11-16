@@ -1,5 +1,6 @@
 import Button from '@/components/Button/Button'
 import GlassIconButton from '@/components/GlassIconButton/GlassIconButton'
+import type { LegalDocumentStatus } from '@/hooks/useLegalDocument'
 import type { LegalDocument, LegalDocumentType } from '@/types/legal'
 import styles from './LegalDocumentPage.module.scss'
 
@@ -12,7 +13,7 @@ const TITLES: Record<LegalDocumentType, string> = {
 
 interface LegalDocumentPageProps {
   type: LegalDocumentType
-  status: 'loading' | 'ready' | 'error'
+  status: LegalDocumentStatus
   document: LegalDocument | null
   onBack: () => void
   onRetry: () => void
@@ -34,6 +35,9 @@ function LegalDocumentPage({ type, status, document, onBack, onRetry }: LegalDoc
               <p key={index}>{line}</p>
             ))}
           </div>
+        ) : status === 'notFound' ? (
+          // 서버에 아직 등록되지 않은 문서라 다시 시도해도 같으므로 버튼 없이 안내만 한다
+          <p className={styles.message}>아직 준비 중인 문서예요.</p>
         ) : status === 'error' ? (
           <div className={styles.message} role="alert">
             <p>문서를 불러오지 못했어요.</p>

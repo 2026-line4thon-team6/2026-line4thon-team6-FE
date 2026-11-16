@@ -22,6 +22,9 @@ export interface AuthTokenResult {
   isNewUser: boolean
 }
 
+// POST /auth/refresh 응답. 리프레시 토큰도 매번 새로 발급된다 (회전)
+export type AuthRefreshResult = Omit<AuthTokenResult, 'user' | 'isNewUser'>
+
 export type ConsentType = 'TERMS' | 'PRIVACY'
 
 // PUT /me/onboarding 요청. 성별 · 커플 시작일 · 붕붕이 이름은 선택

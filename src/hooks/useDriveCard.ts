@@ -77,7 +77,8 @@ function useDriveCard(driveId: string, myUserId: string) {
   }, [driveId, myUserId, attempt])
 
   // 사진 링크(10분 서명 URL)가 만료되기 전에 새 링크만 받아 바꾼다.
-  // 쓰는 중인 내용을 덮지 않도록 카드 버전이 그대로일 때 사진 링크만 바꾼다
+  // 쓰는 중인 내용을 덮지 않도록 카드 버전이 그대로면 사진 목록을, 상대가 바꿔 버전이 다르면
+  // 지금 보이는 사진 중 서버에 남은 사진의 링크만 바꾼다 (버전은 그대로 두어 저장할 때 충돌로 최신 카드를 받는다)
   const photos = state.card?.photos
   useEffect(() => {
     if (!photos) return
@@ -88,8 +89,17 @@ function useDriveCard(driveId: string, myUserId: string) {
       fetchDriveCard(driveId)
         .then(({ data }) => {
           const current = cardRef.current
-          if (ignore || !current || current.version !== data.version) return
-          setCard({ ...current, photos: data.photos })
+          if (ignore || !current) return
+          if (current.version === data.version) return setCard({ ...current, photos: data.photos })
+          const fresh = new Map(data.photos.map((photo) => [photo.mediaId, photo]))
+          setCard({
+            ...current,
+            // 상대가 지운 사진은 빼고(만료된 링크가 남아 다시 받기가 반복되지 않게) 남은 사진의 링크만 바꾼다
+            photos: current.photos.flatMap((photo) => {
+              const next = fresh.get(photo.mediaId)
+              return next ? [{ ...photo, url: next.url, urlExpiresAt: next.urlExpiresAt }] : []
+            }),
+          })
         })
         .catch(() => {})
     }, delay)

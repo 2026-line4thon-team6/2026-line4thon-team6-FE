@@ -1,5 +1,6 @@
-import type { ApiMeta, ApiResponse } from '@/types/api'
+import type { ApiMeta, ApiResponse, CursorParams } from '@/types/api'
 import type { SavedPlaylistPage } from '@/types/playlist'
+import { paginate } from './utils'
 
 // 백엔드 연동 전(VITE_API_BASE_URL 미설정)에 쓰는 플레이리스트 보관함 목 응답. Figma 'My_UI > 플리 보관함'의 4개.
 // 시안의 앨범 표지 대신 목 장소 사진을 대표 이미지로 쓴다
@@ -18,6 +19,9 @@ export const MOCK_PLAYLIST_LIBRARY: SavedPlaylistPage = {
   totalCount: 4,
 }
 
-export async function mockFetchPlaylistLibrary(): Promise<ApiResponse<SavedPlaylistPage>> {
-  return { data: structuredClone(MOCK_PLAYLIST_LIBRARY), meta: meta() }
+export async function mockFetchPlaylistLibrary({ cursor, limit }: CursorParams = {}): Promise<
+  ApiResponse<SavedPlaylistPage>
+> {
+  const { items } = structuredClone(MOCK_PLAYLIST_LIBRARY)
+  return { data: { ...paginate(items, cursor, limit), totalCount: items.length }, meta: meta() }
 }

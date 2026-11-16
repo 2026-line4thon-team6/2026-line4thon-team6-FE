@@ -81,3 +81,33 @@ describe('상태', () => {
     expect(onRetry).toHaveBeenCalled()
   })
 })
+
+// 알림 목록과 같은 '더 보기' 버튼 (보관함 3종 공통 ArchiveLayout)
+describe('더 보기', () => {
+  it('다음 페이지가 있으면 목록 아래에 더 보기 버튼을 보여 주고, 누르면 다음 페이지를 요청한다', async () => {
+    const onLoadMore = vi.fn()
+    const { user } = renderPage({ hasMore: true, onLoadMore })
+
+    await user.click(screen.getByRole('button', { name: '더 보기' }))
+
+    expect(onLoadMore).toHaveBeenCalledTimes(1)
+  })
+
+  it('다음 페이지가 없으면 더 보기 버튼이 없다', () => {
+    renderPage({ hasMore: false, onLoadMore: vi.fn() })
+
+    expect(screen.queryByRole('button', { name: '더 보기' })).not.toBeInTheDocument()
+  })
+
+  it('다음 페이지를 불러오는 동안에는 누를 수 없다', () => {
+    renderPage({ hasMore: true, loadingMore: true, onLoadMore: vi.fn() })
+
+    expect(screen.getByRole('button', { name: '불러오는 중…' })).toBeDisabled()
+  })
+
+  it('목록을 불러오지 못했으면 더 보기 버튼이 없다', () => {
+    renderPage({ status: 'error', hasMore: true, onLoadMore: vi.fn() })
+
+    expect(screen.queryByRole('button', { name: '더 보기' })).not.toBeInTheDocument()
+  })
+})

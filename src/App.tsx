@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router'
 import { fetchCardShare } from '@/api/cards'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
 import useAuth, { type Auth } from '@/hooks/useAuth'
 import useCoupleInvite from '@/hooks/useCoupleInvite'
 import useCouplePage from '@/hooks/useCouplePage'
+import useFaqs from '@/hooks/useFaqs'
 import useFavorites from '@/hooks/useFavorites'
 import useLegalDocument from '@/hooks/useLegalDocument'
 import useMyCouple from '@/hooks/useMyCouple'
@@ -26,12 +27,15 @@ import usePendingCards from '@/hooks/usePendingCards'
 import useRecommendations from '@/hooks/useRecommendations'
 import usePlaceDetail from '@/hooks/usePlaceDetail'
 import usePlaylistLibrary from '@/hooks/usePlaylistLibrary'
+import usePublicPlace from '@/hooks/usePublicPlace'
 import usePwaInstall from '@/hooks/usePwaInstall'
 import useRadioEpisode from '@/hooks/useRadioEpisode'
+import useAuthorizedAudio from '@/hooks/useAuthorizedAudio'
 import useRadioGeneration from '@/hooks/useRadioGeneration'
 import useRadioPlayer from '@/hooks/useRadioPlayer'
 import useRadioStories from '@/hooks/useRadioStories'
 import useRecordMap from '@/hooks/useRecordMap'
+import useSendToPartner from '@/hooks/useSendToPartner'
 import useRecords from '@/hooks/useRecords'
 import useRestAreaAlert from '@/hooks/useRestAreaAlert'
 import useRestAreaDetail from '@/hooks/useRestAreaDetail'
@@ -62,10 +66,12 @@ import RestAreaDetailModal from '@/pages/Drive/RestAreaDetailModal'
 import StampsTab from '@/pages/Drive/StampsTab'
 import DriveCardPage from '@/pages/DriveCard/DriveCardPage'
 import HomePage from '@/pages/Home/HomePage'
+import FaqPage from '@/pages/Faq/FaqPage'
 import LegalDocumentPage from '@/pages/LegalDocument/LegalDocumentPage'
 import MyPage, { type MyMenu } from '@/pages/My/MyPage'
 import NotificationsPage from '@/pages/Notifications/NotificationsPage'
 import PlaceDetailPage from '@/pages/PlaceDetail/PlaceDetailPage'
+import PublicPlacePage from '@/pages/PublicPlace/PublicPlacePage'
 import RadioStoryPage from '@/pages/RadioStory/RadioStoryPage'
 import RecordDetailPage from '@/pages/RecordDetail/RecordDetailPage'
 import RecordCalendarSheet from '@/pages/RecordMap/RecordCalendarSheet'
@@ -76,6 +82,7 @@ import {
   AnniversaryStep,
   BirthdayStep,
   GenderStep,
+  GuestOrMemberGate,
   IntroStep,
   LoginRoute,
   MascotStep,
@@ -95,7 +102,7 @@ import type { RecordSummary } from '@/types/record'
 import { todayInSeoul } from '@/utils/calendar'
 import { formatDate } from '@/utils/formatDate'
 import { distanceMeters } from '@/utils/location'
-import { copyText, createIdempotencyKey, type ShareChannel, shareInviteCode, type ShareLink, shareTo } from '@/utils/share'
+import { copyText, type ShareChannel, shareInviteCode, type ShareLink, shareTo } from '@/utils/share'
 import { shareStory } from '@/utils/storyImage'
 
 // 화면 주소
@@ -123,6 +130,7 @@ const ARCHIVE_PATHS: Partial<Record<MyMenu, string>> = {
   favorites: '/my/favorites',
   playlists: '/my/playlists',
   stories: '/my/stories',
+  faq: '/my/faq',
 }
 
 function useTabNavigate() {
@@ -182,26 +190,20 @@ interface PlaceDetailRouteProps {
   mascotName: string
   myUserId: string
   onFavoriteChange: (placeId: string, favorite: boolean) => void
+  // 연인에게 보내기가 커플 변경(403)으로 거절됐을 때 홈의 커플 정보를 다시 불러온다
+  onCoupleChanged: () => void
 }
 
-function PlaceDetailRoute({ placeId, couple, mascotName, myUserId, onFavoriteChange }: PlaceDetailRouteProps) {
+function PlaceDetailRoute({ placeId, couple, mascotName, myUserId, onFavoriteChange, onCoupleChanged }: PlaceDetailRouteProps) {
   const navigate = useNavigate()
   const goBack = useGoBack()
   const drive = useStartDrive(myUserId)
   const { status, detail, retry, toggleFavorite, getShareUrl, sendToPartner } = usePlaceDetail(placeId)
-  // 같은 전송 시도의 재시도에는 같은 멱등 키를 쓰고, 성공하면 새 키로 바꾼다
-  const idempotencyKey = useRef<string | null>(null)
+  const handleSend = useSendToPartner({ coupleId: couple?.id ?? null, send: sendToPartner, onCoupleChanged })
 
   const handleFavoriteToggle = async (favorite: boolean) => {
     const saved = await toggleFavorite(favorite)
     if (saved) onFavoriteChange(placeId, favorite)
-  }
-
-  const handleSend = async () => {
-    if (!couple) return
-    idempotencyKey.current ??= createIdempotencyKey()
-    await sendToPartner({ idempotencyKey: idempotencyKey.current, coupleId: couple.id })
-    idempotencyKey.current = null
   }
 
   return (
@@ -564,9 +566,12 @@ function RadioStoriesDrawerRoute({
       episodes={stories.episodes}
       query={stories.query}
       keyword={stories.keyword}
+      hasMore={stories.hasMore}
+      loadingMore={stories.loadingMore}
       onQueryChange={stories.setQuery}
       onRetry={stories.retry}
       onSelect={onSelect}
+      onLoadMore={() => void stories.loadMore()}
       onClose={onClose}
     />
   )
@@ -768,6 +773,19 @@ function PlaceDetailRouteByParam(props: Omit<PlaceDetailRouteProps, 'placeId'>) 
   return <PlaceDetailRoute key={placeId} placeId={placeId} {...props} />
 }
 
+// 공유 링크를 로그인 전 사용자가 열었을 때의 공개 장소 화면. 시작하기를 누르면 로그인 화면으로 간다
+function PublicPlaceRoute({ placeId }: { placeId: string }) {
+  const navigate = useNavigate()
+  const { status, place, retry } = usePublicPlace(placeId)
+
+  return <PublicPlacePage status={status} place={place} onRetry={retry} onStart={() => navigate(LOGIN_PATH)} />
+}
+
+function PublicPlaceRouteByParam() {
+  const { placeId = '' } = useParams()
+  return <PublicPlaceRoute key={placeId} placeId={placeId} />
+}
+
 // 마이 화면에 들어올 때마다 커플 요약을 새로 불러온다
 function MyRoute({ auth }: { auth: Auth }) {
   const navigate = useNavigate()
@@ -779,7 +797,6 @@ function MyRoute({ auth }: { auth: Auth }) {
     const legal = LEGAL_MENUS[menu]
     const path = legal ? LEGAL_PATHS[legal] : ARCHIVE_PATHS[menu]
     if (path) navigate(path)
-    // TODO: FAQ 화면이 생기면 이동한다
   }
 
   // 로그아웃하면 로그인 화면(L1)으로 간다
@@ -831,7 +848,8 @@ interface FavoritesRouteProps {
 function FavoritesRoute({ onFavoriteChange }: FavoritesRouteProps) {
   const navigate = useNavigate()
   const goBack = useGoBack('/my')
-  const { status, places, category, selectCategory, toggleFavorite, retry } = useFavorites()
+  const { status, places, hasMore, loadingMore, category, selectCategory, toggleFavorite, loadMore, retry } =
+    useFavorites()
 
   const handleFavoriteToggle = async (placeId: string, favorite: boolean) => {
     if (await toggleFavorite(placeId, favorite)) onFavoriteChange(placeId, favorite)
@@ -842,8 +860,11 @@ function FavoritesRoute({ onFavoriteChange }: FavoritesRouteProps) {
       status={status}
       places={places}
       category={category}
+      hasMore={hasMore}
+      loadingMore={loadingMore}
       onBack={goBack}
       onRetry={retry}
+      onLoadMore={() => void loadMore()}
       onSelectCategory={selectCategory}
       onFavoriteToggle={(placeId, favorite) => void handleFavoriteToggle(placeId, favorite)}
       onPlaceClick={(placeId) => navigate(`/places/${encodeURIComponent(placeId)}`)}
@@ -853,22 +874,32 @@ function FavoritesRoute({ onFavoriteChange }: FavoritesRouteProps) {
 
 function PlaylistsRoute() {
   const goBack = useGoBack('/my')
-  const { retry, ...state } = usePlaylistLibrary()
+  const { retry, loadMore, ...state } = usePlaylistLibrary()
 
-  // TODO: 플레이리스트 상세 화면이 생기면 이동한다
-  return <PlaylistsPage {...state} onBack={goBack} onRetry={retry} onPlaylistClick={() => {}} />
+  // TODO: 저장한 플레이리스트 상세 화면이 생기면 이동한다 (GET /playlists/{id}).
+  // DJ 생성 완료 화면(PlaylistResultPage)은 생성 흐름 전용(다시 만들기 · 불러오기 상태 없음)이라 그대로 쓰지 않는다
+  return (
+    <PlaylistsPage
+      {...state}
+      onBack={goBack}
+      onRetry={retry}
+      onLoadMore={() => void loadMore()}
+      onPlaylistClick={() => {}}
+    />
+  )
 }
 
 function RadioStoriesRoute() {
   const navigate = useNavigate()
   const goBack = useGoBack('/my')
-  const { setQuery, retry, ...state } = useRadioStories()
+  const { setQuery, retry, loadMore, ...state } = useRadioStories()
 
   return (
     <RadioStoriesPage
       {...state}
       onBack={goBack}
       onRetry={retry}
+      onLoadMore={() => void loadMore()}
       onQueryChange={setQuery}
       onStoryClick={(episodeId) => navigate(`/my/stories/${encodeURIComponent(episodeId)}`)}
     />
@@ -878,9 +909,19 @@ function RadioStoriesRoute() {
 // 라디오 사연 상세. 주소로 바로 들어왔으면 뒤로가기로 보관함에 간다
 function RadioStoryRoute({ episodeId }: { episodeId: string }) {
   const goBack = useGoBack('/my/stories')
-  const { refreshAudio, retry, ...state } = useRadioEpisode(episodeId)
+  const { refreshAudio, retry, status, episode } = useRadioEpisode(episodeId)
+  // 음성은 토큰을 붙여 미리 받은 blob URL로 재생한다 (받기 전 · 실패하면 null → 재생 버튼 비활성)
+  const audioSrc = useAuthorizedAudio(episode?.audioUrl ?? null)
 
-  return <RadioStoryPage {...state} onBack={goBack} onRetry={retry} onAudioError={refreshAudio} />
+  return (
+    <RadioStoryPage
+      status={status}
+      episode={episode && { ...episode, audioUrl: audioSrc }}
+      onBack={goBack}
+      onRetry={retry}
+      onAudioError={refreshAudio}
+    />
+  )
 }
 
 // 사연이 바뀌면 상세 화면을 새로 마운트해 이전 사연의 재생 상태가 남지 않게 한다
@@ -909,6 +950,13 @@ function CoupleInviteRoute() {
       onSkip={goHome}
     />
   )
+}
+
+function FaqRoute() {
+  const goBack = useGoBack('/my')
+  const { retry, ...state } = useFaqs()
+
+  return <FaqPage {...state} onBack={goBack} onRetry={retry} />
 }
 
 function LegalDocumentRoute({ type }: { type: LegalDocumentType }) {
@@ -1148,10 +1196,16 @@ function App() {
           <Route path="/my/playlists" element={<PlaylistsRoute />} />
           <Route path="/my/stories" element={<RadioStoriesRoute />} />
           <Route path="/my/stories/:episodeId" element={<RadioStoryRouteByParam />} />
+          <Route path="/my/faq" element={<FaqRoute />} />
           <Route
             path="/drives/:driveId/card"
             element={<DriveCardRouteByParam userId={me.id} myNickname={me.nickname} partnerNickname={partnerNickname} />}
           />
+        </Route>
+
+        {/* 장소 공유 링크({PLACE_SHARE_BASE_URL}/places/{placeId})는 받은 사람이 로그인하지 않았어도 열려야 한다.
+            로그인 전이면 공개 장소 화면, 로그인했으면 기존 회원용 상세를 같은 주소에서 보여 준다 */}
+        <Route element={<GuestOrMemberGate auth={auth} guest={<PublicPlaceRouteByParam />} />}>
           <Route
             path="/places/:placeId"
             element={
@@ -1161,6 +1215,7 @@ function App() {
                 myUserId={me.id}
                 // 상세에서 바꾼 찜 상태를 홈 카드에도 반영한다
                 onFavoriteChange={(placeId, favorite) => recommendations.syncFavorite(placeId, favorite)}
+                onCoupleChanged={() => void homeData.reload()}
               />
             }
           />

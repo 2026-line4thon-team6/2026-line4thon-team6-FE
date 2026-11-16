@@ -13,3 +13,6 @@ export function photoRefreshDelay(photos: CardPhoto[], now: number): number | nu
   const delay = Math.max(0, earliest - REFRESH_MARGIN_MS - now)
   return delay > MAX_TIMEOUT_MS ? null : delay
 }
+
+// 기록 목록 · 지도의 썸네일 링크도 10분 뒤 만료되지만 응답에 만료 시각이 없다. 받은 지 9분이 지나면 다시 받는다
+export const THUMBNAIL_REFRESH_MS = 9 * 60 * 1000

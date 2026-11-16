@@ -1,12 +1,14 @@
-import type { ApiMeta, ApiResponse, CursorPage } from '@/types/api'
+import type { ApiMeta, ApiResponse, CursorPage, CursorParams } from '@/types/api'
 import type {
   PlaceCategory,
   PlaceDetail,
   PlaceRecommendations,
   PlaceShare,
   PlaceSummary,
+  PublicPlace,
   SendToPartnerResult,
 } from '@/types/place'
+import { mockApiError, paginate } from './utils'
 
 // 백엔드 연동 전(VITE_API_BASE_URL 미설정)에 쓰는 장소 목 응답.
 // 백엔드 추천 카탈로그(HardcodedPlaceCatalog)와 같은 15곳 · 같은 id. 카테고리마다 3곳 (Figma Home_Components 카드)
@@ -113,17 +115,40 @@ export async function mockFetchPlaceShare(placeId: string): Promise<ApiResponse<
   }
 }
 
+// 공개 장소 조회는 회원 상세와 같은 장소 목록에서 공개해도 되는 값만 골라 준다.
+// 없는 장소는 실서버처럼 404로 응답해 화면의 '찾을 수 없음' 상태를 확인할 수 있게 한다
+export async function mockFetchPublicPlace(placeId: string): Promise<ApiResponse<PublicPlace>> {
+  const detail = (store ??= createStore()).get(placeId)
+  if (!detail) throw mockApiError(404, 'RESOURCE_NOT_FOUND', '장소를 찾을 수 없습니다.')
+
+  const { place, introduction } = detail
+  return {
+    data: {
+      id: place.id,
+      name: place.name,
+      address: place.address,
+      coordinate: place.coordinate,
+      thumbnailUrl: place.thumbnailUrl,
+      introduction,
+    },
+    meta: meta(),
+  }
+}
+
 export async function mockSetPlaceFavorite(placeId: string, favorite: boolean): Promise<void> {
   const detail = getDetail(placeId)
   store!.set(placeId, { ...detail, place: { ...detail.place, isFavorite: favorite } })
 }
 
 // 찜한 장소만, 목 장소 순서대로. category를 생략하면 전체
-export async function mockFetchFavorites(category?: PlaceCategory): Promise<ApiResponse<CursorPage<PlaceSummary>>> {
+export async function mockFetchFavorites(
+  category?: PlaceCategory,
+  { cursor, limit }: CursorParams = {},
+): Promise<ApiResponse<CursorPage<PlaceSummary>>> {
   const items = [...(store ??= createStore()).values()]
     .map(({ place }) => place)
     .filter((place) => place.isFavorite && (!category || place.category === category))
-  return { data: { items, nextCursor: null, hasMore: false }, meta: meta() }
+  return { data: paginate(items, cursor, limit), meta: meta() }
 }
 
 export async function mockSendPlaceToPartner(placeId: string): Promise<ApiResponse<SendToPartnerResult>> {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Navigate, Outlet, useLocation, useNavigate, useOutletContext, useSearchParams } from 'react-router'
 import { completeSocialLogin, login } from '@/api/auth'
 import type { Auth } from '@/hooks/useAuth'
@@ -12,13 +12,12 @@ import WelcomePage from '@/pages/Onboarding/WelcomePage'
 import type { ConsentType } from '@/types/auth'
 import type { Me } from '@/types/me'
 import { LOGIN_PATH, ONBOARDING_PATHS } from './paths'
+import { LOGIN_ERROR, loginErrorMessage } from '@/utils/loginError'
 
 const INVITE_PATH = '/couple/invite'
 
 // 가입 질문 중 약관 문서를 보러 갈 때의 주소 (로그인 전에도 볼 수 있는 공개 화면)
 const DOCUMENT_PATHS: Record<ConsentType, string> = { TERMS: '/my/terms', PRIVACY: '/my/privacy' }
-
-const LOGIN_ERROR = '로그인하지 못했어요. 다시 시도해 주세요.'
 
 // 로그인을 마친 뒤 갈 곳: 가입을 마쳤으면 메인 홈, 아니면 가입 질문
 const homeOf = (user: Me) => (user.onboardingCompleted ? '/' : ONBOARDING_PATHS.welcome)
@@ -32,6 +31,19 @@ export function MemberGate({ auth }: AuthRouteProps) {
   if (auth.status === 'signedOut') return <Navigate to={LOGIN_PATH} replace />
   if (auth.user && !auth.user.onboardingCompleted) return <Navigate to={ONBOARDING_PATHS.welcome} replace />
   return <Outlet />
+}
+
+interface GuestOrMemberGateProps extends AuthRouteProps {
+  // 로그인 전 사용자에게 대신 보여 줄 공개 화면
+  guest: ReactNode
+}
+
+// 로그인 없이도 열려야 하는 공유 링크 주소(예: /places/:placeId)에 쓴다.
+// 주소를 바꾸면 이미 퍼진 공유 링크가 깨지므로, 같은 주소에서 로그인 전이면 공개 화면을 그리고
+// 로그인했으면 MemberGate와 같은 규칙(가입 전이면 가입 질문으로)으로 회원 화면을 그린다
+export function GuestOrMemberGate({ auth, guest }: GuestOrMemberGateProps) {
+  if (auth.status === 'signedOut') return guest
+  return <MemberGate auth={auth} />
 }
 
 // L1 로그인 메인. 이미 로그인했으면 들어오지 않는다
@@ -55,8 +67,8 @@ export function LoginRoute({ auth }: AuthRouteProps) {
       if (!result) return
       auth.signIn(result.user)
       navigate(homeOf(result.user), { replace: true })
-    } catch {
-      setError(LOGIN_ERROR)
+    } catch (error) {
+      setError(loginErrorMessage(error))
       setStatus('idle')
     }
   }
@@ -87,7 +99,7 @@ export function OAuthCallbackRoute({ auth }: AuthRouteProps) {
         auth.signIn(result.user)
         navigate(homeOf(result.user), { replace: true })
       })
-      .catch(() => navigate(LOGIN_PATH, { replace: true, state: { error: LOGIN_ERROR } }))
+      .catch((error: unknown) => navigate(LOGIN_PATH, { replace: true, state: { error: loginErrorMessage(error) } }))
   }, [auth, navigate, params])
 
   return null
