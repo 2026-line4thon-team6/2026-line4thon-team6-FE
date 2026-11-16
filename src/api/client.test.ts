@@ -1,244 +1,67 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-// 액세스 토큰 갱신은 실서버에서만 일어나므로 백엔드 주소를 넣고 모듈을 새로 불러온다.
-// 갱신 방법(저장된 리프레시 토큰으로 POST /auth/refresh)은 auth 모듈이 등록하므로 함께 불러온다
-async function loadWithBackend() {
-  vi.stubEnv('VITE_API_BASE_URL', 'https://api.test/api/v1')
+// 모듈을 불러올 때 백엔드 주소를 읽으므로, 주소를 바꾼 뒤 새로 불러온다
+async function load(baseUrl: string) {
+  vi.stubEnv('VITE_API_BASE_URL', baseUrl)
   vi.resetModules()
-  const auth = await import('./auth')
-  const client = await import('./client')
-  return { ...auth, ...client }
+  return import('./client')
 }
-
-const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
-
-const expired = () =>
-  json(401, { error: { code: 'ACCESS_TOKEN_EXPIRED', message: '액세스 토큰이 만료되었습니다.', details: [], retryable: false }, meta: {} })
-
-const refreshed = (accessToken: string, refreshToken: string) =>
-  json(200, {
-    data: { accessToken, accessTokenExpiresInSeconds: 1800, refreshToken, refreshTokenExpiresInSeconds: 1209600, tokenType: 'Bearer' },
-    meta: {},
-  })
-
-const errorOf = (status: number, code: string) =>
-  json(status, { error: { code, message: '', details: [], retryable: status >= 500 }, meta: {} })
-
-const pathOf = (call: unknown[]) => new URL(call[0] as string).pathname
-const authOf = (call: unknown[]) => new Headers((call[1] as RequestInit).headers).get('Authorization')
-
-let fetchMock: ReturnType<typeof vi.fn>
-
-beforeEach(() => {
-  localStorage.clear()
-  localStorage.setItem('bbus.auth', JSON.stringify({ accessToken: 'old_access', refreshToken: 'old_refresh' }))
-  fetchMock = vi.fn()
-  vi.stubGlobal('fetch', fetchMock)
-})
 
 afterEach(() => {
   vi.unstubAllEnvs()
   vi.unstubAllGlobals()
 })
 
-describe('액세스 토큰 자동 갱신', () => {
-  it('401을 받으면 리프레시 토큰으로 갱신하고, 새 토큰으로 원래 요청을 한 번 다시 보낸다', async () => {
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
-      if (url.endsWith('/auth/refresh')) return Promise.resolve(refreshed('new_access', 'new_refresh'))
-      const token = new Headers(init?.headers).get('Authorization')
-      return Promise.resolve(token === 'Bearer new_access' ? json(200, { data: { ok: true }, meta: {} }) : expired())
-    })
-    const { apiFetch, setAccessToken } = await loadWithBackend()
-    setAccessToken('old_access')
+describe('detectBackend', () => {
+  it('백엔드 주소가 없으면 서버를 확인하지 않고 목 데이터를 쓴다', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const client = await load('')
 
-    const { data } = await apiFetch<{ ok: boolean }>('/notifications')
+    await client.detectBackend()
 
-    expect(data.ok).toBe(true)
-    expect(fetchMock.mock.calls.map(pathOf)).toEqual(['/api/v1/notifications', '/api/v1/auth/refresh', '/api/v1/notifications'])
-    const refreshCall = fetchMock.mock.calls[1][1] as RequestInit
-    expect(JSON.parse(String(refreshCall.body))).toEqual({ refreshToken: 'old_refresh' })
-    expect(new Headers(refreshCall.headers).get('Idempotency-Key')?.length).toBeGreaterThanOrEqual(16)
-    expect(authOf(fetchMock.mock.calls[2])).toBe('Bearer new_access')
-    // 서버가 리프레시 토큰을 회전시키므로 새 리프레시 토큰도 같은 형식으로 저장한다
-    expect(JSON.parse(localStorage.getItem('bbus.auth') ?? '{}')).toEqual({ accessToken: 'new_access', refreshToken: 'new_refresh' })
+    expect(client.USE_MOCK).toBe(true)
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('여러 요청이 동시에 401을 받아도 갱신은 한 번만 한다', async () => {
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
-      if (url.endsWith('/auth/refresh')) return Promise.resolve(refreshed('new_access', 'new_refresh'))
-      const token = new Headers(init?.headers).get('Authorization')
-      return Promise.resolve(token === 'Bearer new_access' ? json(200, { data: url, meta: {} }) : expired())
-    })
-    const { apiFetch, setAccessToken } = await loadWithBackend()
-    setAccessToken('old_access')
+  it('서버가 응답하면 실서버를 쓴다', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: { status: 'UP' } }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const client = await load('https://api.test/api/v1')
 
-    const results = await Promise.all([apiFetch('/me'), apiFetch('/notifications'), apiFetch('/records')])
+    await client.detectBackend()
 
-    expect(results).toHaveLength(3)
-    expect(fetchMock.mock.calls.map(pathOf).filter((path) => path === '/api/v1/auth/refresh')).toHaveLength(1)
+    expect(fetchMock.mock.calls[0][0]).toBe('https://api.test/api/v1/health')
+    expect(client.USE_MOCK).toBe(false)
   })
 
-  it('갱신이 실패하면 저장된 세션을 지우고 세션 만료를 알리며, 원래 오류를 던진다', async () => {
-    fetchMock.mockImplementation((url: string) =>
-      Promise.resolve(
-        url.endsWith('/auth/refresh')
-          ? json(401, { error: { code: 'REFRESH_TOKEN_EXPIRED', message: '', details: [], retryable: false }, meta: {} })
-          : expired(),
+  it('서버가 꺼져 있거나 오류를 주면 목 데이터로 바꾼다', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
+    const down = await load('https://api.test/api/v1')
+    await down.detectBackend()
+    expect(down.USE_MOCK).toBe(true)
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 502 })))
+    const broken = await load('https://api.test/api/v1')
+    await broken.detectBackend()
+    expect(broken.USE_MOCK).toBe(true)
+  })
+
+  it('응답이 너무 늦으면 기다리지 않고 목 데이터로 바꾼다', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_url: string, init?: RequestInit) =>
+        new Promise((_resolve, reject) => init?.signal?.addEventListener('abort', () => reject(new DOMException('', 'AbortError')))),
       ),
     )
-    const { apiFetch, setAccessToken, onSessionExpired } = await loadWithBackend()
-    setAccessToken('old_access')
-    const listener = vi.fn()
-    onSessionExpired(listener)
+    const client = await load('https://api.test/api/v1')
 
-    await expect(apiFetch('/notifications')).rejects.toMatchObject({ status: 401, code: 'ACCESS_TOKEN_EXPIRED' })
-    expect(localStorage.getItem('bbus.auth')).toBeNull()
-    expect(listener).toHaveBeenCalledTimes(1)
-    // 갱신에 실패한 요청은 다시 보내지 않는다
-    expect(fetchMock.mock.calls.map(pathOf)).toEqual(['/api/v1/notifications', '/api/v1/auth/refresh'])
-  })
+    const pending = client.detectBackend()
+    await vi.advanceTimersByTimeAsync(5000)
+    await pending
 
-  it('네트워크 오류로 갱신하지 못하면 세션은 그대로 두고 원래 오류를 던진다', async () => {
-    fetchMock.mockImplementation((url: string) =>
-      url.endsWith('/auth/refresh') ? Promise.reject(new TypeError('Failed to fetch')) : Promise.resolve(expired()),
-    )
-    const { apiFetch, setAccessToken, onSessionExpired } = await loadWithBackend()
-    setAccessToken('old_access')
-    const listener = vi.fn()
-    onSessionExpired(listener)
-
-    await expect(apiFetch('/notifications')).rejects.toMatchObject({ status: 401 })
-    expect(localStorage.getItem('bbus.auth')).not.toBeNull()
-    expect(listener).not.toHaveBeenCalled()
-  })
-
-  it('인증 엔드포인트 자체의 401은 갱신하지 않는다', async () => {
-    fetchMock.mockImplementation(() => Promise.resolve(expired()))
-    const { apiFetch, setAccessToken } = await loadWithBackend()
-    setAccessToken('old_access')
-
-    for (const path of ['/auth/refresh', '/auth/token', '/auth/authorizations', '/auth/logout']) {
-      await expect(apiFetch(path, { method: 'POST', body: '{}' })).rejects.toMatchObject({ status: 401 })
-    }
-    expect(fetchMock).toHaveBeenCalledTimes(4)
-  })
-
-  it('만료 토큰에 AUTHENTICATION_REQUIRED를 주는 경로도 갱신한다', async () => {
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
-      if (url.endsWith('/auth/refresh')) return Promise.resolve(refreshed('new_access', 'new_refresh'))
-      const token = new Headers(init?.headers).get('Authorization')
-      return Promise.resolve(token === 'Bearer new_access' ? json(200, { data: {}, meta: {} }) : errorOf(401, 'AUTHENTICATION_REQUIRED'))
-    })
-    const { apiFetch, setAccessToken } = await loadWithBackend()
-    setAccessToken('old_access')
-
-    await apiFetch('/home')
-    expect(fetchMock.mock.calls.map(pathOf)).toEqual(['/api/v1/home', '/api/v1/auth/refresh', '/api/v1/home'])
-  })
-
-  it('재인증이 필요하다는 401(REAUTH_REQUIRED)은 갱신하지 않는다', async () => {
-    fetchMock.mockImplementation(() => Promise.resolve(errorOf(401, 'REAUTH_REQUIRED')))
-    const { apiFetch, setAccessToken } = await loadWithBackend()
-    setAccessToken('old_access')
-
-    await expect(apiFetch('/me', { method: 'DELETE' })).rejects.toMatchObject({ code: 'REAUTH_REQUIRED' })
-    expect(fetchMock).toHaveBeenCalledTimes(1)
-  })
-
-  it('갱신이 일시 장애(503)로 실패하면 세션은 그대로 두고 원래 오류를 던진다', async () => {
-    fetchMock.mockImplementation((url: string) =>
-      Promise.resolve(url.endsWith('/auth/refresh') ? errorOf(503, 'SERVICE_UNAVAILABLE') : expired()),
-    )
-    const { apiFetch, setAccessToken, onSessionExpired } = await loadWithBackend()
-    setAccessToken('old_access')
-    const listener = vi.fn()
-    onSessionExpired(listener)
-
-    await expect(apiFetch('/notifications')).rejects.toMatchObject({ status: 401, code: 'ACCESS_TOKEN_EXPIRED' })
-    expect(localStorage.getItem('bbus.auth')).not.toBeNull()
-    expect(listener).not.toHaveBeenCalled()
-  })
-
-  it('다른 탭이 이미 토큰을 갱신했으면 저장된 새 토큰을 쓰고 갱신하지 않는다', async () => {
-    // 이미 회전된 리프레시 토큰을 다시 쓰면 서버가 세션 전체를 끊는다(REFRESH_TOKEN_REUSED)
-    fetchMock.mockImplementation((_url: string, init?: RequestInit) => {
-      const token = new Headers(init?.headers).get('Authorization')
-      return Promise.resolve(token === 'Bearer tab_access' ? json(200, { data: {}, meta: {} }) : expired())
-    })
-    const { apiFetch, setAccessToken } = await loadWithBackend()
-    setAccessToken('old_access')
-    localStorage.setItem('bbus.auth', JSON.stringify({ accessToken: 'tab_access', refreshToken: 'tab_refresh' }))
-
-    await apiFetch('/notifications')
-    expect(fetchMock.mock.calls.map(pathOf)).toEqual(['/api/v1/notifications', '/api/v1/notifications'])
-    expect(authOf(fetchMock.mock.calls[1])).toBe('Bearer tab_access')
-  })
-
-  it('로그아웃은 회전된 최신 리프레시 토큰을 보낸다', async () => {
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
-      if (url.endsWith('/auth/refresh')) return Promise.resolve(refreshed('new_access', 'new_refresh'))
-      if (url.endsWith('/auth/logout')) return Promise.resolve(new Response(null, { status: 204 }))
-      const token = new Headers(init?.headers).get('Authorization')
-      return Promise.resolve(token === 'Bearer new_access' ? json(200, { data: {}, meta: {} }) : expired())
-    })
-    const { apiFetch, setAccessToken, logout } = await loadWithBackend()
-    setAccessToken('old_access')
-    await apiFetch('/notifications')
-
-    await logout('logout-key-0123456789')
-    const logoutCall = fetchMock.mock.calls.find((call) => pathOf(call) === '/api/v1/auth/logout')!
-    expect(JSON.parse(String((logoutCall[1] as RequestInit).body))).toMatchObject({ refreshToken: 'new_refresh' })
-  })
-
-  it('토큰 없이 보낸 요청의 401은 갱신하지 않는다', async () => {
-    fetchMock.mockImplementation(() => Promise.resolve(expired()))
-    const { apiFetch } = await loadWithBackend()
-
-    await expect(apiFetch('/me')).rejects.toMatchObject({ status: 401 })
-    expect(fetchMock).toHaveBeenCalledTimes(1)
-  })
-
-  it('다시 보낸 요청도 401이면 또 갱신하지 않고 오류를 던진다', async () => {
-    fetchMock.mockImplementation((url: string) =>
-      Promise.resolve(url.endsWith('/auth/refresh') ? refreshed('new_access', 'new_refresh') : expired()),
-    )
-    const { apiFetch, setAccessToken } = await loadWithBackend()
-    setAccessToken('old_access')
-
-    await expect(apiFetch('/me')).rejects.toMatchObject({ status: 401 })
-    expect(fetchMock.mock.calls.map(pathOf)).toEqual(['/api/v1/me', '/api/v1/auth/refresh', '/api/v1/me'])
-  })
-
-  it('앱을 열 때 저장된 액세스 토큰이 만료됐으면 갱신해서 내 계정을 불러온다', async () => {
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
-      if (url.endsWith('/auth/refresh')) return Promise.resolve(refreshed('new_access', 'new_refresh'))
-      const token = new Headers(init?.headers).get('Authorization')
-      return Promise.resolve(token === 'Bearer new_access' ? json(200, { data: { nickname: '민준' }, meta: {} }) : expired())
-    })
-    const { restoreSession } = await loadWithBackend()
-
-    expect((await restoreSession())?.nickname).toBe('민준')
-  })
-
-  it('앱을 열 때 리프레시 토큰까지 만료됐으면 세션을 지우고 null을 돌려준다', async () => {
-    fetchMock.mockImplementation((url: string) =>
-      Promise.resolve(url.endsWith('/auth/refresh') ? errorOf(401, 'REFRESH_TOKEN_REUSED') : expired()),
-    )
-    const { restoreSession } = await loadWithBackend()
-
-    expect(await restoreSession()).toBeNull()
-    expect(localStorage.getItem('bbus.auth')).toBeNull()
-    expect(fetchMock.mock.calls.map(pathOf)).toEqual(['/api/v1/me', '/api/v1/auth/refresh'])
-  })
-
-  it('앱을 열 때 갱신이 일시 장애로 실패하면 세션을 남겨 두고 오류를 던진다', async () => {
-    fetchMock.mockImplementation((url: string) =>
-      Promise.resolve(url.endsWith('/auth/refresh') ? errorOf(503, 'SERVICE_UNAVAILABLE') : expired()),
-    )
-    const { restoreSession } = await loadWithBackend()
-
-    await expect(restoreSession()).rejects.toMatchObject({ status: 401 })
-    expect(localStorage.getItem('bbus.auth')).not.toBeNull()
+    expect(client.USE_MOCK).toBe(true)
+    vi.useRealTimers()
   })
 })

@@ -14,6 +14,7 @@ import { resetMockJobs, setMockGenerateMs } from '@/mocks/jobs'
 import { mockGetActiveDrive, resetMockDrives } from '@/mocks/drives'
 import { resetMockStamps } from '@/mocks/restAreas'
 import { resetMockRoutes } from '@/mocks/routes'
+import { resetMockNotifications } from '@/mocks/notifications'
 import { resetMockSearchHistory } from '@/mocks/search'
 import { resetMockRecordDeletions } from './mocks/records'
 import App from './App'
@@ -66,13 +67,14 @@ beforeEach(() => {
   localStorage.clear()
   sessionStorage.clear()
   resetMockCards()
+  resetMockNotifications()
 })
 
 describe('홈 ↔ 알림 화면 이동', () => {
   it('홈의 알림 버튼 → 알림 목록 → 알림을 탭하면 읽음 처리되고, 홈으로 돌아오면 새 알림 표시가 사라진다', async () => {
     const user = renderApp()
 
-    await user.click(screen.getByRole('button', { name: '알림 (새 알림 있음)' }))
+    await user.click(await screen.findByRole('button', { name: '알림 (새 알림 있음)' }))
 
     expect(screen.getByRole('heading', { level: 1, name: '알림' })).toBeInTheDocument()
     const unread = await screen.findByRole('button', { name: /민지님이 드라이브 장소를 공유했어요/ })
@@ -91,7 +93,7 @@ describe('홈 ↔ 알림 화면 이동', () => {
     // 알림 목록 → 홈: 종 아이콘의 새 알림 표시가 없다
     await user.click(screen.getByRole('button', { name: '뒤로가기' }))
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('오늘은 어디로 떠나볼까요?')
-    expect(screen.getByRole('button', { name: '알림' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: '알림' })).toBeInTheDocument()
   })
 
   it('알림 주소로 바로 들어와서 뒤로가기를 누르면 홈으로 간다', async () => {
@@ -107,7 +109,8 @@ describe('홈 · 알림 → 장소 상세 이동', () => {
   it('홈의 장소 카드를 탭하면 그 장소의 상세 화면으로 이동하고, 뒤로가면 홈으로 돌아온다', async () => {
     const user = renderApp()
 
-    await user.click(screen.getByRole('button', { name: '강릉 헌화로' }))
+    // 추천 장소는 GET /places/recommendations 로 불러온다
+    await user.click(await screen.findByRole('button', { name: '강릉 헌화로' }))
 
     expect(await screen.findByRole('heading', { level: 1, name: '강릉 헌화로' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: '뒤로가기' }))
@@ -117,7 +120,7 @@ describe('홈 · 알림 → 장소 상세 이동', () => {
 
   it('상세에서 찜하면 홈으로 돌아왔을 때 카드의 하트에도 반영된다', async () => {
     const user = renderApp()
-    await user.click(screen.getByRole('button', { name: '강릉 헌화로' }))
+    await user.click(await screen.findByRole('button', { name: '강릉 헌화로' }))
     await screen.findByRole('heading', { level: 1, name: '강릉 헌화로' })
 
     await user.click(screen.getByRole('button', { name: '좋아요' }))
@@ -129,6 +132,17 @@ describe('홈 · 알림 → 장소 상세 이동', () => {
     expect(card!.querySelector('button[aria-pressed="true"]')).not.toBeNull()
   })
 
+  it('홈 카드의 하트를 누르면 찜이 저장되어 상세 화면에도 찜으로 보인다', async () => {
+    const user = renderApp()
+    const card = (await screen.findByRole('button', { name: '강릉 헌화로' })).closest('article')!
+
+    await user.click(within(card).getByRole('button', { name: '좋아요' }))
+    await user.click(within(card).getByRole('button', { name: '강릉 헌화로' }))
+
+    await screen.findByRole('heading', { level: 1, name: '강릉 헌화로' })
+    expect(await screen.findByRole('button', { name: '좋아요 취소' })).toBeInTheDocument()
+  })
+
   it('공유받은 장소 알림을 탭하면 그 장소의 상세 화면으로 이동한다', async () => {
     const user = renderApp('/notifications')
 
@@ -138,7 +152,7 @@ describe('홈 · 알림 → 장소 상세 이동', () => {
   })
 
   it('연인에게 보내기 → 보내기 → 전송 완료 안내까지 이어진다', async () => {
-    const user = renderApp('/places/1')
+    const user = renderApp('/places/plc_oido')
     await screen.findByRole('heading', { level: 1, name: '시흥 오이도' })
 
     await user.click(screen.getByRole('button', { name: '연인에게 보내기' }))
@@ -602,7 +616,7 @@ describe('드라이브 모드 진입', () => {
   })
 
   it('장소 상세의 드라이브 시작하기에서도 드라이브명 시트가 열린다', async () => {
-    const user = renderApp('/places/1')
+    const user = renderApp('/places/plc_oido')
     await screen.findByRole('heading', { level: 1, name: '시흥 오이도' })
 
     await user.click(screen.getByRole('button', { name: '드라이브 시작하기' }))
@@ -981,7 +995,7 @@ describe('드라이브 카드 작성', () => {
     expect(pendingBanner()).toHaveTextContent('미작성 드라이브 카드 1개')
 
     // 다른 화면에 갔다가 돌아와도 팝업은 다시 뜨지 않는다
-    await user.click(screen.getByRole('button', { name: '알림 (새 알림 있음)' }))
+    await user.click(await screen.findByRole('button', { name: '알림 (새 알림 있음)' }))
     await user.click(screen.getByRole('button', { name: '뒤로가기' }))
     expect(await screen.findByRole('button', { name: /미작성 드라이브 카드 1개/ })).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -998,7 +1012,7 @@ describe('드라이브 카드 작성', () => {
     await user.click(screen.getByRole('button', { name: '저장하기' }))
 
     expect(await screen.findByRole('heading', { level: 1, name: /오늘은 어디로 떠나볼까요/ })).toBeInTheDocument()
-    expect(pendingBanner()).not.toBeInTheDocument()
+    await waitFor(() => expect(pendingBanner()).not.toBeInTheDocument())
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
@@ -1020,6 +1034,9 @@ describe('드라이브 카드 작성', () => {
 
     expect(await screen.findByText('우리의 첫 바다 드라이브')).toBeInTheDocument()
     // 소감 칸은 운전자 · 동승자 대신 닉네임으로 표시한다 (목: 나 민준=동승자, 연인 민지=운전자)
-    expect(screen.getAllByRole('group').map((group) => group.getAttribute('aria-label'))).toEqual(['민준', '민지'])
+    // 연인 닉네임은 홈 정보(GET /home)를 받은 뒤 채워진다
+    await waitFor(() =>
+      expect(screen.getAllByRole('group').map((group) => group.getAttribute('aria-label'))).toEqual(['민준', '민지']),
+    )
   })
 })

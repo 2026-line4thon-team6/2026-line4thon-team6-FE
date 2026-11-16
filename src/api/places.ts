@@ -2,11 +2,20 @@ import {
   mockFetchFavorites,
   mockFetchPlaceDetail,
   mockFetchPlaceShare,
+  mockFetchRecommendations,
   mockSendPlaceToPartner,
   mockSetPlaceFavorite,
 } from '@/mocks/places'
 import type { ApiResponse, CursorPage } from '@/types/api'
-import type { PlaceCategory, PlaceDetail, PlaceShare, PlaceSummary, SendToPartnerResult } from '@/types/place'
+import type {
+  PlaceCategory,
+  PlaceDetail,
+  PlaceRecommendations,
+  PlaceShare,
+  PlaceSummary,
+  SendToPartnerResult,
+} from '@/types/place'
+import type { Coordinate } from '@/types/route'
 import { apiFetch, USE_MOCK } from './client'
 
 const path = (placeId: string) => `/places/${encodeURIComponent(placeId)}`
@@ -20,6 +29,21 @@ export function fetchPlaceDetail(
 
   const query = coordinate ? `?latitude=${coordinate.latitude}&longitude=${coordinate.longitude}` : ''
   return apiFetch<PlaceDetail>(`${path(placeId)}${query}`)
+}
+
+// GET /places/recommendations — 카테고리별 추천 장소. 좌표를 보내면 거리(distanceMeters)가 채워진다
+export function fetchRecommendations(
+  category: PlaceCategory,
+  coordinate?: Coordinate | null,
+): Promise<ApiResponse<PlaceRecommendations>> {
+  if (USE_MOCK) return mockFetchRecommendations(category)
+
+  const query = new URLSearchParams({ category })
+  if (coordinate) {
+    query.set('latitude', String(coordinate.latitude))
+    query.set('longitude', String(coordinate.longitude))
+  }
+  return apiFetch<PlaceRecommendations>(`/places/recommendations?${query}`)
 }
 
 // GET /places/{placeId}/share — 장소 공유용 공개 링크
