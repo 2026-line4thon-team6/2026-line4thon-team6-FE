@@ -3,7 +3,7 @@ import pinIcon from '@/assets/icons/pin-md.svg'
 import BottomSheet from '@/components/BottomSheet/BottomSheet'
 import ShareChannelList from '@/components/ShareChannelList/ShareChannelList'
 import type { PlaceSummary } from '@/types/place'
-import { formatDuration } from '@/utils/formatDuration'
+import { formatRegionDuration } from '@/utils/formatDuration'
 import type { ShareChannel, ShareLink } from '@/utils/share'
 import styles from './ShareSheet.module.scss'
 
@@ -30,7 +30,7 @@ function ShareSheet({ place, link, onClose, onCopyLink, onShareChannel }: ShareS
             <p className={styles.name}>{place.name}</p>
             <p className={styles.meta}>
               <img src={pinIcon} alt="" />
-              {place.region} · {formatDuration(place.estimatedDurationSeconds)}
+              {formatRegionDuration(place.region, place.estimatedDurationSeconds)}
             </p>
           </div>
         </div>

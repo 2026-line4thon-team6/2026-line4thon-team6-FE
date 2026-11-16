@@ -10,7 +10,7 @@ import GlassIconButton from '@/components/GlassIconButton/GlassIconButton'
 import LikeButton from '@/components/LikeButton/LikeButton'
 import { PLACE_CATEGORIES } from '@/constants/placeCategories'
 import type { PlaceDetail } from '@/types/place'
-import { formatDuration } from '@/utils/formatDuration'
+import { formatDuration, formatRegionDuration } from '@/utils/formatDuration'
 import type { ShareChannel } from '@/utils/share'
 import styles from './PlaceDetailPage.module.scss'
 import SendToPartnerModal, { type SendStep } from './SendToPartnerModal'
@@ -134,7 +134,7 @@ function PlaceDetailPage({
             <h1 className={styles.name}>{place.name}</h1>
             <p className={styles.meta}>
               <img src={pinIcon} alt="" />
-              {place.region} · {duration}
+              {formatRegionDuration(place.region, place.estimatedDurationSeconds)}
             </p>
             {/* 명세는 주소를 요구하지만 Figma 위치 줄은 '지역 · 시간'이라, 위치 줄은 그대로 두고 전체 주소를 한 줄 더 보여 준다 */}
             {place.address && place.address !== place.region && <p className={styles.address}>{place.address}</p>}

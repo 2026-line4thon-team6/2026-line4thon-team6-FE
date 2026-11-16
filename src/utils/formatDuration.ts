@@ -10,3 +10,8 @@ export function formatDuration(seconds: number | null) {
   if (minutes === 0) return `약 ${hours}시간`
   return `약 ${hours}시간 ${minutes}분`
 }
+
+// 장소 카드 · 상세의 '지역 · 예상 시간' 줄. 서버가 예상 시간을 모르면(null) 지역만 보여 준다 ('경기 시흥시 · --' 대신)
+export function formatRegionDuration(region: string, seconds: number | null) {
+  return seconds === null ? region : `${region} · ${formatDuration(seconds)}`
+}
