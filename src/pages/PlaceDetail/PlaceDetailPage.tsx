@@ -206,7 +206,8 @@ function PlaceDetailPage({
               </span>
             </div>
           ) : (
-            <p className={styles.mapEmpty}>위치 권한을 허용하면 경로를 볼 수 있어요.</p>
+            // 경로가 없는 이유가 위치 권한만은 아니다 (지금 서버는 늘 null을 준다). 권한 탓을 하지 않는 중립 문구로 둔다
+            <p className={styles.mapEmpty}>경로 미리보기를 준비 중이에요.</p>
           )}
         </section>
       </main>
