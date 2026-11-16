@@ -5,6 +5,7 @@ import exitIcon from '@/assets/icons/exit.svg'
 import locateIcon from '@/assets/icons/locate.svg'
 import menuIcon from '@/assets/icons/menu.svg'
 import pauseIcon from '@/assets/icons/pause.svg'
+import playIcon from '@/assets/icons/play.svg'
 import shareIcon from '@/assets/icons/share.svg'
 import trashIcon from '@/assets/icons/trash-fill.svg'
 import styles from './GlassIconButton.module.scss'
@@ -17,6 +18,7 @@ const ICONS = {
   locate: locateIcon,
   exit: exitIcon,
   pause: pauseIcon,
+  play: playIcon,
   menu: menuIcon,
 }
 

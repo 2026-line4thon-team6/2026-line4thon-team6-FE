@@ -128,11 +128,18 @@ $footer-height: 104px;
 }
 
 .trackBody {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   height: 47px;
+  background-color: color('coral-bg');
   transition: transform 0.2s ease-out;
   touch-action: pan-y;
+}
+
+.swiping {
+  transition: none;
 }
 
 .order {
@@ -148,6 +155,19 @@ $footer-height: 104px;
   gap: 12px;
   align-items: center;
   min-width: 0;
+  color: inherit;
+  text-decoration: none;
+  border-radius: 10px;
+  -webkit-tap-highlight-color: transparent;
+
+  &:is(a):active {
+    background-color: color('divider');
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
 }
 
 .album {
@@ -218,6 +238,11 @@ $footer-height: 104px;
   color: color('white');
   background-color: color('coral');
   transform: translateY(-50%);
+  transition: opacity 0.2s ease-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .footer {
@@ -225,6 +250,7 @@ $footer-height: 104px;
   right: 0;
   bottom: 0;
   left: 0;
+  z-index: 10;
   display: flex;
   gap: 8px;
   max-width: var(--app-max-width);
@@ -237,7 +263,7 @@ $footer-height: 104px;
 }
 
 .restart,
-.playAll {
+.saveButton {
   height: 48px;
   border: 0;
   border-radius: 15px;
@@ -255,7 +281,7 @@ $footer-height: 104px;
   background-color: color('coral-2');
 }
 
-.playAll {
+.saveButton {
   flex: 1;
   color: color('white');
   background-color: color('coral');

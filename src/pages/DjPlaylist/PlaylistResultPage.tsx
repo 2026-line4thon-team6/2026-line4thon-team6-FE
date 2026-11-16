@@ -19,6 +19,8 @@ function scrollParent(element: HTMLElement): HTMLElement {
   return (document.scrollingElement as HTMLElement | null) ?? document.documentElement
 }
 const SWIPE_OPEN = 72
+const SWIPE_MIN = 8
+const SWIPE_OVERSHOOT = 16
 
 interface PlaylistResultPageProps {
   playlist: Playlist
@@ -26,7 +28,7 @@ interface PlaylistResultPageProps {
   onReorder: (trackIds: string[]) => void
   onDelete: (trackId: string) => void
   onRestart: () => void
-  onPlayAll: () => void
+  onSave: () => void
   onBack: () => void
 }
 
@@ -79,6 +81,35 @@ function TrackRow({
   onDragEnd,
 }: TrackRowProps) {
   const swipeStart = useRef<number | null>(null)
+  const moved = useRef(false)
+  const [swipeX, setSwipeX] = useState<number | null>(null)
+  const restX = open ? -SWIPE_OPEN : 0
+  const x = swipeX ?? restX
+  const fromHandle = (event: PointerEvent<HTMLDivElement>) => !!(event.target as HTMLElement).closest('button')
+  const settle = (clientX: number) => {
+    const start = swipeStart.current
+    swipeStart.current = null
+    setSwipeX(null)
+    if (start === null) return
+    const dx = clientX - start
+    if (Math.abs(dx) < SWIPE_MIN) return
+    onSwipe(restX + dx < -SWIPE_OPEN / 2)
+  }
+
+  const info = (
+    <>
+      {track.albumImageUrl ? (
+        <img className={styles.album} src={track.albumImageUrl} alt="" />
+      ) : (
+        <span className={styles.album} />
+      )}
+      <span className={styles.names}>
+        <span className={styles.songTitle}>{track.title}</span>
+        <span className={styles.artist}>{track.artist}</span>
+      </span>
+      <span className={styles.time}>{formatTrackTime(track.durationSeconds)}</span>
+    </>
+  )
 
   return (
     <li
@@ -86,33 +117,51 @@ function TrackRow({
       style={{ transform: offset ? `translateY(${offset}px)` : undefined }}
     >
       <div
-        className={styles.trackBody}
-        style={{ transform: open ? `translateX(-${SWIPE_OPEN}px)` : undefined }}
+        className={[styles.trackBody, swipeX !== null && styles.swiping].filter(Boolean).join(' ')}
+        style={{ transform: x ? `translateX(${x}px)` : undefined }}
         onPointerDown={(event) => {
+          if (fromHandle(event)) return
           swipeStart.current = event.clientX
+          moved.current = false
         }}
-        onPointerUp={(event) => {
+        onPointerMove={(event) => {
           const start = swipeStart.current
-          swipeStart.current = null
           if (start === null) return
           const dx = event.clientX - start
-          if (dx < -30) onSwipe(true)
-          else if (dx > 30) onSwipe(false)
+          if (swipeX === null && Math.abs(dx) < SWIPE_MIN) return
+          if (!moved.current) {
+            moved.current = true
+            event.currentTarget.setPointerCapture?.(event.pointerId)
+          }
+          setSwipeX(Math.min(0, Math.max(-SWIPE_OPEN - SWIPE_OVERSHOOT, restX + dx)))
+        }}
+        onPointerUp={(event) => settle(event.clientX)}
+        onPointerCancel={() => {
+          swipeStart.current = null
+          setSwipeX(null)
         }}
       >
         <span className={styles.order}>{pad(index + 1)}</span>
-        <span className={styles.info}>
-          {track.albumImageUrl ? (
-            <img className={styles.album} src={track.albumImageUrl} alt="" />
-          ) : (
-            <span className={styles.album} />
-          )}
-          <span className={styles.names}>
-            <span className={styles.songTitle}>{track.title}</span>
-            <span className={styles.artist}>{track.artist}</span>
-          </span>
-          <span className={styles.time}>{formatTrackTime(track.durationSeconds)}</span>
-        </span>
+        {track.externalUrl ? (
+          <a
+            className={styles.info}
+            href={track.externalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${track.title} - ${track.artist}, 스포티파이에서 듣기`}
+            onClick={(event) => {
+              const swiped = moved.current
+              moved.current = false
+              if (!swiped && !open) return
+              event.preventDefault()
+              if (open && !swiped) onSwipe(false)
+            }}
+          >
+            {info}
+          </a>
+        ) : (
+          <span className={styles.info}>{info}</span>
+        )}
         <button
           type="button"
           className={styles.handle}
@@ -126,11 +175,16 @@ function TrackRow({
           <img src={dragDots} alt="" />
         </button>
       </div>
-      {open && (
-        <button type="button" className={styles.delete} onClick={onDelete}>
-          삭제
-        </button>
-      )}
+      <button
+        type="button"
+        className={styles.delete}
+        style={{ opacity: Math.min(1, -x / SWIPE_OPEN), transition: swipeX !== null ? 'none' : undefined }}
+        tabIndex={open ? 0 : -1}
+        aria-hidden={!open}
+        onClick={onDelete}
+      >
+        삭제
+      </button>
     </li>
   )
 }
@@ -142,7 +196,7 @@ function PlaylistResultPage({
   onReorder,
   onDelete,
   onRestart,
-  onPlayAll,
+  onSave,
   onBack,
 }: PlaylistResultPageProps) {
   const [openId, setOpenId] = useState<string | null>(null)
@@ -275,8 +329,8 @@ function PlaylistResultPage({
         <button type="button" className={styles.restart} onClick={onRestart}>
           다시 만들기
         </button>
-        <button type="button" className={styles.playAll} onClick={onPlayAll}>
-          전체 재생
+        <button type="button" className={styles.saveButton} onClick={onSave}>
+          저장하기
         </button>
       </footer>
     </div>

@@ -339,8 +339,9 @@ function DjPlaylistRoute() {
         onReorder={(trackIds) => void generation.reorder(trackIds)}
         onDelete={(trackId) => void generation.removeTrack(trackId)}
         onRestart={generation.restart}
-        // TODO: 앱 안에서 재생하지 않는다. 재생 카드 화면이 정해지면 연결
-        onPlayAll={() => navigate('/drive')}
+        onSave={async () => {
+          if (await generation.save()) navigate('/drive')
+        }}
         onBack={() => navigate('/drive')}
       />
     )

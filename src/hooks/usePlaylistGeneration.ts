@@ -112,6 +112,18 @@ function usePlaylistGeneration(driveId: string | null) {
     await setPlaylistSaved(playlist.id, saved).catch(() => setPlaylist({ ...playlist, savedByMe: !saved }))
   }
 
+  const save = async () => {
+    if (!playlist || playlist.savedByMe) return true
+    setPlaylist({ ...playlist, savedByMe: true })
+    try {
+      await setPlaylistSaved(playlist.id, true)
+      return true
+    } catch {
+      setPlaylist({ ...playlist, savedByMe: false })
+      return false
+    }
+  }
+
   const restart = () => {
     setPlaylist(null)
     setJobId(null)
@@ -132,6 +144,7 @@ function usePlaylistGeneration(driveId: string | null) {
     reorder: editTracks,
     removeTrack,
     toggleSave,
+    save,
   }
 }
 
