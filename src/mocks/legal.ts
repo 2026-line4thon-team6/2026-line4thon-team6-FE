@@ -117,15 +117,57 @@ const TERMS = `## 제1조 목적
 ---
 **시행일**: 2026년 11월 16일`
 
-// 실제 사용 라이브러리 목록은 배포 시점에 채운다 (Figma의 자리표시 그대로)
-const OPEN_SOURCE = `붕붕어스는 서비스 개발을 위해 오픈소스 소프트웨어를 사용하고 있습니다. 각 오픈소스 소프트웨어의 저작권은 해당 저작권자에게 있으며, 각 소프트웨어에 적용되는 라이선스 조건에 따라 사용됩니다.
+// 앱 배포 파일에 실제로 들어가는 오픈소스 (pnpm list --prod 기준, 타입 정의만 있는 패키지 제외).
+// 의존성을 바꾸면 이 목록도 함께 고친다. 저작권 문구는 각 패키지의 LICENSE 파일 그대로
+const OPEN_SOURCE = `붕붕어스 앱은 다음 오픈소스 소프트웨어를 사용합니다. 각 소프트웨어의 저작권은 해당 저작권자에게 있으며, 각 라이선스 조건에 따라 사용됩니다.
 
-## [라이브러리명]
-- **버전**: [버전]
-- **라이선스**: [라이선스명]
-- Copyright © [저작권자]
+## React · React DOM · Scheduler · use-sync-external-store
+- **버전**: React 19.3.1 · React DOM 19.3.1 · Scheduler 0.28.0 · use-sync-external-store 1.7.0
+- **라이선스**: MIT License
+- Copyright (c) Meta Platforms, Inc. and affiliates.
 
-[라이선스 전문]`
+## React Router
+- **버전**: 8.5.1
+- **라이선스**: MIT License
+- Copyright (c) React Training LLC 2015-2019
+- Copyright (c) Remix Software Inc. 2020-2021
+- Copyright (c) Shopify Inc. 2022-2023
+
+## @remix-run/route-pattern
+- **버전**: 0.22.1
+- **라이선스**: MIT License
+- Copyright (c) 2025 Shopify Inc.
+
+## cookie-es
+- **버전**: 3.1.1
+- **라이선스**: MIT License
+- Copyright (c) 2012-2014 Roman Shtylman
+- Copyright (c) 2015 Douglas Christopher Wilson
+- Copyright (c) 2015 Nathan Friedly
+
+## react-kakao-maps-sdk
+- **버전**: 1.2.2
+- **라이선스**: MIT License
+- Copyright (c) 2021-2023 JaeSeoKim
+
+## @babel/runtime
+- **버전**: 7.29.10
+- **라이선스**: MIT License
+- Copyright (c) 2014-present Sebastian McKenzie and other contributors
+
+## Pretendard
+- **버전**: 1.3.9
+- **라이선스**: SIL Open Font License 1.1
+- Copyright (c) 2021, Kil Hyung-jin
+- 라이선스 전문: https://openfontlicense.org
+
+---
+## MIT License
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.`
 
 const document = (
   type: LegalDocumentType,
