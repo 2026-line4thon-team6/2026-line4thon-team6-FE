@@ -27,6 +27,14 @@ describe('LegalDocumentPage', () => {
     expect(screen.queryByText(/^## /)).not.toBeInTheDocument()
   })
 
+  it('서버가 Markdown 없이 일반 텍스트로 준 약관도 "제N조"를 조항 제목으로 나눠 보여 준다', () => {
+    renderPage({ document: { ...TERMS, content: '제1조 목적\n본 약관은 목적을 정합니다.\n제2조 정의\n용어를 정의합니다.' } })
+
+    expect(screen.getByRole('heading', { level: 3, name: '제1조 목적' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 3, name: '제2조 정의' })).toBeInTheDocument()
+    expect(screen.getByText('본 약관은 목적을 정합니다.').tagName).toBe('P')
+  })
+
   it.each([
     ['PRIVACY', '개인정보 처리방침'],
     ['TERMS', '이용 약관'],
