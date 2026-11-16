@@ -90,6 +90,16 @@ export class ApiError extends Error {
   }
 }
 
+// 쿼리 문자열을 붙인 경로. 값이 없는(undefined · 빈 문자열) 파라미터는 뺀다
+export function withQuery(path: string, params: Record<string, string | number | undefined>) {
+  const query = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== '') query.set(key, String(value))
+  }
+  const search = query.toString()
+  return search ? `${path}?${search}` : path
+}
+
 async function send(path: string, init: RequestInit, token: string | null) {
   const headers = new Headers(init.headers)
   headers.set('Accept', 'application/json')

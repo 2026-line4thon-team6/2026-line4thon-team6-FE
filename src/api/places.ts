@@ -7,7 +7,7 @@ import {
   mockSendPlaceToPartner,
   mockSetPlaceFavorite,
 } from '@/mocks/places'
-import type { ApiResponse, CursorPage } from '@/types/api'
+import type { ApiResponse, CursorPage, CursorParams } from '@/types/api'
 import type {
   PlaceCategory,
   PlaceDetail,
@@ -18,7 +18,7 @@ import type {
   SendToPartnerResult,
 } from '@/types/place'
 import type { Coordinate } from '@/types/route'
-import { apiFetch, USE_MOCK } from './client'
+import { apiFetch, USE_MOCK, withQuery } from './client'
 
 const path = (placeId: string) => `/places/${encodeURIComponent(placeId)}`
 
@@ -70,11 +70,17 @@ export async function setPlaceFavorite(placeId: string, favorite: boolean): Prom
   await apiFetch(`/me/favorite-places/${encodeURIComponent(placeId)}`, { method: favorite ? 'PUT' : 'DELETE' })
 }
 
-// GET /me/favorite-places — 내가 찜한 장소. category를 생략하면 전체 (보관함의 카테고리 칩 필터)
-export function fetchFavorites(category?: PlaceCategory): Promise<ApiResponse<CursorPage<PlaceSummary>>> {
-  if (USE_MOCK) return mockFetchFavorites(category)
+// GET /me/favorite-places — 내가 찜한 장소. category를 생략하면 전체 (보관함의 카테고리 칩 필터).
+// 다음 페이지는 같은 category와 함께 보내야 한다 (커서가 카테고리에 묶여 있다)
+export function fetchFavorites(
+  category?: PlaceCategory,
+  params: CursorParams = {},
+): Promise<ApiResponse<CursorPage<PlaceSummary>>> {
+  if (USE_MOCK) return mockFetchFavorites(category, params)
 
-  return apiFetch<CursorPage<PlaceSummary>>(`/me/favorite-places${category ? `?category=${category}` : ''}`)
+  return apiFetch<CursorPage<PlaceSummary>>(
+    withQuery('/me/favorite-places', { category, cursor: params.cursor, limit: params.limit }),
+  )
 }
 
 export interface SendToPartnerOptions {

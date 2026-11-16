@@ -27,3 +27,9 @@ export interface CursorPage<T> {
   nextCursor: string | null
   hasMore: boolean
 }
+
+// 커서 목록 요청 공통 파라미터. 커서는 함께 보낸 필터(검색어 · 카테고리)에 묶여 있어 필터가 바뀌면 버린다
+export interface CursorParams {
+  cursor?: string // 이전 응답의 nextCursor. 첫 요청은 생략
+  limit?: number // 기본 20, 1~100
+}

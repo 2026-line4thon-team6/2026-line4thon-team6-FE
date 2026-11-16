@@ -42,6 +42,21 @@ describe('찜한 장소 목록', () => {
     const { data: restored } = await mockFetchFavorites()
     expect(restored.items.map((place) => place.id)).toContain(target.id)
   })
+
+  it('limit만큼 잘라 주고 nextCursor로 이어서 불러온다', async () => {
+    const { data: all } = await mockFetchFavorites()
+    const { data: first } = await mockFetchFavorites(undefined, { limit: 1 })
+
+    expect(first.items).toEqual(all.items.slice(0, 1))
+    expect(first).toMatchObject({ hasMore: true, nextCursor: '1' })
+
+    const { data: second } = await mockFetchFavorites(undefined, { cursor: '1', limit: 1 })
+    expect(second.items).toEqual(all.items.slice(1, 2))
+  })
+
+  it('잘못된 cursor면 400', async () => {
+    await expect(mockFetchFavorites('SEA', { cursor: 'nope' })).rejects.toMatchObject({ status: 400 })
+  })
 })
 
 // GET /public/places/{placeId}: 로그인 없이 보는 공유 장소. 회원 상세와 같은 장소를 공개 필드만 담아 준다

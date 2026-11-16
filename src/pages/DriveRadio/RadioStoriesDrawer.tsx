@@ -12,9 +12,13 @@ interface RadioStoriesDrawerProps {
   episodes: RadioEpisode[]
   query: string
   keyword: string
+  // 다음 페이지 더 보기 (보관함 · 알림 목록과 같은 방식)
+  hasMore: boolean
+  loadingMore: boolean
   onQueryChange: (query: string) => void
   onRetry: () => void
   onSelect: (episode: RadioEpisode) => void
+  onLoadMore: () => void
   onClose: () => void
 }
 
@@ -23,9 +27,12 @@ function RadioStoriesDrawer({
   episodes,
   query,
   keyword,
+  hasMore,
+  loadingMore,
   onQueryChange,
   onRetry,
   onSelect,
+  onLoadMore,
   onClose,
 }: RadioStoriesDrawerProps) {
   const ref = useOverlay<HTMLDivElement>(onClose)
@@ -93,6 +100,11 @@ function RadioStoriesDrawer({
               </li>
             ))}
           </ul>
+        )}
+        {status === 'ready' && episodes.length > 0 && hasMore && (
+          <button type="button" className={styles.loadMore} disabled={loadingMore} onClick={onLoadMore}>
+            {loadingMore ? '불러오는 중…' : '더 보기'}
+          </button>
         )}
       </div>
     </div>

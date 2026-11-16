@@ -26,6 +26,23 @@ describe('보낸 사연 보관함', () => {
     expect(trimmed.items.length).toBeGreaterThan(0)
     expect(none.items).toEqual([])
   })
+
+  it('limit만큼 잘라 주고 nextCursor로 이어서 불러온다 (기본 20개라 목 데이터 10개는 한 페이지)', async () => {
+    const { data: all } = await mockFetchRadioHistory()
+    expect(all).toMatchObject({ hasMore: false, nextCursor: null })
+
+    const { data: first } = await mockFetchRadioHistory('', { limit: 4 })
+    expect(first.items).toEqual(all.items.slice(0, 4))
+    expect(first).toMatchObject({ hasMore: true, nextCursor: '4' })
+
+    const { data: last } = await mockFetchRadioHistory('', { cursor: '8', limit: 4 })
+    expect(last.items).toEqual(all.items.slice(8))
+    expect(last).toMatchObject({ hasMore: false, nextCursor: null })
+  })
+
+  it('잘못된 cursor면 400', async () => {
+    await expect(mockFetchRadioHistory('', { cursor: 'abc' })).rejects.toMatchObject({ status: 400 })
+  })
 })
 
 // API 명세 GET /radio/episodes/{episodeId}: 생성자 본인의 사연 한 개 (방송 문구 · 임시 음성 URL)

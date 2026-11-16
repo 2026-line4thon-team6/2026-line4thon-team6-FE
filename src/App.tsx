@@ -569,9 +569,12 @@ function RadioStoriesDrawerRoute({
       episodes={stories.episodes}
       query={stories.query}
       keyword={stories.keyword}
+      hasMore={stories.hasMore}
+      loadingMore={stories.loadingMore}
       onQueryChange={stories.setQuery}
       onRetry={stories.retry}
       onSelect={onSelect}
+      onLoadMore={() => void stories.loadMore()}
       onClose={onClose}
     />
   )
@@ -848,7 +851,8 @@ interface FavoritesRouteProps {
 function FavoritesRoute({ onFavoriteChange }: FavoritesRouteProps) {
   const navigate = useNavigate()
   const goBack = useGoBack('/my')
-  const { status, places, category, selectCategory, toggleFavorite, retry } = useFavorites()
+  const { status, places, hasMore, loadingMore, category, selectCategory, toggleFavorite, loadMore, retry } =
+    useFavorites()
 
   const handleFavoriteToggle = async (placeId: string, favorite: boolean) => {
     if (await toggleFavorite(placeId, favorite)) onFavoriteChange(placeId, favorite)
@@ -859,8 +863,11 @@ function FavoritesRoute({ onFavoriteChange }: FavoritesRouteProps) {
       status={status}
       places={places}
       category={category}
+      hasMore={hasMore}
+      loadingMore={loadingMore}
       onBack={goBack}
       onRetry={retry}
+      onLoadMore={() => void loadMore()}
       onSelectCategory={selectCategory}
       onFavoriteToggle={(placeId, favorite) => void handleFavoriteToggle(placeId, favorite)}
       onPlaceClick={(placeId) => navigate(`/places/${encodeURIComponent(placeId)}`)}
@@ -870,22 +877,32 @@ function FavoritesRoute({ onFavoriteChange }: FavoritesRouteProps) {
 
 function PlaylistsRoute() {
   const goBack = useGoBack('/my')
-  const { retry, ...state } = usePlaylistLibrary()
+  const { retry, loadMore, ...state } = usePlaylistLibrary()
 
-  // TODO: 플레이리스트 상세 화면이 생기면 이동한다
-  return <PlaylistsPage {...state} onBack={goBack} onRetry={retry} onPlaylistClick={() => {}} />
+  // TODO: 저장한 플레이리스트 상세 화면이 생기면 이동한다 (GET /playlists/{id}).
+  // DJ 생성 완료 화면(PlaylistResultPage)은 생성 흐름 전용(다시 만들기 · 불러오기 상태 없음)이라 그대로 쓰지 않는다
+  return (
+    <PlaylistsPage
+      {...state}
+      onBack={goBack}
+      onRetry={retry}
+      onLoadMore={() => void loadMore()}
+      onPlaylistClick={() => {}}
+    />
+  )
 }
 
 function RadioStoriesRoute() {
   const navigate = useNavigate()
   const goBack = useGoBack('/my')
-  const { setQuery, retry, ...state } = useRadioStories()
+  const { setQuery, retry, loadMore, ...state } = useRadioStories()
 
   return (
     <RadioStoriesPage
       {...state}
       onBack={goBack}
       onRetry={retry}
+      onLoadMore={() => void loadMore()}
       onQueryChange={setQuery}
       onStoryClick={(episodeId) => navigate(`/my/stories/${encodeURIComponent(episodeId)}`)}
     />
