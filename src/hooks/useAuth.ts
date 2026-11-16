@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { hasStoredSession, logout, restoreSession } from '@/api/auth'
+import { hasStoredSession, logout, onSessionExpired, restoreSession } from '@/api/auth'
 import type { Me } from '@/types/me'
 import { createIdempotencyKey } from '@/utils/share'
 
@@ -32,6 +32,9 @@ function useAuth() {
       ignore = true
     }
   }, [needsUser])
+
+  // 쓰는 중에 리프레시 토큰까지 만료되면 로그아웃 상태로 바꿔 로그인 화면으로 보낸다 (MemberGate)
+  useEffect(() => onSessionExpired(() => setState({ status: 'signedOut', user: null })), [])
 
   // 로그인 · 가입 프로필 저장을 마쳤을 때 받은 내 계정으로 바꾼다
   const signIn = (user: Me) => setState({ status: 'signedIn', user })

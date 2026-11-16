@@ -58,6 +58,8 @@ describe('소셜 로그인 (실서버 OAuth · PKCE)', () => {
     const exchange = JSON.parse(String(fetchMock.mock.calls[1][1]?.body))
     expect(exchange).toMatchObject({ authSessionId: 'auth_01', authorizationCode: 'oauth_code', state: 'st_01' })
     expect(exchange.codeVerifier).toMatch(/^[A-Za-z0-9._~-]{43,128}$/)
+    // 서버는 Idempotency-Key(16~128자)가 없으면 코드 교환을 400으로 거절한다
+    expect(new Headers(fetchMock.mock.calls[1][1]?.headers).get('Idempotency-Key')?.length).toBeGreaterThanOrEqual(16)
     expect(result.isNewUser).toBe(true)
     expect(JSON.parse(localStorage.getItem('bbus.auth') ?? '{}')).toMatchObject({ accessToken: 'a', refreshToken: 'r' })
   })

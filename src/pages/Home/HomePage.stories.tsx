@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
-import { MOCK_CATEGORIES, MOCK_HOME, MOCK_SPOTS } from '@/mocks/home'
+import { MOCK_HOME } from '@/mocks/home'
+import { MOCK_PLACES } from '@/mocks/places'
+import type { PlaceCategory } from '@/types/place'
 import HomePage from './HomePage'
 
 const meta = {
@@ -12,8 +14,8 @@ const meta = {
   },
   args: {
     home: MOCK_HOME,
-    categories: MOCK_CATEGORIES,
-    spots: MOCK_SPOTS,
+    category: 'SEA',
+    places: MOCK_PLACES.filter((place) => place.category === 'SEA'),
     carConnected: true,
     timeOfDay: 'evening',
     onNotificationClick: fn(),
@@ -22,16 +24,19 @@ const meta = {
     onLikeToggle: fn(),
     onTabChange: fn(),
   },
-  // 하트를 누르면 실제로 토글되도록 spots를 상태로 관리
+  // 카테고리 칩 · 하트가 실제로 동작하도록 목 장소를 상태로 관리
   render: function Render(args) {
-    const [spots, setSpots] = useState(args.spots)
+    const [category, setCategory] = useState<PlaceCategory>(args.category)
+    const [places, setPlaces] = useState(MOCK_PLACES)
     return (
       <HomePage
         {...args}
-        spots={spots}
+        category={category}
+        places={args.places === null ? null : places.filter((place) => place.category === category)}
+        onCategoryChange={setCategory}
         onLikeToggle={(id, liked) => {
           args.onLikeToggle?.(id, liked)
-          setSpots((prev) => prev.map((spot) => (spot.id === id ? { ...spot, liked } : spot)))
+          setPlaces((prev) => prev.map((place) => (place.id === id ? { ...place, isFavorite: liked } : place)))
         }}
       />
     )
@@ -52,6 +57,11 @@ export const ContextUnavailable: Story = {
       context: { weather: null, temperature: null, traffic: null, recommendedTheme: null },
     },
   },
+}
+
+// 추천 장소를 불러오는 중
+export const PlacesLoading: Story = {
+  args: { places: null },
 }
 
 export const CarDisconnected: Story = {

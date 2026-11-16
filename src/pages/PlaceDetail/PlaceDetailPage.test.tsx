@@ -8,9 +8,9 @@ import PlaceDetailPage from './PlaceDetailPage'
 // 기능명세서 '4️⃣ 스마트 탐색 상세', '5️⃣ 공유하기 바텀시트', '6️⃣ 연인에게 보내기 확인 팝업' 기준
 type Props = ComponentProps<typeof PlaceDetailPage>
 
-const SHARE_URL = 'https://bunbungus.app/places/1'
-const { data: OIDO } = await mockFetchPlaceDetail('1')
-const { data: HEONHWARO } = await mockFetchPlaceDetail('2')
+const SHARE_URL = 'https://bunbungus.app/places/plc_oido'
+const { data: OIDO } = await mockFetchPlaceDetail('plc_oido')
+const { data: HEONHWARO } = await mockFetchPlaceDetail('plc_heonhwaro')
 
 function renderPage(props: Partial<Props> = {}) {
   const handlers = {

@@ -4,8 +4,8 @@ import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { logout } from '@/api/auth'
 import { prepareDrive } from '@/api/drives'
-import { MOCK_PARTNER_INVITE_CODE, mockEndSession, mockFetchMe, resetMockCouple } from '@/mocks/couples'
-import { resetMockPlaces } from '@/mocks/places'
+import { MOCK_PARTNER_INVITE_CODE, MOCK_RESTORE_INVITE_CODE, mockEndSession, mockFetchMe, resetMockCouple } from '@/mocks/couples'
+import { mockFetchFavorites, mockFetchPublicPlace, resetMockPlaces } from '@/mocks/places'
 import { resetMockCards } from '@/mocks/cards'
 import { resetMockDjPlaylists } from '@/mocks/djPlaylists'
 import { resetMockRadio } from '@/mocks/radio'
@@ -14,6 +14,7 @@ import { resetMockJobs, setMockGenerateMs } from '@/mocks/jobs'
 import { mockGetActiveDrive, resetMockDrives } from '@/mocks/drives'
 import { resetMockStamps } from '@/mocks/restAreas'
 import { resetMockRoutes } from '@/mocks/routes'
+import { resetMockNotifications } from '@/mocks/notifications'
 import { resetMockSearchHistory } from '@/mocks/search'
 import { resetMockRecordDeletions } from './mocks/records'
 import App from './App'
@@ -66,13 +67,14 @@ beforeEach(() => {
   localStorage.clear()
   sessionStorage.clear()
   resetMockCards()
+  resetMockNotifications()
 })
 
 describe('홈 ↔ 알림 화면 이동', () => {
   it('홈의 알림 버튼 → 알림 목록 → 알림을 탭하면 읽음 처리되고, 홈으로 돌아오면 새 알림 표시가 사라진다', async () => {
     const user = renderApp()
 
-    await user.click(screen.getByRole('button', { name: '알림 (새 알림 있음)' }))
+    await user.click(await screen.findByRole('button', { name: '알림 (새 알림 있음)' }))
 
     expect(screen.getByRole('heading', { level: 1, name: '알림' })).toBeInTheDocument()
     const unread = await screen.findByRole('button', { name: /민지님이 드라이브 장소를 공유했어요/ })
@@ -91,7 +93,7 @@ describe('홈 ↔ 알림 화면 이동', () => {
     // 알림 목록 → 홈: 종 아이콘의 새 알림 표시가 없다
     await user.click(screen.getByRole('button', { name: '뒤로가기' }))
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('오늘은 어디로 떠나볼까요?')
-    expect(screen.getByRole('button', { name: '알림' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: '알림' })).toBeInTheDocument()
   })
 
   it('알림 주소로 바로 들어와서 뒤로가기를 누르면 홈으로 간다', async () => {
@@ -107,7 +109,8 @@ describe('홈 · 알림 → 장소 상세 이동', () => {
   it('홈의 장소 카드를 탭하면 그 장소의 상세 화면으로 이동하고, 뒤로가면 홈으로 돌아온다', async () => {
     const user = renderApp()
 
-    await user.click(screen.getByRole('button', { name: '강릉 헌화로' }))
+    // 추천 장소는 GET /places/recommendations 로 불러온다
+    await user.click(await screen.findByRole('button', { name: '강릉 헌화로' }))
 
     expect(await screen.findByRole('heading', { level: 1, name: '강릉 헌화로' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: '뒤로가기' }))
@@ -117,7 +120,7 @@ describe('홈 · 알림 → 장소 상세 이동', () => {
 
   it('상세에서 찜하면 홈으로 돌아왔을 때 카드의 하트에도 반영된다', async () => {
     const user = renderApp()
-    await user.click(screen.getByRole('button', { name: '강릉 헌화로' }))
+    await user.click(await screen.findByRole('button', { name: '강릉 헌화로' }))
     await screen.findByRole('heading', { level: 1, name: '강릉 헌화로' })
 
     await user.click(screen.getByRole('button', { name: '좋아요' }))
@@ -129,6 +132,17 @@ describe('홈 · 알림 → 장소 상세 이동', () => {
     expect(card!.querySelector('button[aria-pressed="true"]')).not.toBeNull()
   })
 
+  it('홈 카드의 하트를 누르면 찜이 저장되어 상세 화면에도 찜으로 보인다', async () => {
+    const user = renderApp()
+    const card = (await screen.findByRole('button', { name: '강릉 헌화로' })).closest('article')!
+
+    await user.click(within(card).getByRole('button', { name: '좋아요' }))
+    await user.click(within(card).getByRole('button', { name: '강릉 헌화로' }))
+
+    await screen.findByRole('heading', { level: 1, name: '강릉 헌화로' })
+    expect(await screen.findByRole('button', { name: '좋아요 취소' })).toBeInTheDocument()
+  })
+
   it('공유받은 장소 알림을 탭하면 그 장소의 상세 화면으로 이동한다', async () => {
     const user = renderApp('/notifications')
 
@@ -137,8 +151,16 @@ describe('홈 · 알림 → 장소 상세 이동', () => {
     expect(await screen.findByRole('heading', { level: 1, name: '시흥 오이도' })).toBeInTheDocument()
   })
 
+  it('연인이 소감을 남긴 알림을 탭하면 그 카드의 기록 상세로 이동한다', async () => {
+    const user = renderApp('/notifications')
+
+    await user.click(await screen.findByRole('button', { name: /드라이브 소감을 남겼어요/ }))
+
+    expect(await screen.findByRole('button', { name: '카드 삭제' })).toBeInTheDocument()
+  })
+
   it('연인에게 보내기 → 보내기 → 전송 완료 안내까지 이어진다', async () => {
-    const user = renderApp('/places/1')
+    const user = renderApp('/places/plc_oido')
     await screen.findByRole('heading', { level: 1, name: '시흥 오이도' })
 
     await user.click(screen.getByRole('button', { name: '연인에게 보내기' }))
@@ -180,6 +202,19 @@ describe('마이 화면', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: title })).toBeInTheDocument()
     expect(await screen.findByText(text)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '뒤로가기' }))
+    expect(await screen.findByRole('button', { name: /누적 330km/ })).toBeInTheDocument()
+  })
+
+  it("'자주 묻는 질문 (FAQ)'를 누르면 FAQ 화면으로 이동해 답변을 펼쳐 볼 수 있고, 뒤로가면 마이 화면으로 돌아온다", async () => {
+    const user = renderApp('/my')
+
+    await user.click(await screen.findByRole('button', { name: '자주 묻는 질문 (FAQ)' }))
+
+    expect(screen.getByRole('heading', { level: 1, name: '자주 묻는 질문' })).toBeInTheDocument()
+    await user.click(await screen.findByRole('button', { name: '연인과 어떻게 연결하나요?' }))
+    expect(screen.getByText(/마이 화면의 프로필 카드를 눌러/)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: '뒤로가기' }))
     expect(await screen.findByRole('button', { name: /누적 330km/ })).toBeInTheDocument()
@@ -330,6 +365,23 @@ describe('연인 초대', () => {
     expect(await screen.findByRole('button', { name: /누적 0km · D\+1/ })).toBeInTheDocument()
   })
 
+  it('예전에 연결했던 연인의 코드를 입력하면 다시 연결할지 묻고, 다시 연결하면 예전 기록으로 홈에 간다', async () => {
+    const user = renderApp('/my/couple')
+    await user.click(await screen.findByRole('button', { name: /커플 연결 끊기/ }))
+    await user.click(screen.getByRole('button', { name: '연결 해제' }))
+    await user.click(await screen.findByRole('button', { name: /연인과 연결해 보세요/ }))
+    await waitFor(() => expect(screen.getByRole('button', { name: '내 코드 복사' })).toBeEnabled())
+
+    await user.type(screen.getByRole('textbox', { name: '연인의 코드를 알고 있다면?' }), MOCK_RESTORE_INVITE_CODE)
+    await user.click(screen.getByRole('button', { name: '완료' }))
+    const sheet = within(await screen.findByRole('dialog', { name: '예전에 연결했던 연인이에요' }))
+    await user.click(sheet.getByRole('button', { name: '다시 연결하기' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: /오늘은 어디로 떠나볼까요/ })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '마이' }))
+    expect(await screen.findByRole('button', { name: /누적 330km · D\+23/ })).toBeInTheDocument()
+  })
+
   it('코드를 비워 두고 완료를 누르면 연결하지 않고 홈으로 간다', async () => {
     const user = renderApp('/couple/invite')
 
@@ -343,6 +395,12 @@ describe('로그인 · 가입 (기능명세서 L1~L9)', () => {
   // 로그아웃한 기기: 목 서버는 다음 로그인을 아직 가입하지 않은 새 사용자로 응답한다
   async function signOut() {
     await logout('test-logout')
+  }
+
+  // 목 장소 id는 브랜치마다 다를 수 있어 목 저장소에서 꺼내 쓴다
+  async function firstMockPlaceId() {
+    const { data } = await mockFetchFavorites()
+    return data.items[0].id
   }
 
   it('로그인하지 않았으면 어느 주소로 들어와도 로그인 화면을 보여 준다', async () => {
@@ -418,6 +476,35 @@ describe('로그인 · 가입 (기능명세서 L1~L9)', () => {
 
     await user.click(screen.getByRole('button', { name: '이용약관 보기' }))
     expect(await screen.findByRole('heading', { level: 1, name: '이용 약관' })).toBeInTheDocument()
+  })
+
+  it('로그인하지 않았어도 장소 공유 링크를 열면 로그인 화면 대신 공개 장소 화면을 보여 준다', async () => {
+    const { data: place } = await mockFetchPublicPlace(await firstMockPlaceId())
+    await signOut()
+    const user = renderApp(`/places/${place.id}`)
+
+    expect(await screen.findByRole('heading', { level: 1, name: place.name })).toBeInTheDocument()
+    expect(screen.getByText('공유받은 드라이브 장소')).toBeInTheDocument()
+    // 로그인이 필요한 회원용 버튼은 없다
+    expect(screen.queryByRole('button', { name: '연인에게 보내기' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '붕붕어스 시작하기' }))
+    expect(await screen.findByRole('button', { name: '카카오로 3초 만에 시작하기' })).toBeInTheDocument()
+  })
+
+  it('로그인하지 않은 사용자가 없는 장소 링크를 열면 찾을 수 없다고 안내한다', async () => {
+    await signOut()
+    renderApp('/places/없는-장소')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('장소를 찾을 수 없어요.')
+  })
+
+  it('로그인한 사용자가 장소 공유 링크를 열면 기존 회원용 상세를 보여 준다', async () => {
+    const placeId = await firstMockPlaceId()
+    renderApp(`/places/${placeId}`)
+
+    expect(await screen.findByRole('button', { name: '연인에게 보내기' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '붕붕어스 시작하기' })).not.toBeInTheDocument()
   })
 
   it('기존 가입자는 로그인하면 바로 메인 홈으로 간다', async () => {
@@ -602,7 +689,7 @@ describe('드라이브 모드 진입', () => {
   })
 
   it('장소 상세의 드라이브 시작하기에서도 드라이브명 시트가 열린다', async () => {
-    const user = renderApp('/places/1')
+    const user = renderApp('/places/plc_oido')
     await screen.findByRole('heading', { level: 1, name: '시흥 오이도' })
 
     await user.click(screen.getByRole('button', { name: '드라이브 시작하기' }))
@@ -981,7 +1068,7 @@ describe('드라이브 카드 작성', () => {
     expect(pendingBanner()).toHaveTextContent('미작성 드라이브 카드 1개')
 
     // 다른 화면에 갔다가 돌아와도 팝업은 다시 뜨지 않는다
-    await user.click(screen.getByRole('button', { name: '알림 (새 알림 있음)' }))
+    await user.click(await screen.findByRole('button', { name: '알림 (새 알림 있음)' }))
     await user.click(screen.getByRole('button', { name: '뒤로가기' }))
     expect(await screen.findByRole('button', { name: /미작성 드라이브 카드 1개/ })).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -998,7 +1085,7 @@ describe('드라이브 카드 작성', () => {
     await user.click(screen.getByRole('button', { name: '저장하기' }))
 
     expect(await screen.findByRole('heading', { level: 1, name: /오늘은 어디로 떠나볼까요/ })).toBeInTheDocument()
-    expect(pendingBanner()).not.toBeInTheDocument()
+    await waitFor(() => expect(pendingBanner()).not.toBeInTheDocument())
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
@@ -1020,6 +1107,9 @@ describe('드라이브 카드 작성', () => {
 
     expect(await screen.findByText('우리의 첫 바다 드라이브')).toBeInTheDocument()
     // 소감 칸은 운전자 · 동승자 대신 닉네임으로 표시한다 (목: 나 민준=동승자, 연인 민지=운전자)
-    expect(screen.getAllByRole('group').map((group) => group.getAttribute('aria-label'))).toEqual(['민준', '민지'])
+    // 연인 닉네임은 홈 정보(GET /home)를 받은 뒤 채워진다
+    await waitFor(() =>
+      expect(screen.getAllByRole('group').map((group) => group.getAttribute('aria-label'))).toEqual(['민준', '민지']),
+    )
   })
 })

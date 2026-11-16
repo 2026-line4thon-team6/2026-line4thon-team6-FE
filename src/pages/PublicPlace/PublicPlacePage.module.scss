@@ -1,0 +1,159 @@
+// 회원용 장소 상세(PlaceDetailPage)와 같은 틀: 상단 대표 사진 + 위로 겹쳐 올라오는 본문 카드 + 하단 고정 버튼
+$gutter: 25px;
+$hero-height: 291px;
+// 하단 버튼 바에서 버튼 위 여백 + 버튼 높이
+$bottom-bar-height: 19px + 50px;
+
+.page {
+  position: relative;
+  max-width: var(--app-max-width);
+  min-height: var(--app-height);
+  margin: 0 auto;
+  overflow-x: hidden;
+  background-color: color('coral-bg');
+}
+
+.hero {
+  position: relative;
+  height: $hero-height;
+  background-color: color('gray-100');
+}
+
+.heroPhoto {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+// 사진이 없는 장소: 회색 빈칸 대신 은은한 코랄 배경
+.heroPlaceholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(160deg, color('coral-3') 0%, color('coral-2') 100%);
+}
+
+.content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: calc(var(--app-height) - #{$hero-height - 36px});
+  margin-top: -36px;
+  // 아래 여백: 하단 고정 버튼 바에 내용이 가려지지 않게 한다
+  padding: 27px $gutter calc(#{$bottom-bar-height} + max(19px, var(--safe-bottom)) + 20px);
+  border-radius: 30px 30px 0 0;
+  background-color: color('coral-bg');
+  box-shadow: 0 1px 10px rgb(0 0 0 / 10%);
+}
+
+// 공유받은 화면임을 알려 주는 작은 칩
+.badge {
+  align-self: flex-start;
+  padding: 4px 10px;
+  border-radius: 100px;
+  @include typo('body-m-15-bold');
+  color: color('coral-pressed');
+  background-color: color('coral-2');
+}
+
+.titleText {
+  min-width: 0;
+}
+
+.name {
+  @include typo('title-m-bold');
+  color: color('black');
+  word-break: keep-all;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  @include typo('body-m-medium');
+  color: color('gray-600');
+  word-break: keep-all;
+
+  img {
+    flex-shrink: 0;
+  }
+}
+
+.introduction {
+  max-width: 294px;
+  @include typo('body-s');
+  color: color('gray-600');
+  word-break: keep-all;
+}
+
+// 앱 소개. 로그인하면 쓸 수 있는 기능을 짧게 알린다
+.promo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  border-radius: 10px;
+  background-color: rgb(255 214 204 / 50%);
+}
+
+.promoTitle {
+  @include typo('body-m-15-bold');
+  color: color('black');
+}
+
+.promoText {
+  @include typo('body-s');
+  color: color('gray-600');
+  word-break: keep-all;
+}
+
+// 하단 고정 버튼 바
+.bottomBar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  z-index: 10;
+  display: flex;
+  width: 100%;
+  max-width: var(--app-max-width);
+  padding: 19px $gutter max(19px, calc(var(--safe-bottom) + 1px));
+  border-radius: 30px 30px 0 0;
+  background-color: color('white');
+  box-shadow: shadow('icon');
+  transform: translateX(-50%);
+
+  > button {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+// 불러오는 중 · 찾을 수 없음 · 오류 안내
+.message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: calc(max(var(--safe-top), 12px) + 148px) $gutter 0;
+  @include typo('body-m-15');
+  color: color('gray-600');
+  text-align: center;
+  word-break: keep-all;
+}
+
+.messageSub {
+  @include typo('body-s');
+  color: color('gray-600');
+}
+
+.textButton {
+  padding: 8px 16px;
+  @include typo('body-s-medium');
+  color: color('coral-pressed');
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}

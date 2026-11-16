@@ -1,12 +1,12 @@
 import CategoryChip from '@/components/CategoryChip/CategoryChip'
 import useDragScroll from '@/hooks/useDragScroll'
 import type { PlaceCategory, PlaceSummary } from '@/types/place'
-import ArchiveLayout from './ArchiveLayout'
+import ArchiveLayout, { type LoadMoreProps } from './ArchiveLayout'
 import FavoriteCourseCard from './FavoriteCourseCard'
 import styles from './FavoritesPage.module.scss'
 import { PLACE_CATEGORIES } from './placeCategories'
 
-interface FavoritesPageProps {
+interface FavoritesPageProps extends LoadMoreProps {
   status: 'loading' | 'ready' | 'error'
   places: PlaceSummary[]
   // 고른 카테고리 칩
@@ -28,6 +28,7 @@ function FavoritesPage({
   onSelectCategory,
   onFavoriteToggle,
   onPlaceClick,
+  ...loadMore
 }: FavoritesPageProps) {
   const categoryDrag = useDragScroll<HTMLUListElement>()
   const categoryLabel = PLACE_CATEGORIES.find(({ value }) => value === category)?.label
@@ -55,6 +56,7 @@ function FavoritesPage({
       }
       onBack={onBack}
       onRetry={onRetry}
+      {...loadMore}
     >
       <ul className={styles.list}>
         {places.map((place) => (

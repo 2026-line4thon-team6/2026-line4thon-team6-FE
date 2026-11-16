@@ -3,10 +3,10 @@ import chevronIcon from '@/assets/icons/chevron-light.svg'
 import storyIcon from '@/assets/icons/radio-story.svg'
 import searchIcon from '@/assets/icons/search-coral.svg'
 import type { RadioEpisode } from '@/types/radio'
-import ArchiveLayout from './ArchiveLayout'
+import ArchiveLayout, { type LoadMoreProps } from './ArchiveLayout'
 import styles from './RadioStoriesPage.module.scss'
 
-interface RadioStoriesPageProps {
+interface RadioStoriesPageProps extends LoadMoreProps {
   status: 'loading' | 'ready' | 'error'
   episodes: RadioEpisode[]
   // 입력 중인 검색어
@@ -29,6 +29,7 @@ function RadioStoriesPage({
   onRetry,
   onQueryChange,
   onStoryClick,
+  ...loadMore
 }: RadioStoriesPageProps) {
   return (
     <ArchiveLayout
@@ -56,6 +57,7 @@ function RadioStoriesPage({
       }
       onBack={onBack}
       onRetry={onRetry}
+      {...loadMore}
     >
       <ul className={styles.list} aria-label="보낸 사연">
         {episodes.map(({ id, story, broadcastText }) => (

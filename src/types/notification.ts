@@ -1,7 +1,12 @@
 import type { CursorPage } from './api'
 
 // API 명세의 Notification 스키마 그대로 (GET /notifications, PATCH /notifications/{id}/read)
-export type NotificationType = 'PLACE_SHARED' | 'REFLECTION_SUBMITTED' | 'COUPLE_CONNECTED' | 'COUPLE_DISCONNECTED'
+export type NotificationType =
+  | 'PLACE_SHARED'
+  | 'REFLECTION_SUBMITTED'
+  | 'CARD_COMPLETED' // 연인이 카드를 완료함
+  | 'COUPLE_CONNECTED'
+  | 'COUPLE_DISCONNECTED'
 
 // 알림을 탭했을 때 이동할 대상
 export type NotificationTargetType = 'PLACE' | 'CARD' | 'COUPLE'

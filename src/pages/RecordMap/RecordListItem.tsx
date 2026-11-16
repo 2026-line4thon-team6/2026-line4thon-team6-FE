@@ -6,6 +6,7 @@ import type { RecordSummary } from '@/types/record'
 import { formatDateParts } from '@/utils/formatDate'
 import { formatDistance, formatDriveTime } from '@/utils/formatDrive'
 import styles from './RecordListItem.module.scss'
+import RecordPhoto from '@/components/RecordPhoto/RecordPhoto'
 
 interface RecordListItemProps {
   record: RecordSummary
@@ -24,7 +25,7 @@ function RecordListItem({ record, onClick }: RecordListItemProps) {
         <span className={styles.weekday}>{weekday}</span>
       </span>
 
-      <img className={styles.photo} src={record.thumbnailUrl} alt="" />
+      <RecordPhoto className={styles.photo} src={record.thumbnailUrl} />
 
       <span className={styles.body}>
         <span className={styles.title}>{record.title}</span>
