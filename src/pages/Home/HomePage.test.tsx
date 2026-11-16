@@ -52,6 +52,12 @@ describe('상단 프로필 · 인사말', () => {
     expect(screen.getByText('D+1')).toBeInTheDocument()
   })
 
+  it('커플이 연결되지 않아 함께한 날이 없으면 D+를 숨긴다', () => {
+    renderHome({ home: { ...MOCK_HOME, daysTogether: null, couple: null } })
+
+    expect(screen.queryByText(/^D\+/)).not.toBeInTheDocument()
+  })
+
   it('인사말에 사용자 이름을 넣는다', () => {
     renderHome({ home: { ...MOCK_HOME, nickname: '지수' } })
 

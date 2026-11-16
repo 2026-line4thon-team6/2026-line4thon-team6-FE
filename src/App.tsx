@@ -21,6 +21,7 @@ import useDriveMap from '@/hooks/useDriveMap'
 import useGpsRecorder from '@/hooks/useGpsRecorder'
 import useDriveCard from '@/hooks/useDriveCard'
 import useNotifications from '@/hooks/useNotifications'
+import useHome from '@/hooks/useHome'
 import usePendingCards from '@/hooks/usePendingCards'
 import usePlaceDetail from '@/hooks/usePlaceDetail'
 import usePlaylistLibrary from '@/hooks/usePlaylistLibrary'
@@ -37,7 +38,7 @@ import useRouteRestAreas from '@/hooks/useRouteRestAreas'
 import useRouteSetting from '@/hooks/useRouteSetting'
 import useStartDrive, { type DriveLocationState } from '@/hooks/useStartDrive'
 import useTimeOfDay from '@/hooks/useTimeOfDay'
-import { MOCK_CATEGORIES, MOCK_HOME, MOCK_SPOTS } from '@/mocks/home'
+import { MOCK_CATEGORIES, MOCK_SPOTS } from '@/mocks/home'
 import FavoritesPage from '@/pages/Archive/FavoritesPage'
 import PlaylistsPage from '@/pages/Archive/PlaylistsPage'
 import RadioStoriesPage from '@/pages/Archive/RadioStoriesPage'
@@ -85,6 +86,7 @@ import {
   WelcomeStep,
 } from '@/routes/AuthRoutes'
 import { LOGIN_PATH } from '@/routes/paths'
+import type { PendingCard } from '@/types/card'
 import type { HomeSummary } from '@/types/home'
 import type { LegalDocumentType } from '@/types/legal'
 import type { Notification } from '@/types/notification'
@@ -917,6 +919,11 @@ const cardPath = (driveId: string) => `/drives/${encodeURIComponent(driveId)}/ca
 
 interface HomeRouteProps {
   home: HomeSummary
+  // GET /home 의 미작성 카드. 아직 불러오지 않았으면 null
+  pendingCards: PendingCard[] | null
+  pendingReceivedAt: number
+  // 홈에 다시 들어오면 새로 불러온다 (카드 저장 · 커플 변경 반영)
+  onEnter: () => void
   myUserId: string
   categories: Category[]
   spots: SpotSummary[]
@@ -926,9 +933,12 @@ interface HomeRouteProps {
   onLikeToggle: (id: number, liked: boolean) => void
 }
 
-// 홈에 들어올 때마다 미작성 카드를 새로 불러온다
+// 홈에 들어올 때마다 홈 데이터(미작성 카드 포함)를 새로 불러온다
 function HomeRoute({
   home,
+  pendingCards,
+  pendingReceivedAt,
+  onEnter,
   myUserId,
   categories,
   spots,
@@ -938,10 +948,14 @@ function HomeRoute({
 }: HomeRouteProps) {
   const navigate = useNavigate()
   const goTab = useTabNavigate()
-  const { summary } = usePendingCards()
+  const summary = usePendingCards(pendingCards, pendingReceivedAt)
   const drive = useStartDrive(myUserId)
   const activeDrive = useActiveDrive()
   const timeOfDay = useTimeOfDay()
+
+  // 처음 마운트 때만 부른다 (onEnter는 렌더마다 새 함수라 의존성에 넣지 않는다)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => onEnter(), [])
 
   const goCard = (driveId: string) => {
     onPendingPromptSeen()
@@ -1035,19 +1049,20 @@ function DriveCardRouteByParam(props: Omit<DriveCardRouteProps, 'driveId'>) {
   return <DriveCardRoute key={driveId} driveId={driveId} {...props} />
 }
 
-// 홈 데이터는 API 연동 전까지 목 데이터를 쓴다 (GET /home 연동 시 교체)
+// 홈 데이터(GET /home)는 로그인한 뒤 앱 전체에서 한 번 불러와 커플 · 붕붕이 이름을 여러 화면이 같이 쓴다
+// 추천 장소는 아직 목 데이터 (GET /places/recommendations 연동 시 교체)
 function App() {
   const auth = useAuth()
-  const [home, setHome] = useState(MOCK_HOME)
+  const homeData = useHome(auth.status === 'signedIn' ? auth.user : null)
+  const home = homeData.summary
   const [spots, setSpots] = useState(MOCK_SPOTS)
   const [pendingPromptSeen, setPendingPromptSeen] = useState(false)
-  // 로그인한 사용자(GET /me). 홈 데이터는 아직 목이라 실서버에선 id가 맞지 않으므로 로그인 정보를 먼저 쓴다
+  // 로그인한 사용자(GET /me)를 먼저 쓰고, 없으면 홈 응답의 내 정보를 쓴다
   const me = { id: auth.user?.id ?? home.userId, nickname: auth.user?.nickname ?? home.nickname }
   const partnerNickname = home.couple?.partnerNickname ?? null
 
-  // 알림을 읽으면 홈의 새 알림 표시도 맞춘다. API 연동 후에는 홈을 다시 조회해 반영한다
-  const handleNotificationRead = () =>
-    setHome((prev) => ({ ...prev, unreadNotificationCount: Math.max(0, prev.unreadNotificationCount - 1) }))
+  // 알림을 읽으면 홈을 다시 불러와 새 알림 표시를 맞춘다
+  const handleNotificationRead = () => void homeData.reload()
 
   const setSpotLiked = (id: number, liked: boolean) =>
     setSpots((prev) => prev.map((spot) => (spot.id === id ? { ...spot, liked } : spot)))
@@ -1082,6 +1097,9 @@ function App() {
             element={
               <HomeRoute
                 home={home}
+                pendingCards={homeData.pendingCards}
+                pendingReceivedAt={homeData.receivedAt}
+                onEnter={() => void homeData.reload()}
                 myUserId={me.id}
                 categories={MOCK_CATEGORIES}
                 spots={spots}

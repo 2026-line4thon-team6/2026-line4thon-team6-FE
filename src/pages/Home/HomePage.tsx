@@ -41,7 +41,7 @@ interface HomePageProps {
   carConnected: boolean
   // 지금 시간대. 드라이브 준비 배너의 배경 사진이 바뀐다
   timeOfDay: TimeOfDay
-  // 24시간 안에 저장하지 않은 드라이브 카드 (GET /cards/pending). 없으면 null
+  // 24시간 안에 저장하지 않은 드라이브 카드 (GET /home 의 pendingCards). 없으면 null
   pendingCard?: PendingSummary | null
   activeDrive?: boolean
   onNotificationClick?: () => void
@@ -82,7 +82,7 @@ function HomePage({
       <header className={styles.header}>
         <p className={styles.brand}>
           <span className={styles.mascot}>{mascotName}</span>
-          <span className={styles.dday}>D+{daysTogether}</span>
+          {daysTogether !== null && <span className={styles.dday}>D+{daysTogether}</span>}
         </p>
         <NotificationButton hasUnread={unreadNotificationCount > 0} onClick={onNotificationClick} />
       </header>
