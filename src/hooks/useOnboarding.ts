@@ -25,6 +25,10 @@ const ERRORS: Record<string, string> = {
   VALIDATION_FAILED: '입력한 내용을 다시 확인해 주세요.',
 }
 const FALLBACK = '저장하지 못했어요. 잠시 후 다시 시도해 주세요.'
+// 서버에 시행 중인 약관이 아직 없으면(404) 다시 시도해도 가입할 수 없다
+const LEGAL_NOT_READY = '약관이 아직 준비되지 않아 가입을 마칠 수 없어요. 잠시 후 다시 들어와 주세요.'
+
+class LegalNotReadyError extends Error {}
 
 // 가입 도중 새로고침해도 이어서 할 수 있게 탭이 열려 있는 동안 보관한다
 function loadDraft(): OnboardingDraft {
@@ -66,7 +70,12 @@ function useOnboarding() {
 
     try {
       // 동의한 약관은 현재 시행 중인 버전으로 보낸다
-      const [terms, privacy] = await Promise.all([fetchLegalDocument('TERMS'), fetchLegalDocument('PRIVACY')])
+      const [terms, privacy] = await Promise.all([fetchLegalDocument('TERMS'), fetchLegalDocument('PRIVACY')]).catch(
+        (reason: unknown) => {
+          if (reason instanceof ApiError && reason.status === 404) throw new LegalNotReadyError()
+          throw reason
+        },
+      )
       const today = todayString()
       const { data } = await completeOnboarding({
         nickname: answers.nickname.trim(),
@@ -84,7 +93,8 @@ function useOnboarding() {
       setDraft(EMPTY)
       return data
     } catch (caught) {
-      setError((caught instanceof ApiError && ERRORS[caught.code]) || FALLBACK)
+      if (caught instanceof LegalNotReadyError) setError(LEGAL_NOT_READY)
+      else setError((caught instanceof ApiError && ERRORS[caught.code]) || FALLBACK)
       return null
     } finally {
       setSubmitting(false)
