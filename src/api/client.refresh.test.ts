@@ -278,6 +278,28 @@ describe('액세스 토큰 자동 갱신', () => {
   })
 })
 
+describe('파일 받기 (fetchBlob)', () => {
+  it('음성 파일이 액세스 토큰 만료로 401이면 갱신하고 새 토큰으로 다시 받는다', async () => {
+    const audioUrl = 'https://api.test/api/v1/radio/episodes/rep_1/audio?expires=1&signature=s'
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.endsWith('/auth/refresh')) return Promise.resolve(refreshed('new_access', 'new_refresh'))
+      const token = new Headers(init?.headers).get('Authorization')
+      return Promise.resolve(token === 'Bearer new_access' ? new Response('mp3', { status: 200 }) : expired())
+    })
+    const { fetchBlob, setAccessToken } = await loadWithBackend()
+    setAccessToken('old_access')
+
+    const blob = await fetchBlob(audioUrl)
+
+    expect(await blob.text()).toBe('mp3')
+    expect(fetchMock.mock.calls.map(pathOf)).toEqual([
+      '/api/v1/radio/episodes/rep_1/audio',
+      '/api/v1/auth/refresh',
+      '/api/v1/radio/episodes/rep_1/audio',
+    ])
+  })
+})
+
 describe('목 모드에서 남은 세션', () => {
   it('실서버에서는 목 토큰(mock_)을 세션으로 보지 않고 지운다', async () => {
     localStorage.setItem('bbus.auth', JSON.stringify({ accessToken: 'mock_access_token', refreshToken: 'mock_refresh_token' }))

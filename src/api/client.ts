@@ -131,3 +131,28 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   }
   return body as ApiResponse<T>
 }
+
+// JSON이 아닌 파일(라디오 음성 등)을 토큰을 붙여 받는다. url은 서버가 준 절대 주소.
+// 액세스 토큰 만료로 401이면 apiFetch처럼 한 번 갱신하고 다시 받는다. 실패하면 ApiError를 던진다
+export async function fetchBlob(url: string): Promise<Blob> {
+  const request = (token: string | null) =>
+    fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+
+  const sentToken = accessToken
+  let response = await request(sentToken)
+  if (!response.ok && sentToken && refresher) {
+    const body = await response.clone().json().catch(() => null)
+    if (canRefresh(new URL(url).pathname.replace(/^\/api\/v1/, ''), response.status, body)) {
+      const token =
+        accessToken && accessToken !== sentToken
+          ? accessToken
+          : await refreshAccessToken(refresher, sentToken).catch(() => null)
+      if (token) response = await request(token)
+    }
+  }
+
+  if (!response.ok) {
+    throw new ApiError(response.status, await response.json().catch(() => null))
+  }
+  return response.blob()
+}

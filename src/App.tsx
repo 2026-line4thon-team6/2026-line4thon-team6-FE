@@ -30,6 +30,7 @@ import usePlaylistLibrary from '@/hooks/usePlaylistLibrary'
 import usePublicPlace from '@/hooks/usePublicPlace'
 import usePwaInstall from '@/hooks/usePwaInstall'
 import useRadioEpisode from '@/hooks/useRadioEpisode'
+import useAuthorizedAudio from '@/hooks/useAuthorizedAudio'
 import useRadioGeneration from '@/hooks/useRadioGeneration'
 import useRadioPlayer from '@/hooks/useRadioPlayer'
 import useRadioStories from '@/hooks/useRadioStories'
@@ -907,9 +908,19 @@ function RadioStoriesRoute() {
 // 라디오 사연 상세. 주소로 바로 들어왔으면 뒤로가기로 보관함에 간다
 function RadioStoryRoute({ episodeId }: { episodeId: string }) {
   const goBack = useGoBack('/my/stories')
-  const { refreshAudio, retry, ...state } = useRadioEpisode(episodeId)
+  const { refreshAudio, retry, status, episode } = useRadioEpisode(episodeId)
+  // 음성은 토큰을 붙여 미리 받은 blob URL로 재생한다 (받기 전 · 실패하면 null → 재생 버튼 비활성)
+  const audioSrc = useAuthorizedAudio(episode?.audioUrl ?? null)
 
-  return <RadioStoryPage {...state} onBack={goBack} onRetry={retry} onAudioError={refreshAudio} />
+  return (
+    <RadioStoryPage
+      status={status}
+      episode={episode && { ...episode, audioUrl: audioSrc }}
+      onBack={goBack}
+      onRetry={retry}
+      onAudioError={refreshAudio}
+    />
+  )
 }
 
 // 사연이 바뀌면 상세 화면을 새로 마운트해 이전 사연의 재생 상태가 남지 않게 한다
