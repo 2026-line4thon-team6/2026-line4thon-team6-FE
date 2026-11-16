@@ -47,7 +47,7 @@ function PhotoInput({ className, disabled, onAdd, role, children }: PhotoInputPr
   )
 }
 
-// 카드 사진 영역. 사진이 없으면 큰 추가 영역, 있으면 사진 2칸과 더보기 메뉴(사진 추가 · 순서 변경)
+// 카드 사진 영역. 사진이 없으면 큰 추가 영역, 있으면 사진 2칸과 더보기 메뉴(사진 추가 · 사진 순서 바꾸기)
 function PhotoSection({ photos, disabled, onAdd, onRemove, onSwap }: PhotoSectionProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -90,7 +90,6 @@ function PhotoSection({ photos, disabled, onAdd, onRemove, onSwap }: PhotoSectio
   }
 
   const handleSwap = () => {
-    if (!canSwap) return
     setMenuOpen(false)
     onSwap()
   }
@@ -115,16 +114,15 @@ function PhotoSection({ photos, disabled, onAdd, onRemove, onSwap }: PhotoSectio
             <PhotoInput role="menuitem" className={styles.menuItem} disabled={full} onAdd={handleAdd}>
               사진 추가하기
             </PhotoInput>
-            <hr className={styles.menuDivider} />
-            <button
-              type="button"
-              role="menuitem"
-              className={styles.menuItem}
-              aria-disabled={!canSwap || undefined}
-              onClick={handleSwap}
-            >
-              순서 변경하기
-            </button>
+            {/* 순서 바꾸기는 사진이 두 장일 때만 의미가 있어 한 장이면 메뉴에서 뺀다 */}
+            {canSwap && (
+              <>
+                <hr className={styles.menuDivider} />
+                <button type="button" role="menuitem" className={styles.menuItem} onClick={handleSwap}>
+                  사진 순서 바꾸기
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
