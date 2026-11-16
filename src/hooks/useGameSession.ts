@@ -11,6 +11,7 @@ import {
   saveGameResponse,
 } from '@/api/games'
 import { cancelJob, getJob } from '@/api/jobs'
+import type { Drive } from '@/types/drive'
 import type { GameResponseInput, GameSession, GameType } from '@/types/game'
 import { createIdempotencyKey } from '@/utils/share'
 
@@ -18,7 +19,9 @@ const SYNC_MS = 3000
 
 type Status = 'generating' | 'playing' | 'completed' | 'error'
 
-function useGameSession(driveId: string | null, type: GameType) {
+function useGameSession(drive: Pick<Drive, 'id' | 'coupleId'> | null, type: GameType) {
+  const driveId = drive?.id ?? null
+  const coupleId = drive?.coupleId ?? null
   const [status, setStatus] = useState<Status>('generating')
   const [session, setSession] = useState<GameSession | null>(null)
   const [busy, setBusy] = useState(false)
@@ -26,7 +29,7 @@ function useGameSession(driveId: string | null, type: GameType) {
   const jobRef = useRef<string | null>(null)
 
   useEffect(() => {
-    if (!driveId) return
+    if (!driveId || !coupleId) return
     let ignore = false
     let timer: ReturnType<typeof setTimeout>
 
@@ -45,7 +48,7 @@ function useGameSession(driveId: string | null, type: GameType) {
       }
     }
 
-    createGameSession({ driveId, type }, createIdempotencyKey())
+    createGameSession({ driveId, type }, { coupleId, idempotencyKey: createIdempotencyKey() })
       .then(({ data: job }) => {
         jobRef.current = job.id
         return poll(job.id)
@@ -56,7 +59,7 @@ function useGameSession(driveId: string | null, type: GameType) {
       ignore = true
       clearTimeout(timer)
     }
-  }, [driveId, type, attempt])
+  }, [driveId, coupleId, type, attempt])
 
   const sessionId = session?.id
   useEffect(() => {
@@ -77,7 +80,7 @@ function useGameSession(driveId: string | null, type: GameType) {
 
   const respond = async (input: GameResponseInput, myUserId: string) => {
     const question = session?.currentQuestion
-    if (!session || !question) return
+    if (!session || !question || !coupleId) return
     const mine = {
       authorUserId: myUserId,
       choice: input.type === 'BALANCE' ? input.choice : null,
@@ -86,7 +89,7 @@ function useGameSession(driveId: string | null, type: GameType) {
     }
     setSession({ ...session, responses: [...session.responses.filter((r) => r.authorUserId !== myUserId), mine] })
     try {
-      await saveGameResponse(session.id, question.id, input)
+      await saveGameResponse(session.id, question.id, input, { coupleId })
     } catch {
       await refresh()
     }
@@ -94,9 +97,12 @@ function useGameSession(driveId: string | null, type: GameType) {
 
   const reveal = async (kind: 'hint' | 'answer') => {
     const question = session?.currentQuestion
-    if (!session || !question) return
+    if (!session || !question || !coupleId) return
     try {
-      const { data } = await (kind === 'hint' ? revealGameHint : revealGameAnswer)(session.id, question.id)
+      const { data } = await (kind === 'hint' ? revealGameHint : revealGameAnswer)(session.id, question.id, {
+        coupleId,
+        idempotencyKey: createIdempotencyKey(),
+      })
       setSession((prev) => (prev?.currentQuestion?.id === data.id ? { ...prev, currentQuestion: data } : prev))
     } catch {
       await refresh()
@@ -105,11 +111,14 @@ function useGameSession(driveId: string | null, type: GameType) {
 
   const advance = async () => {
     const question = session?.currentQuestion
-    if (!session || !question || busy) return
+    if (!session || !question || !coupleId || busy) return
     const last = question.number >= session.questionCount
     setBusy(true)
     try {
-      const { data } = await (last ? completeGameSession : nextGameQuestion)(session.id, session.version)
+      const { data } = await (last ? completeGameSession : nextGameQuestion)(session.id, session.version, {
+        coupleId,
+        idempotencyKey: createIdempotencyKey(),
+      })
       setSession(data)
       if (data.status === 'COMPLETED') setStatus('completed')
     } catch (error) {
@@ -120,8 +129,9 @@ function useGameSession(driveId: string | null, type: GameType) {
   }
 
   const abandon = async () => {
-    if (session?.status === 'ACTIVE') {
-      await abandonGameSession(session.id, session.version).catch(() => {})
+    if (session?.status === 'ACTIVE' && coupleId) {
+      const options = { coupleId, idempotencyKey: createIdempotencyKey() }
+      await abandonGameSession(session.id, session.version, options).catch(() => {})
     } else if (jobRef.current) {
       await cancelJob(jobRef.current).catch(() => {})
     }

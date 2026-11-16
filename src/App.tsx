@@ -377,7 +377,7 @@ interface BalanceGameRouteProps {
 function BalanceGameRoute({ myUserId, myNickname, partnerNickname }: BalanceGameRouteProps) {
   const navigate = useNavigate()
   const { status: driveStatus, drive } = useDrive()
-  const game = useGameSession(drive?.id ?? null, 'BALANCE')
+  const game = useGameSession(drive, 'BALANCE')
   const responses = game.session?.responses ?? []
   const myChoice = responses.find((response) => response.authorUserId === myUserId)?.choice ?? null
   const myRole = drive?.passengerUserId === myUserId ? 'PASSENGER' : 'DRIVER'
@@ -427,7 +427,7 @@ function BalanceGameRoute({ myUserId, myNickname, partnerNickname }: BalanceGame
 function NonsenseQuizRoute({ myUserId, myNickname, partnerNickname }: BalanceGameRouteProps) {
   const navigate = useNavigate()
   const { status: driveStatus, drive } = useDrive()
-  const game = useGameSession(drive?.id ?? null, 'NONSENSE')
+  const game = useGameSession(drive, 'NONSENSE')
   const question = game.session?.currentQuestion ?? null
   // TODO: 누가 맞혔는지 저장하는 API가 명세에 없다(D07 점수 기록 없음) — 백엔드 확인 필요
   const [winner, setWinner] = useState<{ questionId: string; value: Winner } | null>(null)
@@ -466,7 +466,7 @@ function NonsenseQuizRoute({ myUserId, myNickname, partnerNickname }: BalanceGam
 function MemoryGameRoute({ myUserId, myNickname, partnerNickname }: BalanceGameRouteProps) {
   const navigate = useNavigate()
   const { status: driveStatus, drive } = useDrive()
-  const game = useGameSession(drive?.id ?? null, 'MEMORY')
+  const game = useGameSession(drive, 'MEMORY')
   const responses = game.session?.responses ?? []
   const winner =
     responses.find((response) => response.authorUserId === myUserId)?.selectedRole ??
