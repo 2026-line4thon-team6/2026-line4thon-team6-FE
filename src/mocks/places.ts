@@ -36,7 +36,7 @@ const place = (
 export const MOCK_PLACES: PlaceSummary[] = [
   place('plc_oido', '시흥 오이도', '경기 시흥시', 60, ['일몰', '해안도로'], 'SEA', true, 'oido'),
   place('plc_heonhwaro', '강릉 헌화로', '강원 강릉시', 180, ['바다', '해안도로'], 'SEA', false, 'heonhwaro'),
-  place('plc_eurwangni', '인천 을왕리 해수욕장', '인천 중구', 70, ['바다', '노을'], 'SEA', false, 'eurwangni'),
+  place('plc_eurwangni', '인천 을왕리 해수욕장', '인천 영종구', 70, ['바다', '노을'], 'SEA', false, 'eurwangni'),
   place('plc_namsan', '서울 남산 순환도로', '서울 중구', 20, ['도심드라이브', '서울'], 'NIGHT_VIEW', true, 'namsan'),
   place('plc_banpo', '서울 반포한강공원', '서울 서초구', 30, ['한강', '데이트'], 'NIGHT_VIEW', false, 'banpo'),
   place('plc_songdo', '인천 송도 센트럴파크', '인천 연수구', 60, ['야경', '도시전망'], 'NIGHT_VIEW', false, 'songdo'),
