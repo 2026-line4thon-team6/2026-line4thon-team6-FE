@@ -37,7 +37,7 @@ it('제목 · 안내 문구를 보여 주고, 뒤로가기를 누르면 돌아�
 })
 
 describe('나의 코드', () => {
-  it('내 코드를 보여 주고, 복사를 누르면 코드를 복사한다 (복사 안내 문구는 띄우지 않는다)', async () => {
+  it('내 코드를 보여 주고, 복사를 누르면 코드를 복사한 뒤 복사했다고 알려 준다', async () => {
     const { user, onCopy } = renderPage()
 
     const section = screen.getByRole('region', { name: '나의 코드' })
@@ -45,7 +45,15 @@ describe('나의 코드', () => {
 
     await user.click(within(section).getByRole('button', { name: '내 코드 복사' }))
     expect(onCopy).toHaveBeenCalledWith('23Wh8N')
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(await screen.findByRole('status')).toHaveTextContent('커플 코드가 복사되었습니다.')
+  })
+
+  it('복사하지 못하면 그렇게 안내한다', async () => {
+    const { user } = renderPage({ onCopy: vi.fn().mockRejectedValue(new Error('denied')) })
+
+    await user.click(screen.getByRole('button', { name: '내 코드 복사' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('코드를 복사하지 못했어요. 다시 시도해 주세요.')
   })
 
   it('내 코드 보내기를 누르면 공유 화면을 연다', async () => {
