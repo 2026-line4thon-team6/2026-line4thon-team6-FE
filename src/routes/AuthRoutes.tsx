@@ -12,13 +12,12 @@ import WelcomePage from '@/pages/Onboarding/WelcomePage'
 import type { ConsentType } from '@/types/auth'
 import type { Me } from '@/types/me'
 import { LOGIN_PATH, ONBOARDING_PATHS } from './paths'
+import { LOGIN_ERROR, loginErrorMessage } from '@/utils/loginError'
 
 const INVITE_PATH = '/couple/invite'
 
 // 가입 질문 중 약관 문서를 보러 갈 때의 주소 (로그인 전에도 볼 수 있는 공개 화면)
 const DOCUMENT_PATHS: Record<ConsentType, string> = { TERMS: '/my/terms', PRIVACY: '/my/privacy' }
-
-const LOGIN_ERROR = '로그인하지 못했어요. 다시 시도해 주세요.'
 
 // 로그인을 마친 뒤 갈 곳: 가입을 마쳤으면 메인 홈, 아니면 가입 질문
 const homeOf = (user: Me) => (user.onboardingCompleted ? '/' : ONBOARDING_PATHS.welcome)
@@ -68,8 +67,8 @@ export function LoginRoute({ auth }: AuthRouteProps) {
       if (!result) return
       auth.signIn(result.user)
       navigate(homeOf(result.user), { replace: true })
-    } catch {
-      setError(LOGIN_ERROR)
+    } catch (error) {
+      setError(loginErrorMessage(error))
       setStatus('idle')
     }
   }
@@ -100,7 +99,7 @@ export function OAuthCallbackRoute({ auth }: AuthRouteProps) {
         auth.signIn(result.user)
         navigate(homeOf(result.user), { replace: true })
       })
-      .catch(() => navigate(LOGIN_PATH, { replace: true, state: { error: LOGIN_ERROR } }))
+      .catch((error: unknown) => navigate(LOGIN_PATH, { replace: true, state: { error: loginErrorMessage(error) } }))
   }, [auth, navigate, params])
 
   return null

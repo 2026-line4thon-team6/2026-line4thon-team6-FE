@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchRecordMap, type FetchRecordMapParams } from '@/api/records'
 import type { RecordMapMarker } from '@/types/record'
+import { THUMBNAIL_REFRESH_MS } from '@/utils/photoRefresh'
 
 export interface RecordMapFilter {
   q?: string
@@ -56,6 +57,27 @@ function useRecordMap({ q, date }: RecordMapFilter = {}) {
       ignore = true
     }
   }, [q, date, attempt])
+
+  // 썸네일 링크가 만료되기 전에 조용히 다시 받는다 (실패하면 지금 화면을 그대로 둔다)
+  const markers = state.status === 'ready' ? state.markers : null
+  useEffect(() => {
+    if (!markers) return
+    let ignore = false
+    const filter: RecordMapFilter = {}
+    if (q) filter.q = q
+    if (date) filter.date = date
+    const timer = setTimeout(() => {
+      fetchAllMarkers(filter)
+        .then(({ markers: fresh, totalCount }) => {
+          if (!ignore) setState({ status: 'ready', markers: fresh, totalCount })
+        })
+        .catch(() => {})
+    }, THUMBNAIL_REFRESH_MS)
+    return () => {
+      ignore = true
+      clearTimeout(timer)
+    }
+  }, [markers, q, date])
 
   const retry = () => {
     setState(INITIAL)

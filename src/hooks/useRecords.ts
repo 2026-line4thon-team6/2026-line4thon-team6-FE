@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { fetchRecords, type FetchRecordsParams } from '@/api/records'
 import type { RecordSummary } from '@/types/record'
+import { THUMBNAIL_REFRESH_MS } from '@/utils/photoRefresh'
 import type { RecordMapFilter } from './useRecordMap'
 
 interface State {
@@ -62,6 +63,30 @@ function useRecords({ q, date }: RecordMapFilter = {}) {
       ignore = true
     }
   }, [q, date, attempt])
+
+  // 썸네일 링크가 만료되기 전에 지금까지 불러온 만큼(최대 100개) 한 번에 조용히 다시 받는다.
+  // 더 보기를 할 때마다 타이머가 다시 시작되며, 실패하면 지금 화면을 그대로 둔다
+  const records = state.status === 'ready' ? state.records : null
+  useEffect(() => {
+    if (!records) return
+    const id = requestId.current
+    const timer = setTimeout(() => {
+      const limit = Math.min(100, Math.max(20, records.length))
+      fetchRecords({ ...toParams({ q, date }), limit })
+        .then(({ data }) => {
+          if (id !== requestId.current) return
+          setTotalCount(data.totalCount)
+          setState((prev) => ({
+            ...prev,
+            records: data.items,
+            filteredCount: data.filteredCount,
+            nextCursor: data.hasMore ? data.nextCursor : null,
+          }))
+        })
+        .catch(() => {})
+    }, THUMBNAIL_REFRESH_MS)
+    return () => clearTimeout(timer)
+  }, [records, q, date])
 
   const retry = () => setAttempt((count) => count + 1)
 

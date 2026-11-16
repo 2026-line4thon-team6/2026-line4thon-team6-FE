@@ -183,6 +183,11 @@ export async function restoreSession(): Promise<Me | null> {
     setAccessToken(tokens.accessToken)
     return (await apiFetch<Me>('/me')).data
   } catch (error) {
+    // 계정이 없어졌으면(탈퇴 등) 저장된 세션은 쓸 수 없다
+    if (error instanceof ApiError && error.status === 404) {
+      clearTokens()
+      return null
+    }
     if (error instanceof ApiError && error.status === 401) {
       // 갱신이 일시 장애(503 · 네트워크)로 실패해 세션이 남아 있으면 지우지 않고 오류를 던진다 (다음에 다시 시도)
       if (isAccessTokenExpired(error) && hasStoredSession()) throw error

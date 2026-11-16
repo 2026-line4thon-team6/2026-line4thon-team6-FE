@@ -94,4 +94,18 @@ describe('가입 답변 모으기', () => {
     expect(result.current.draft.nickname).toBe('현우')
     expect((await mockFetchMe()).data.onboardingCompleted).toBe(false)
   })
+
+  it('서버에 약관이 아직 없으면(404) 다시 시도 대신 준비 중이라고 안내한다', async () => {
+    const legal = await import('@/api/legal')
+    const { ApiError } = await import('@/api/client')
+    vi.spyOn(legal, 'fetchLegalDocument').mockRejectedValue(new ApiError(404, null))
+    const { result } = renderHook(() => useOnboarding())
+    act(() => result.current.update({ agreed: true, nickname: '현우' }))
+
+    await act(async () => {
+      await result.current.submit('쌩쌩이')
+    })
+
+    expect(result.current.error).toBe('약관이 아직 준비되지 않아 가입을 마칠 수 없어요. 잠시 후 다시 들어와 주세요.')
+  })
 })

@@ -267,6 +267,14 @@ describe('액세스 토큰 자동 갱신', () => {
     expect(fetchMock.mock.calls.map(pathOf)).toEqual(['/api/v1/me', '/api/v1/auth/refresh'])
   })
 
+  it('앱을 열 때 계정이 없으면(/me 404, 탈퇴 등) 세션을 지우고 null을 돌려준다', async () => {
+    fetchMock.mockResolvedValue(errorOf(404, 'RESOURCE_NOT_FOUND'))
+    const { restoreSession } = await loadWithBackend()
+
+    expect(await restoreSession()).toBeNull()
+    expect(localStorage.getItem('bbus.auth')).toBeNull()
+  })
+
   it('앱을 열 때 갱신이 일시 장애로 실패하면 세션을 남겨 두고 오류를 던진다', async () => {
     fetchMock.mockImplementation((url: string) =>
       Promise.resolve(url.endsWith('/auth/refresh') ? errorOf(503, 'SERVICE_UNAVAILABLE') : expired()),
@@ -275,6 +283,28 @@ describe('액세스 토큰 자동 갱신', () => {
 
     await expect(restoreSession()).rejects.toMatchObject({ status: 401 })
     expect(localStorage.getItem('bbus.auth')).not.toBeNull()
+  })
+})
+
+describe('파일 받기 (fetchBlob)', () => {
+  it('음성 파일이 액세스 토큰 만료로 401이면 갱신하고 새 토큰으로 다시 받는다', async () => {
+    const audioUrl = 'https://api.test/api/v1/radio/episodes/rep_1/audio?expires=1&signature=s'
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.endsWith('/auth/refresh')) return Promise.resolve(refreshed('new_access', 'new_refresh'))
+      const token = new Headers(init?.headers).get('Authorization')
+      return Promise.resolve(token === 'Bearer new_access' ? new Response('mp3', { status: 200 }) : expired())
+    })
+    const { fetchBlob, setAccessToken } = await loadWithBackend()
+    setAccessToken('old_access')
+
+    const blob = await fetchBlob(audioUrl)
+
+    expect(blob.size).toBe(3)
+    expect(fetchMock.mock.calls.map(pathOf)).toEqual([
+      '/api/v1/radio/episodes/rep_1/audio',
+      '/api/v1/auth/refresh',
+      '/api/v1/radio/episodes/rep_1/audio',
+    ])
   })
 })
 
