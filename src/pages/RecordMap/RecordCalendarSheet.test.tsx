@@ -24,12 +24,12 @@ describe('RecordCalendarSheet', () => {
     expect(day('2026년 10월 28일')).toBeDisabled()
   })
 
-  it('날짜를 누르면 그 날짜를 고른다', async () => {
+  it('날짜를 누르면 그 날짜와 그날의 기록 수를 넘긴다', async () => {
     const { user, onSelect } = setup()
 
     await user.click(await screen.findByRole('button', { name: '2026년 10월 24일' }))
 
-    expect(onSelect).toHaveBeenCalledWith('2026-10-24')
+    expect(onSelect).toHaveBeenCalledWith('2026-10-24', 1)
   })
 
   it('이미 고른 날짜가 있으면 그 달을 띄우고 선택 표시를 한다', async () => {

@@ -8,7 +8,7 @@ import RecordShareSheet from './RecordShareSheet'
 const CARD = createMockRecords().find((record) => record.cardId === 'crd_02')!
 
 function setup(link: Parameters<typeof RecordShareSheet>[0]['link'] = { status: 'ready', url: 'https://bunbungus.app/cards/crd_02' }) {
-  const handlers = { onClose: vi.fn(), onCopyLink: vi.fn(), onShareChannel: vi.fn() }
+  const handlers = { onClose: vi.fn(), onCopyLink: vi.fn().mockResolvedValue(undefined), onShareChannel: vi.fn() }
   render(<RecordShareSheet card={CARD} link={link} {...handlers} />)
   return { user: userEvent.setup(), ...handlers }
 }
@@ -31,6 +31,24 @@ describe('RecordShareSheet', () => {
     await user.click(within(sheet()).getByRole('button', { name: '링크 복사' }))
 
     expect(onCopyLink).toHaveBeenCalledWith('https://bunbungus.app/cards/crd_02')
+  })
+
+  // 기능명세서 1️⃣1️⃣: 복사했는지 알 수 있게 토스트로 알린다
+  it('링크를 복사하면 복사했다고 알린다', async () => {
+    const { user } = setup()
+
+    await user.click(within(sheet()).getByRole('button', { name: '링크 복사' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('링크를 복사했어요.')
+  })
+
+  it('링크를 복사하지 못하면 다시 시도하라고 알린다', async () => {
+    const { user, onCopyLink } = setup()
+    onCopyLink.mockRejectedValue(new Error('denied'))
+
+    await user.click(within(sheet()).getByRole('button', { name: '링크 복사' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('링크를 복사하지 못했어요. 다시 시도해 주세요.')
   })
 
   it('공유 채널을 누르면 그 채널로 공유한다', async () => {

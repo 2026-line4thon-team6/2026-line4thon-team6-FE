@@ -18,7 +18,8 @@ import { resetMockNotifications } from '@/mocks/notifications'
 import { resetMockSearchHistory } from '@/mocks/search'
 import { resetMockRecordDeletions } from './mocks/records'
 import App from './App'
-import type { RecordMapMarker } from './types/record'
+import type { ApiResponse } from './types/api'
+import type { RecordCalendar, RecordMapMarker } from './types/record'
 
 vi.mock('./components/DriveMap/DriveMap', () => ({ default: () => <div data-testid="drive-map" /> }))
 
@@ -36,8 +37,21 @@ vi.mock('./pages/RecordMap/RecordMapView', async () => {
   }
 })
 
+// 목 데이터에는 같은 날짜에 기록이 여러 개인 날이 없어, 필요한 테스트에서만 달력 응답(날짜별 기록 수)을 바꿔 끼운다
+const calendarOverride = vi.hoisted(() => ({ current: null as ((month: string) => Promise<ApiResponse<RecordCalendar>>) | null }))
+vi.mock('./api/records', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./api/records')>()
+  return {
+    ...actual,
+    fetchRecordCalendar: (month: string) => calendarOverride.current?.(month) ?? actual.fetchRecordCalendar(month),
+  }
+})
+
 // 목 서버에서 지운 기록이 다른 테스트에 남지 않게 한다
-afterEach(() => resetMockRecordDeletions())
+afterEach(() => {
+  resetMockRecordDeletions()
+  calendarOverride.current = null
+})
 
 // 백엔드 주소가 없는 테스트 환경에서는 목 데이터로 응답한다
 function renderApp(path = '/') {
@@ -578,6 +592,46 @@ describe('홈 ↔ 기록 지도 이동', () => {
     expect(screen.queryByRole('button', { name: '날짜 검색 해제' })).not.toBeInTheDocument()
     vi.useRealTimers()
   })
+
+  // 기능명세서 9️⃣: 날짜를 고르면 기록 지도(날짜 필터)로 가고, 같은 날짜에 기록이 여러 개일 때만 목록형으로 나열한다
+  describe('지도형에서 날짜를 고를 때', () => {
+    async function pickOctober24(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(screen.getByRole('button', { name: '날짜로 검색' }))
+      const calendar = screen.getByRole('dialog', { name: '날짜로 기록 검색' })
+      await user.click(within(calendar).getByRole('button', { name: '이전 달' }))
+      await user.click(await within(calendar).findByRole('button', { name: '2026년 10월 24일' }))
+    }
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-11-13T03:00:00Z'))
+    })
+    afterEach(() => vi.useRealTimers())
+
+    it('그날 기록이 하나면 지도형을 그대로 둔다', async () => {
+      const user = renderApp('/map')
+      await screen.findByText('총 12번의 드라이브를 함께했어요')
+
+      await pickOctober24(user)
+
+      expect(screen.getByRole('button', { name: '지도형' })).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getByTestId('map')).toBeInTheDocument()
+    })
+
+    it('그날 기록이 여러 개면 목록형으로 바꿔 나열한다', async () => {
+      calendarOverride.current = async (month) => ({
+        data: { month, days: [{ date: '2026-10-24', count: 2 }] },
+        meta: { requestId: 'req_test', serverTime: '2026-11-13T03:00:00Z' },
+      })
+      const user = renderApp('/map')
+      await screen.findByText('총 12번의 드라이브를 함께했어요')
+
+      await pickOctober24(user)
+
+      expect(screen.getByRole('button', { name: '목록형' })).toHaveAttribute('aria-pressed', 'true')
+      expect(await screen.findByRole('list', { name: '드라이브 기록 목록' })).toBeInTheDocument()
+    })
+  })
 })
 
 describe('기록 지도 → 기록 상세', () => {
@@ -596,6 +650,60 @@ describe('기록 지도 → 기록 상세', () => {
 
     expect(await screen.findByText('총 11번의 드라이브를 함께했어요')).toBeInTheDocument()
     expect(screen.queryByText('자라섬 캠핑 드라이브')).not.toBeInTheDocument()
+  })
+
+  it('상세에서 돌아오면 보던 목록형 화면과 검색어가 그대로 남아 있다', async () => {
+    const user = renderApp('/map')
+    await screen.findByText('총 12번의 드라이브를 함께했어요')
+    await user.click(screen.getByRole('button', { name: '목록형' }))
+    await user.type(screen.getByRole('searchbox', { name: '기록 검색' }), '오이도{Enter}')
+    await waitFor(() =>
+      expect(within(screen.getByRole('list', { name: '드라이브 기록 목록' })).getAllByRole('listitem')).toHaveLength(2),
+    )
+
+    await user.click(screen.getByRole('button', { name: /오이도 노을 보러/ }))
+    await screen.findByRole('heading', { name: '2026년 11월 2일' })
+    await user.click(screen.getByRole('button', { name: '뒤로가기' }))
+
+    expect(await screen.findByRole('button', { name: '목록형' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('searchbox', { name: '기록 검색' })).toHaveValue('오이도')
+    await waitFor(() =>
+      expect(within(screen.getByRole('list', { name: '드라이브 기록 목록' })).getAllByRole('listitem')).toHaveLength(2),
+    )
+  })
+
+  it('상세에서 돌아오면 고른 날짜 검색이 그대로 남아 있다', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-11-13T03:00:00Z'))
+    const user = renderApp('/map')
+    await screen.findByText('총 12번의 드라이브를 함께했어요')
+    await user.click(screen.getByRole('button', { name: '목록형' }))
+    await user.click(screen.getByRole('button', { name: '날짜로 검색' }))
+    const calendar = screen.getByRole('dialog', { name: '날짜로 기록 검색' })
+    await user.click(within(calendar).getByRole('button', { name: '이전 달' }))
+    await user.click(await within(calendar).findByRole('button', { name: '2026년 10월 24일' }))
+
+    await user.click(await screen.findByRole('button', { name: /몽산포 해변 산책/ }))
+    await screen.findByRole('heading', { name: '2026년 10월 24일' })
+    await user.click(screen.getByRole('button', { name: '뒤로가기' }))
+
+    expect(await screen.findByRole('searchbox', { name: '기록 검색' })).toHaveValue('2026년 10월 24일')
+    await waitFor(() => {
+      const items = within(screen.getByRole('list', { name: '드라이브 기록 목록' })).getAllByRole('listitem')
+      expect(items).toHaveLength(1)
+      expect(items[0]).toHaveTextContent('몽산포 해변 산책')
+    })
+    vi.useRealTimers()
+  })
+
+  // 기능명세서 🔟: 뒤로가기는 기록 지도로 간다. 공유 링크처럼 주소로 바로 열었을 때도 홈이 아니라 기록 지도로 간다
+  it('기록 주소로 바로 들어와서 뒤로가기를 누르면 기록 지도로 간다', async () => {
+    const user = renderApp('/cards/crd_01')
+    await screen.findByRole('heading', { name: '2026년 11월 8일' })
+
+    await user.click(screen.getByRole('button', { name: '뒤로가기' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: '우리 어디까지 가봤지?' })).toBeInTheDocument()
   })
 
   it('없는 기록 주소로 들어오면 볼 수 없는 기록이라고 안내한다', async () => {
@@ -641,6 +749,7 @@ describe('기록 지도 → 기록 공유', () => {
     await user.click(within(sheet).getByRole('button', { name: '링크 복사' }))
     // userEvent가 클립보드를 대신하므로 복사된 내용을 읽어 확인한다
     expect(await navigator.clipboard.readText()).toBe('https://bunbungus.app/cards/crd_01')
+    expect(await screen.findByText('링크를 복사했어요.')).toBeInTheDocument()
   })
 })
 
@@ -1100,6 +1209,16 @@ describe('드라이브 카드 작성', () => {
     await user.click(screen.getByRole('button', { name: '나가기' }))
 
     expect(await screen.findByRole('button', { name: /미작성 드라이브 카드 1개/ })).toBeInTheDocument()
+  })
+
+  // 기능명세서 드라이브 18: 기록 지도에서도 24시간 동안 '카드 작성 이어서 하기'를 띄운다
+  it('기록 지도에도 미작성 카드 배너가 뜨고, 누르면 그 카드 작성 화면으로 간다', async () => {
+    const user = renderApp('/map')
+
+    await user.click(await screen.findByRole('button', { name: /미작성 드라이브 카드 1개/ }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: '2026년 11월 3일' })).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: '내 한 줄 소감' })).toBeInTheDocument()
   })
 
   it('카드 작성 주소로 바로 들어올 수 있다', async () => {

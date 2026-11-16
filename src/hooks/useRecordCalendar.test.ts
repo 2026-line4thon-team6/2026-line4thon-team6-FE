@@ -25,7 +25,7 @@ describe('useRecordCalendar', () => {
 
     await waitFor(() => expect(result.current.status).toBe('ready'))
     expect(fetchRecordCalendar).toHaveBeenCalledWith('2026-10')
-    expect([...result.current.recordDates]).toEqual(['2026-10-03', '2026-10-24'])
+    expect([...result.current.recordCounts.keys()]).toEqual(['2026-10-03', '2026-10-24'])
   })
 
   it('달이 바뀌면 이전 달 날짜를 비우고 새 달을 불러온다', async () => {
@@ -38,10 +38,10 @@ describe('useRecordCalendar', () => {
 
     rerender('2026-09')
     expect(result.current.status).toBe('loading')
-    expect(result.current.recordDates.size).toBe(0)
+    expect(result.current.recordCounts.size).toBe(0)
 
     await waitFor(() => expect(result.current.status).toBe('ready'))
-    expect([...result.current.recordDates]).toEqual(['2026-09-06'])
+    expect([...result.current.recordCounts.keys()]).toEqual(['2026-09-06'])
   })
 
   it('늦게 도착한 이전 달 응답은 버린다', async () => {
@@ -55,7 +55,21 @@ describe('useRecordCalendar', () => {
     await waitFor(() => expect(result.current.status).toBe('ready'))
 
     await act(async () => resolveOctober(calendar('2026-10', ['2026-10-03'])))
-    expect([...result.current.recordDates]).toEqual(['2026-09-06'])
+    expect([...result.current.recordCounts.keys()]).toEqual(['2026-09-06'])
+  })
+
+  // 기능명세서 9️⃣: 같은 날짜에 기록이 여러 개면 목록형으로 보여 주므로 날짜마다 기록 수를 함께 둔다
+  it('날짜마다 기록 수를 함께 불러온다', async () => {
+    vi.mocked(fetchRecordCalendar).mockResolvedValue({
+      ...calendar('2026-10', []),
+      data: { month: '2026-10', days: [{ date: '2026-10-03', count: 2 }, { date: '2026-10-24', count: 1 }] },
+    })
+
+    const { result } = renderHook(() => useRecordCalendar('2026-10'))
+
+    await waitFor(() => expect(result.current.status).toBe('ready'))
+    expect(result.current.recordCounts.get('2026-10-03')).toBe(2)
+    expect(result.current.recordCounts.get('2026-10-24')).toBe(1)
   })
 
   it('실패하면 오류 상태가 되고, 다시 시도할 수 있다', async () => {
@@ -70,6 +84,6 @@ describe('useRecordCalendar', () => {
     expect(result.current.status).toBe('loading')
 
     await waitFor(() => expect(result.current.status).toBe('ready'))
-    expect(result.current.recordDates.has('2026-10-03')).toBe(true)
+    expect(result.current.recordCounts.has('2026-10-03')).toBe(true)
   })
 })
