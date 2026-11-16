@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { hasStoredSession, logout, onSessionExpired, restoreSession } from '@/api/auth'
+import { loadStoredSession, logout, onSessionExpired, restoreSession } from '@/api/auth'
 import type { Me } from '@/types/me'
 import { createIdempotencyKey } from '@/utils/share'
 
@@ -12,7 +12,7 @@ interface AuthState {
 // 앱 전체의 로그인 상태. 기기에 세션이 있으면 바로 로그인 상태로 그리고, 내 계정(가입 완료 여부)은 뒤이어 불러온다
 function useAuth() {
   const [state, setState] = useState<AuthState>(() => ({
-    status: hasStoredSession() ? 'signedIn' : 'signedOut',
+    status: loadStoredSession() ? 'signedIn' : 'signedOut',
     user: null,
   }))
   const needsUser = state.status === 'signedIn' && !state.user

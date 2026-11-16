@@ -172,6 +172,16 @@ export function hasStoredSession() {
   return USE_MOCK ? mockHasSession() : readTokens() !== null
 }
 
+// 앱을 열 때 한 번 부른다. 저장된 세션이 있으면 액세스 토큰을 바로 실어 두고 true를 돌려준다.
+// React는 자식 화면의 effect(홈 · 진행 중 드라이브 조회 등)를 App의 세션 복구보다 먼저 실행하므로,
+// 토큰을 미리 실어 두지 않으면 첫 요청들이 토큰 없이 나가 401을 받는다
+export function loadStoredSession(): boolean {
+  if (USE_MOCK) return mockHasSession()
+  const tokens = readTokens()
+  if (tokens) setAccessToken(tokens.accessToken)
+  return tokens !== null
+}
+
 // 앱을 열 때 저장된 세션으로 내 계정을 불러온다. 세션이 없거나 만료됐으면 null
 // 액세스 토큰이 만료됐으면 apiFetch가 리프레시 토큰으로 갱신해 다시 불러온다
 export async function restoreSession(): Promise<Me | null> {
