@@ -267,6 +267,14 @@ describe('액세스 토큰 자동 갱신', () => {
     expect(fetchMock.mock.calls.map(pathOf)).toEqual(['/api/v1/me', '/api/v1/auth/refresh'])
   })
 
+  it('앱을 열 때 계정이 없으면(/me 404, 탈퇴 등) 세션을 지우고 null을 돌려준다', async () => {
+    fetchMock.mockResolvedValue(errorOf(404, 'RESOURCE_NOT_FOUND'))
+    const { restoreSession } = await loadWithBackend()
+
+    expect(await restoreSession()).toBeNull()
+    expect(localStorage.getItem('bbus.auth')).toBeNull()
+  })
+
   it('앱을 열 때 갱신이 일시 장애로 실패하면 세션을 남겨 두고 오류를 던진다', async () => {
     fetchMock.mockImplementation((url: string) =>
       Promise.resolve(url.endsWith('/auth/refresh') ? errorOf(503, 'SERVICE_UNAVAILABLE') : expired()),
