@@ -88,6 +88,14 @@ $bottom-bar-height: 19px + 50px;
   }
 }
 
+// 전체 주소. 위치 줄의 핀 아이콘(13.2px) + 간격(7px) 만큼 들여 글자 시작을 맞춘다
+.address {
+  padding-left: 20px;
+  @include typo('caption');
+  color: color('gray-600');
+  word-break: keep-all;
+}
+
 // 카테고리 표시 (누를 수 없는 칩)
 .category {
   display: flex;

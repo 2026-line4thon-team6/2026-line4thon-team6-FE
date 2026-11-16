@@ -4,7 +4,14 @@ import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { logout } from '@/api/auth'
 import { prepareDrive } from '@/api/drives'
-import { MOCK_PARTNER_INVITE_CODE, MOCK_RESTORE_INVITE_CODE, mockEndSession, mockFetchMe, resetMockCouple } from '@/mocks/couples'
+import {
+  MOCK_PARTNER_INVITE_CODE,
+  MOCK_RESTORE_INVITE_CODE,
+  mockDisconnectCouple,
+  mockEndSession,
+  mockFetchMe,
+  resetMockCouple,
+} from '@/mocks/couples'
 import { mockFetchFavorites, mockFetchPublicPlace, resetMockPlaces } from '@/mocks/places'
 import { resetMockCards } from '@/mocks/cards'
 import { resetMockDjPlaylists } from '@/mocks/djPlaylists'
@@ -396,10 +403,10 @@ describe('연인 초대', () => {
     expect(await screen.findByRole('button', { name: /누적 330km · D\+23/ })).toBeInTheDocument()
   })
 
-  it('코드를 비워 두고 완료를 누르면 연결하지 않고 홈으로 간다', async () => {
+  it('건너뛰기를 누르면 연결하지 않고 홈으로 간다', async () => {
     const user = renderApp('/couple/invite')
 
-    await user.click(await screen.findByRole('button', { name: '완료' }))
+    await user.click(await screen.findByRole('button', { name: '건너뛰기' }))
 
     expect(await screen.findByRole('heading', { level: 1, name: /오늘은 어디로 떠나볼까요/ })).toBeInTheDocument()
   })
@@ -455,7 +462,7 @@ describe('로그인 · 가입 (기능명세서 L1~L9)', () => {
     await user.type(await screen.findByRole('textbox', { name: '붕붕이 이름' }), '쌩쌩이')
     await user.click(screen.getByRole('button', { name: '다음' }))
 
-    // L9 연인 초대 → 코드 없이 완료(건너뛰기) → 메인 홈
+    // L9 연인 초대 → 건너뛰기 → 메인 홈
     expect(await screen.findByRole('heading', { level: 1, name: '연인 초대' })).toBeInTheDocument()
     expect((await mockFetchMe()).data).toMatchObject({
       nickname: '현우',
@@ -463,7 +470,7 @@ describe('로그인 · 가입 (기능명세서 L1~L9)', () => {
       gender: 'MALE',
       onboardingCompleted: true,
     })
-    await user.click(screen.getByRole('button', { name: '완료' }))
+    await user.click(screen.getByRole('button', { name: '건너뛰기' }))
     expect(await screen.findByRole('heading', { level: 1, name: /오늘은 어디로 떠나볼까요/ })).toBeInTheDocument()
   })
 
@@ -795,6 +802,15 @@ describe('드라이브 모드 진입', () => {
 
     expect(await screen.findByRole('button', { name: '경로 탐색' })).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('연인과 연결돼 있지 않으면 드라이브 시작하기가 연인 초대 화면으로 보낸다', async () => {
+    await mockDisconnectCouple()
+    const user = renderApp()
+
+    await user.click(await screen.findByRole('button', { name: '드라이브 시작하기' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: '연인 초대' })).toBeInTheDocument()
   })
 
   it('장소 상세의 드라이브 시작하기에서도 드라이브명 시트가 열린다', async () => {

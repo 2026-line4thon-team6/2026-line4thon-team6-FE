@@ -114,14 +114,25 @@ describe('연인 코드 입력 · 완료', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
-  it('코드를 비워 두고 완료를 누르면 연결하지 않고 넘어간다 (건너뛰기)', async () => {
+  it('건너뛰기를 누르면 연결하지 않고 넘어간다', async () => {
     const { user, onConnect, onSkip } = renderPage()
 
-    await user.type(screen.getByRole('textbox', { name: '연인의 코드를 알고 있다면?' }), '   ')
-    await user.click(screen.getByRole('button', { name: '완료' }))
+    await user.click(screen.getByRole('button', { name: '건너뛰기' }))
 
     expect(onConnect).not.toHaveBeenCalled()
     expect(onSkip).toHaveBeenCalled()
+  })
+
+  it('코드를 비워 두면 완료 버튼을 막는다 (건너뛰기는 따로 있다)', async () => {
+    const { user, onConnect, onSkip } = renderPage()
+    const input = screen.getByRole('textbox', { name: '연인의 코드를 알고 있다면?' })
+
+    expect(screen.getByRole('button', { name: '완료' })).toBeDisabled()
+
+    await user.type(input, '   {Enter}')
+    expect(screen.getByRole('button', { name: '완료' })).toBeDisabled()
+    expect(onConnect).not.toHaveBeenCalled()
+    expect(onSkip).not.toHaveBeenCalled()
   })
 
   it('연결하는 동안에는 완료 버튼을 막는다', async () => {
@@ -182,4 +193,12 @@ it('이미 연인과 연결돼 있으면 코드 대신 안내를 보여 준다',
 
   expect(screen.getByText('이미 연인과 연결되어 있어요.')).toBeInTheDocument()
   expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+})
+
+it('이미 연결돼 있으면 건너뛰기 없이 완료로 바로 넘어간다', async () => {
+  const { user, onSkip } = renderPage({ status: 'linked', code: null })
+
+  expect(screen.queryByRole('button', { name: '건너뛰기' })).not.toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: '완료' }))
+  expect(onSkip).toHaveBeenCalled()
 })

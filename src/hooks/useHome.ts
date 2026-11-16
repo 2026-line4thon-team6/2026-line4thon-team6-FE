@@ -14,6 +14,8 @@ function useHome(user: Pick<Me, 'id' | 'nickname'> | null) {
   // 응답을 받은 기기 시각. 미작성 카드의 남은 시간을 이 시각부터 센다
   const [receivedAt, setReceivedAt] = useState(0)
   const coordinate = useRef<Coordinate | null>(null)
+  // 위치 권한을 막아 날씨 · 교통을 채우지 못했는지 (홈에서 설정 안내를 띄운다)
+  const [locationDenied, setLocationDenied] = useState(false)
   const latestRequest = useRef(0)
   const userId = user?.id ?? null
 
@@ -35,7 +37,9 @@ function useHome(user: Pick<Me, 'id' | 'nickname'> | null) {
     let ignore = false
     void reload()
     if (!coordinate.current) {
-      void getCurrentCoordinate().then((found) => {
+      void getCurrentCoordinate(() => {
+        if (!ignore) setLocationDenied(true)
+      }).then((found) => {
         if (ignore || !found) return
         coordinate.current = found
         void reload()
@@ -54,6 +58,7 @@ function useHome(user: Pick<Me, 'id' | 'nickname'> | null) {
     pendingCards: response?.pendingCards ?? null,
     receivedAt,
     activeDriveId: response?.activeDriveId ?? null,
+    locationDenied,
     reload,
   }
 }

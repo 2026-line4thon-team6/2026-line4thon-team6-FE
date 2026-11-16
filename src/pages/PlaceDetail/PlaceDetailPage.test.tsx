@@ -41,6 +41,19 @@ describe('장소 정보', () => {
     expect(screen.getByText(/붉은 등대와 아름다운 노을이 어우러진/)).toBeInTheDocument()
   })
 
+  it('도로명 주소가 있으면 위치 아래에 전체 주소를 표시한다', () => {
+    renderPage({ detail: { ...OIDO, place: { ...OIDO.place, address: '경기 시흥시 정왕동 오이도로 175' } } })
+
+    expect(screen.getByText('경기 시흥시 · 약 1시간')).toBeInTheDocument()
+    expect(screen.getByText('경기 시흥시 정왕동 오이도로 175')).toBeInTheDocument()
+  })
+
+  it('주소가 지역과 같거나 비어 있으면 주소 줄을 따로 두지 않는다', () => {
+    renderPage({ detail: { ...OIDO, place: { ...OIDO.place, address: '' } } })
+
+    expect(screen.getAllByText(/경기 시흥시/)).toHaveLength(1)
+  })
+
   it('드라이브 정보 요약 4가지를 표시한다', () => {
     renderPage()
 
@@ -61,7 +74,9 @@ describe('장소 정보', () => {
       expect(item).toHaveTextContent('--')
     }
     expect(screen.getByText('강원 강릉시 · --')).toBeInTheDocument()
-    expect(screen.getByText('위치 권한을 허용하면 경로를 볼 수 있어요.')).toBeInTheDocument()
+    // 서버가 경로를 주지 않는 이유는 위치 권한만이 아니라서 권한 탓을 하지 않는다
+    expect(screen.getByText('경로 미리보기를 준비 중이에요.')).toBeInTheDocument()
+    expect(screen.queryByText(/위치 권한/)).not.toBeInTheDocument()
     expect(screen.queryByText('출발지')).not.toBeInTheDocument()
   })
 

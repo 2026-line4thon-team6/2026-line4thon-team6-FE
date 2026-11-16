@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as homeApi from '@/api/home'
 import { MOCK_CARD_DRIVE_ID, resetMockCards } from '@/mocks/cards'
 import { MOCK_ME, mockDisconnectCouple, resetMockCouple } from '@/mocks/couples'
+import * as location from '@/utils/location'
 import useHome from './useHome'
 
 beforeEach(() => {
@@ -33,6 +34,25 @@ describe('useHome', () => {
     await waitFor(() => expect(spy).toHaveBeenCalledTimes(2))
     expect(spy.mock.calls[0][0]).toBeUndefined()
     expect(spy.mock.calls[1][0]).toMatchObject({ latitude: expect.any(Number), longitude: expect.any(Number) })
+  })
+
+  it('위치 권한이 막혀 있으면 locationDenied로 알리고, 위치 없이 그대로 보여 준다', async () => {
+    const spy = vi.spyOn(homeApi, 'fetchHome')
+    vi.spyOn(location, 'getCurrentCoordinate').mockImplementation((onDenied) => {
+      onDenied?.()
+      return Promise.resolve(null)
+    })
+    const { result } = renderHook(() => useHome(MOCK_ME))
+
+    await waitFor(() => expect(result.current.locationDenied).toBe(true))
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+
+  it('위치를 얻으면 locationDenied는 false다', async () => {
+    const { result } = renderHook(() => useHome(MOCK_ME))
+
+    await waitFor(() => expect(result.current.summary.daysTogether).toBe(23))
+    expect(result.current.locationDenied).toBe(false)
   })
 
   it('reload하면 바뀐 상태(커플 연결 해제 등)를 다시 받아 온다', async () => {

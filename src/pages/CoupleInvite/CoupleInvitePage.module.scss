@@ -167,8 +167,16 @@ input.box {
   color: color('coral-pressed');
 }
 
-// 완료 버튼은 화면 맨 아래 (Figma 340 x 48, 홈 인디케이터 위)
+// 건너뛰기 · 완료 버튼은 화면 맨 아래 (Figma 340 x 48, 홈 인디케이터 위)
 .footer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   margin-top: auto;
   padding: 0 $gutter max(var(--safe-bottom), 24px);
+}
+
+// Figma 버튼 874:10439. 기본은 secondary(코랄2 배경 · 코랄pressed 글자)와 같고, 눌렀을 때만 코랄stroke 배경
+.skip:active:not(:disabled) {
+  background-color: color('coral-stroke');
 }
