@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MOCK_CARD_DRIVE_ID, MOCK_ME_ID, mockFetchDriveCard, mockSaveCardDraft, resetMockCards } from '@/mocks/cards'
 import * as cardsApi from '@/api/cards'
 import useDriveCard from './useDriveCard'
@@ -14,6 +14,11 @@ async function renderReady(driveId = MOCK_CARD_DRIVE_ID) {
 
 beforeEach(() => {
   resetMockCards()
+})
+
+afterEach(() => {
+  vi.useRealTimers()
+  vi.restoreAllMocks()
 })
 
 describe('불러오기', () => {
@@ -142,6 +147,117 @@ describe('저장', () => {
     const { data } = await mockFetchDriveCard(MOCK_CARD_DRIVE_ID)
     expect(data.status).toBe('DRAFT')
     expect(data.reflections[0]).toMatchObject({ text: '쓰다 만 소감', submitted: false })
+  })
+})
+
+// 기능명세 18: 사진 · 소감은 자동 임시저장된다 (새로고침 · 앱 종료 · 브라우저 뒤로가기에도 남는다)
+describe('소감 자동 임시저장', () => {
+  const savedMine = async () => {
+    const { data } = await mockFetchDriveCard(MOCK_CARD_DRIVE_ID)
+    return data.reflections.find((reflection) => reflection.author.id === MOCK_ME_ID) ?? null
+  }
+
+  it('입력을 멈추고 잠시 지나면 쓰던 소감을 초안으로 저장한다', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const { result } = await renderReady()
+
+    act(() => result.current.setMyText('쓰다'))
+    await act(() => vi.advanceTimersByTimeAsync(1000))
+    act(() => result.current.setMyText('쓰다 만 소감'))
+    await act(() => vi.advanceTimersByTimeAsync(1000))
+    expect(await savedMine()).toBeNull()
+
+    await act(() => vi.advanceTimersByTimeAsync(1000))
+    expect(await savedMine()).toMatchObject({ text: '쓰다 만 소감', submitted: false })
+  })
+
+  it('이어서 고치면 저장된 버전으로 다시 저장한다', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const { result } = await renderReady()
+
+    act(() => result.current.setMyText('첫 문장'))
+    await act(() => vi.advanceTimersByTimeAsync(2000))
+    act(() => result.current.setMyText('고친 문장'))
+    await act(() => vi.advanceTimersByTimeAsync(2000))
+
+    expect(await savedMine()).toMatchObject({ text: '고친 문장', version: 2 })
+    expect(result.current.error).toBeNull()
+  })
+
+  it('앱이 가려지거나(탭 전환 · 앱 종료) 페이지를 떠나면 기다리지 않고 바로 저장한다', async () => {
+    const { result } = await renderReady()
+
+    act(() => result.current.setMyText('가려지기 직전'))
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' })
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' })
+    await waitFor(async () => expect(await savedMine()).toMatchObject({ text: '가려지기 직전' }))
+
+    act(() => result.current.setMyText('새로고침 직전'))
+    act(() => {
+      window.dispatchEvent(new Event('pagehide'))
+    })
+    await waitFor(async () => expect(await savedMine()).toMatchObject({ text: '새로고침 직전' }))
+  })
+
+  it('화면이 사라지면(브라우저 뒤로가기) 쓰던 소감을 저장한다', async () => {
+    const { result, unmount } = await renderReady()
+
+    act(() => result.current.setMyText('뒤로가기 직전'))
+    unmount()
+
+    await waitFor(async () => expect(await savedMine()).toMatchObject({ text: '뒤로가기 직전', submitted: false }))
+  })
+
+  it('마지막으로 저장한 내용과 같으면 다시 보내지 않는다', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const { result } = await renderReady()
+    const put = vi.spyOn(cardsApi, 'saveMyReflection')
+
+    act(() => result.current.setMyText('그대로'))
+    await act(() => vi.advanceTimersByTimeAsync(2000))
+    act(() => result.current.setMyText('그대로 '))
+    await act(() => vi.advanceTimersByTimeAsync(2000))
+    act(() => {
+      window.dispatchEvent(new Event('pagehide'))
+    })
+    await act(() => result.current.saveDraft())
+
+    expect(put).toHaveBeenCalledTimes(1)
+  })
+
+  it('고칠 수 없는 카드면 저장하지 않는다', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const { data } = await mockFetchDriveCard(MOCK_CARD_DRIVE_ID)
+    vi.spyOn(cardsApi, 'fetchDriveCard').mockResolvedValue({
+      data: { ...data, canEdit: false },
+      meta: { requestId: 'r', serverTime: '' },
+    })
+    const put = vi.spyOn(cardsApi, 'saveMyReflection')
+    const { result } = await renderReady()
+
+    act(() => result.current.setMyText('못 쓰는 카드'))
+    await act(() => vi.advanceTimersByTimeAsync(2000))
+
+    expect(put).not.toHaveBeenCalled()
+  })
+
+  it('자동 저장 중에 저장하기를 눌러도 버전이 꼬이지 않고 저장된다', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const { result } = await renderReady()
+
+    act(() => result.current.setMyText('바로 저장'))
+    await act(() => vi.advanceTimersByTimeAsync(1500))
+    let saved = false
+    await act(async () => {
+      saved = await result.current.save()
+    })
+
+    expect(saved).toBe(true)
+    expect(result.current.error).toBeNull()
+    expect(await savedMine()).toMatchObject({ text: '바로 저장', submitted: true })
   })
 })
 
