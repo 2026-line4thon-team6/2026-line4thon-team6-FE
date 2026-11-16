@@ -34,6 +34,7 @@ const meta = {
     myText: '',
     partnerText: null,
     canSave: false,
+    hasUnsavedChanges: false,
     busy: false,
     error: null,
     onMyTextChange: fn(),

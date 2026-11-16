@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import {
   completeCard,
   discardUploadedPhoto,
@@ -17,6 +17,8 @@ export const MAX_PHOTOS = 2
 export const MAX_REFLECTION_LENGTH = 70
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024
 export const PHOTO_ACCEPT = ['image/jpeg', 'image/png', 'image/webp']
+// 입력을 멈추고 이만큼 지나면 쓰던 소감을 초안으로 저장한다 (글자마다 요청하지 않게)
+export const REFLECTION_AUTOSAVE_DELAY = 1500
 
 const MESSAGES = {
   tooMany: '사진은 2장까지 넣을 수 있어요.',
@@ -38,6 +40,9 @@ interface State {
 const findMine = (card: Card | null, userId: string) =>
   card?.reflections.find((reflection) => reflection.author.id === userId) ?? null
 
+// 서버가 준 canEdit은 불러온 시점 기준이라, 화면을 연 채 24시간이 지났는지도 함께 본다
+export const isCardEditable = (card: Card, now = Date.now()) => card.canEdit && now < Date.parse(card.editableUntil)
+
 // 드라이브 카드 작성 화면의 데이터와 동작 (불러오기 · 사진 추가/삭제/순서 변경 · 소감 · 저장)
 // 드라이브가 바뀌면 부모에서 key={driveId}로 새로 마운트한다
 function useDriveCard(driveId: string, myUserId: string) {
@@ -49,6 +54,12 @@ function useDriveCard(driveId: string, myUserId: string) {
   // 연속된 요청에서 최신 버전을 쓰기 위해 화면 상태와 별도로 들고 있는다
   const cardRef = useRef<Card | null>(null)
   const completeKey = useRef<string | null>(null)
+  // 타이머 · 화면 이탈 이벤트에서 지금 입력된 소감을 읽기 위해 들고 있는다
+  const textRef = useRef('')
+  // 진행 중인 소감 초안 저장. 소감 버전이 꼬이지 않게 다음 저장은 앞의 저장이 끝난 뒤에 보낸다
+  const draftTask = useRef<Promise<void>>(Promise.resolve())
+  // 저장하기가 소감을 제출하는 동안에는 초안 저장을 보내지 않는다 (같은 버전으로 겹쳐 충돌하지 않게)
+  const submitting = useRef(false)
 
   const setCard = (card: Card) => {
     cardRef.current = card
@@ -63,7 +74,8 @@ function useDriveCard(driveId: string, myUserId: string) {
         if (ignore) return
         cardRef.current = data
         setState({ status: 'ready', card: data })
-        setMyTextState(findMine(data, myUserId)?.text ?? '')
+        textRef.current = findMine(data, myUserId)?.text ?? ''
+        setMyTextState(textRef.current)
       })
       .catch((reason: unknown) => {
         if (ignore) return
@@ -204,24 +216,83 @@ function useDriveCard(driveId: string, myUserId: string) {
     })
   }
 
-  const setMyText = (text: string) => setMyTextState(text.slice(0, MAX_REFLECTION_LENGTH))
+  const setMyText = (text: string) => {
+    const next = text.slice(0, MAX_REFLECTION_LENGTH)
+    textRef.current = next
+    setMyTextState(next)
+  }
 
-  const putMyReflection = async (card: Card, submitted: boolean) => {
+  const putMyReflection = async (card: Card, submitted: boolean, text = textRef.current.trim()) => {
     const mine = findMine(card, myUserId)
     const { data } = await saveMyReflection(
       card.id,
-      { text: myText.trim(), submitted, expectedVersion: mine?.version ?? 0 },
+      { text, submitted, expectedVersion: mine?.version ?? 0 },
       { coupleId: card.coupleId },
     )
-    const reflections: Reflection[] = [...card.reflections.filter((item) => item.author.id !== myUserId), data]
-    const next: Card = { ...card, status: card.status === 'UNWRITTEN' ? 'DRAFT' : card.status, reflections }
+    // 기다리는 사이 사진 저장 등으로 카드가 바뀌었을 수 있어, 응답이 온 시점의 카드에 내 소감만 바꿔 넣는다
+    const latest = cardRef.current ?? card
+    const reflections: Reflection[] = [...latest.reflections.filter((item) => item.author.id !== myUserId), data]
+    const next: Card = { ...latest, status: latest.status === 'UNWRITTEN' ? 'DRAFT' : latest.status, reflections }
     setCard(next)
     return next
   }
 
+  // 쓰던 소감을 나만 보이는 초안으로 저장한다. 이미 제출한 소감은 초안으로 되돌릴 수 없어 건너뛴다.
+  // 마지막으로 저장한 내용과 같거나 고칠 수 없는 카드면 보내지 않는다. 실패해도 쓰는 것을 막지 않는다
+  const saveTextDraft = async () => {
+    const card = cardRef.current
+    if (!card || submitting.current || !isCardEditable(card)) return
+    const mine = findMine(card, myUserId)
+    const text = textRef.current.trim()
+    if (mine?.submitted || text === (mine?.text ?? '')) return
+    try {
+      await putMyReflection(card, false, text)
+    } catch (reason) {
+      if (reason instanceof ApiError && reason.code === 'VERSION_CONFLICT') {
+        // 다른 기기에서 내 소감이 바뀌었다. 최신 버전을 받아 두고 알린다 (입력 중인 글은 그대로 둔다)
+        const { data } = await fetchDriveCard(driveId).catch(() => ({ data: card }))
+        setCard(data)
+        setError(MESSAGES.conflict)
+      } else if (reason instanceof ApiError && reason.status === 410) {
+        setError(MESSAGES.expired)
+      }
+    }
+  }
+
+  const flushDraft = () => {
+    draftTask.current = draftTask.current.then(saveTextDraft)
+    return draftTask.current
+  }
+
+  // 입력을 멈추면 잠시 뒤 초안으로 저장한다
+  const autosave = useEffectEvent(() => void flushDraft())
+  useEffect(() => {
+    const card = cardRef.current
+    if (!card || myText.trim() === (findMine(card, myUserId)?.text ?? '')) return
+    const timer = setTimeout(autosave, REFLECTION_AUTOSAVE_DELAY)
+    return () => clearTimeout(timer)
+  }, [myText, myUserId])
+
+  // 새로고침 · 앱 종료 · 탭 전환 · 브라우저 뒤로가기로 화면을 떠날 때는 기다리지 않고 바로 저장한다
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') autosave()
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    window.addEventListener('pagehide', autosave)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility)
+      window.removeEventListener('pagehide', autosave)
+      autosave()
+    }
+  }, [])
+
   // 내 소감을 제출하고 카드를 완료한다. 성공하면 true
-  const save = () => {
+  const save = async () => {
     setError(null)
+    // 보내던 초안 저장이 끝나 소감 버전이 맞춰진 뒤에 제출한다
+    await draftTask.current
+    submitting.current = true
     return run(async (card) => {
       let current = card
       const mine = findMine(card, myUserId)
@@ -237,16 +308,26 @@ function useDriveCard(driveId: string, myUserId: string) {
       })
       completeKey.current = null
       setCard(data)
+    }).finally(() => {
+      submitting.current = false
     })
   }
 
-  // 화면을 나갈 때 쓰던 소감을 나만 보이는 초안으로 남긴다. 실패해도 나가는 것을 막지 않는다
-  const saveDraft = async () => {
-    const card = cardRef.current
-    if (!card || card.status === 'COMPLETED') return
-    const mine = findMine(card, myUserId)
-    if (mine?.submitted || myText.trim() === (mine?.text ?? '')) return
-    await putMyReflection(card, false).catch(() => undefined)
+  // 화면을 나갈 때(작성 중단 팝업의 '나가기') 쓰던 소감을 남긴다. 실패해도 나가는 것을 막지 않는다.
+  // 아직 저장 전인 카드는 나만 보이는 초안으로, 저장을 마친 카드는 저장하기처럼 연인에게 보이는 소감으로 제출한다.
+  // (서버는 제출한 소감을 초안으로 되돌리지 못하게 하고, 초안으로 두면 완료된 카드에서는 연인에게 끝내 보이지 않는다)
+  const saveDraft = () => {
+    draftTask.current = draftTask.current.then(async () => {
+      const card = cardRef.current
+      const text = textRef.current.trim()
+      // 빈 소감은 제출할 수 없어 초안 규칙을 따른다 (이미 제출한 소감이면 그대로 둔다)
+      if (card?.status !== 'COMPLETED' || !text) return saveTextDraft()
+      if (submitting.current || !isCardEditable(card)) return
+      const mine = findMine(card, myUserId)
+      if (mine?.submitted && mine.text === text) return
+      await putMyReflection(card, true, text).catch(() => undefined)
+    })
+    return draftTask.current
   }
 
   const card = state.card
@@ -257,6 +338,14 @@ function useDriveCard(driveId: string, myUserId: string) {
       ? 'DRIVER'
       : 'PASSENGER'
     : null
+  const mine = findMine(card, myUserId)
+  const trimmed = myText.trim()
+  // 아직 서버에 남기지 못한 소감이 있는지. 저장을 마친 카드는 연인에게 보이는 소감과 다르면 남지 않은 것으로 본다
+  const hasUnsavedChanges =
+    !!card &&
+    (card.status === 'COMPLETED'
+      ? trimmed.length > 0 && (!mine?.submitted || mine.text !== trimmed)
+      : trimmed !== (mine?.text ?? ''))
   const canSave =
     !!card && card.canEdit && ((card.photos.length ?? 0) > 0 || myText.trim().length > 0 || partnerText !== null)
 
@@ -267,6 +356,7 @@ function useDriveCard(driveId: string, myUserId: string) {
     partnerText,
     myRole,
     canSave,
+    hasUnsavedChanges,
     busy,
     error,
     retry,

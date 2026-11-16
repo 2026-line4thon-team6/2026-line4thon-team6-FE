@@ -43,6 +43,7 @@ function renderPage(props: Partial<Props> = {}) {
       myText=""
       partnerText={null}
       canSave={false}
+      hasUnsavedChanges={false}
       busy={false}
       error={null}
       {...handlers}
@@ -71,7 +72,7 @@ describe('드라이브 정보', () => {
     expect(stamps).toHaveTextContent('휴게소 도장2개')
   })
 
-  it('함께 들었던 플레이리스트의 제목 · 곡 수 · 재생 시간을 표시하고, 없으면 영역을 숨긴다', () => {
+  it('함께 들었던 플레이리스트의 제목 · 곡 수 · 재생 시간을 표시한다', () => {
     renderPage()
 
     const playlist = screen.getByRole('region', { name: '함께 들었던 플레이리스트' })
@@ -79,10 +80,12 @@ describe('드라이브 정보', () => {
     expect(playlist).toHaveTextContent('총 13곡 · 약 54분')
   })
 
-  it('플레이리스트가 없으면 영역을 숨긴다', () => {
+  it("플레이리스트를 안 썼으면 같은 자리에 제목 '- -'만 보여 준다", () => {
     renderPage({ card: { ...EMPTY_CARD, playlist: null } })
 
-    expect(screen.queryByRole('region', { name: '함께 들었던 플레이리스트' })).not.toBeInTheDocument()
+    const playlist = screen.getByRole('region', { name: '함께 들었던 플레이리스트' })
+    expect(within(playlist).getByText('- -')).toBeInTheDocument()
+    expect(playlist).not.toHaveTextContent(/총 \d+곡/)
   })
 })
 
@@ -116,24 +119,25 @@ describe('사진', () => {
     expect(onRemovePhoto).toHaveBeenCalledWith('med_2')
   })
 
-  it('더보기 메뉴: 2장이면 사진 추가는 막고 순서 변경을 할 수 있다', async () => {
+  it('더보기 메뉴: 2장이면 사진 추가는 막고 사진 순서를 바꿀 수 있다', async () => {
     const { user, onSwapPhotos } = renderPage({ card: withPhotos(2) })
 
     await user.click(screen.getByRole('button', { name: '사진 메뉴' }))
     const menu = within(screen.getByRole('menu'))
     expect(menu.getByRole('menuitem', { name: '사진 추가하기' })).toHaveAttribute('aria-disabled', 'true')
 
-    await user.click(menu.getByRole('menuitem', { name: '순서 변경하기' }))
+    await user.click(menu.getByRole('menuitem', { name: '사진 순서 바꾸기' }))
     expect(onSwapPhotos).toHaveBeenCalled()
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
-  it('더보기 메뉴: 1장이면 순서 변경은 막고 사진을 더 추가할 수 있다', async () => {
+  it('더보기 메뉴: 1장이면 사진 추가하기만 보이고 사진을 더 추가할 수 있다', async () => {
     const { user, onAddPhotos } = renderPage({ card: withPhotos(1) })
 
     await user.click(screen.getByRole('button', { name: '사진 메뉴' }))
     const menu = within(screen.getByRole('menu'))
-    expect(menu.getByRole('menuitem', { name: '순서 변경하기' })).toHaveAttribute('aria-disabled', 'true')
+    expect(menu.getAllByRole('menuitem')).toHaveLength(1)
+    expect(menu.queryByRole('menuitem', { name: '사진 순서 바꾸기' })).not.toBeInTheDocument()
 
     const file = new File(['b'], 'b.png', { type: 'image/png' })
     await user.upload(menu.getByLabelText('사진 추가하기'), file)
@@ -248,8 +252,38 @@ describe('뒤로가기 · 작성 중단 팝업', () => {
     expect(onLeave).not.toHaveBeenCalled()
   })
 
-  it('이미 저장한 카드는 묻지 않고 나간다', async () => {
+  it('이미 저장한 카드는 고친 내용이 없으면 묻지 않고 나간다', async () => {
     const { user, onLeave } = renderPage({ card: { ...EMPTY_CARD, status: 'COMPLETED' } })
+
+    await user.click(screen.getByRole('button', { name: '뒤로가기' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(onLeave).toHaveBeenCalled()
+  })
+
+  it('이미 저장한 카드라도 고치고 저장하지 않은 내용이 있으면 묻는다', async () => {
+    const { user, onLeave } = renderPage({ card: { ...EMPTY_CARD, status: 'COMPLETED' }, hasUnsavedChanges: true })
+
+    await user.click(screen.getByRole('button', { name: '뒤로가기' }))
+    expect(screen.getByRole('dialog', { name: '작성을 마치시겠습니까?' })).toBeInTheDocument()
+    expect(onLeave).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: '나가기' }))
+    expect(onLeave).toHaveBeenCalled()
+  })
+
+  it('고칠 수 없는 카드는 묻지 않고 나간다', async () => {
+    const { user, onLeave } = renderPage({ card: { ...EMPTY_CARD, status: 'DRAFT', canEdit: false } })
+
+    await user.click(screen.getByRole('button', { name: '뒤로가기' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(onLeave).toHaveBeenCalled()
+  })
+
+  it('화면을 연 채 24시간이 지나면 더 이상 묻지 않고 나간다', async () => {
+    const expired = { ...EMPTY_CARD, status: 'DRAFT' as const, editableUntil: new Date(Date.now() - 1000).toISOString() }
+    const { user, onLeave } = renderPage({ card: expired, hasUnsavedChanges: true })
 
     await user.click(screen.getByRole('button', { name: '뒤로가기' }))
 
