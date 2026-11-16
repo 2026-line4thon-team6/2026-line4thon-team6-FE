@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router'
 import { fetchCardShare } from '@/api/cards'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
@@ -34,6 +34,7 @@ import useRadioGeneration from '@/hooks/useRadioGeneration'
 import useRadioPlayer from '@/hooks/useRadioPlayer'
 import useRadioStories from '@/hooks/useRadioStories'
 import useRecordMap from '@/hooks/useRecordMap'
+import useSendToPartner from '@/hooks/useSendToPartner'
 import useRecords from '@/hooks/useRecords'
 import useRestAreaAlert from '@/hooks/useRestAreaAlert'
 import useRestAreaDetail from '@/hooks/useRestAreaDetail'
@@ -100,7 +101,7 @@ import type { RecordSummary } from '@/types/record'
 import { todayInSeoul } from '@/utils/calendar'
 import { formatDate } from '@/utils/formatDate'
 import { distanceMeters } from '@/utils/location'
-import { copyText, createIdempotencyKey, type ShareChannel, shareInviteCode, type ShareLink, shareTo } from '@/utils/share'
+import { copyText, type ShareChannel, shareInviteCode, type ShareLink, shareTo } from '@/utils/share'
 import { shareStory } from '@/utils/storyImage'
 
 // 화면 주소
@@ -188,26 +189,20 @@ interface PlaceDetailRouteProps {
   mascotName: string
   myUserId: string
   onFavoriteChange: (placeId: string, favorite: boolean) => void
+  // 연인에게 보내기가 커플 변경(403)으로 거절됐을 때 홈의 커플 정보를 다시 불러온다
+  onCoupleChanged: () => void
 }
 
-function PlaceDetailRoute({ placeId, couple, mascotName, myUserId, onFavoriteChange }: PlaceDetailRouteProps) {
+function PlaceDetailRoute({ placeId, couple, mascotName, myUserId, onFavoriteChange, onCoupleChanged }: PlaceDetailRouteProps) {
   const navigate = useNavigate()
   const goBack = useGoBack()
   const drive = useStartDrive(myUserId)
   const { status, detail, retry, toggleFavorite, getShareUrl, sendToPartner } = usePlaceDetail(placeId)
-  // 같은 전송 시도의 재시도에는 같은 멱등 키를 쓰고, 성공하면 새 키로 바꾼다
-  const idempotencyKey = useRef<string | null>(null)
+  const handleSend = useSendToPartner({ coupleId: couple?.id ?? null, send: sendToPartner, onCoupleChanged })
 
   const handleFavoriteToggle = async (favorite: boolean) => {
     const saved = await toggleFavorite(favorite)
     if (saved) onFavoriteChange(placeId, favorite)
-  }
-
-  const handleSend = async () => {
-    if (!couple) return
-    idempotencyKey.current ??= createIdempotencyKey()
-    await sendToPartner({ idempotencyKey: idempotencyKey.current, coupleId: couple.id })
-    idempotencyKey.current = null
   }
 
   return (
@@ -1208,6 +1203,7 @@ function App() {
                 myUserId={me.id}
                 // 상세에서 바꾼 찜 상태를 홈 카드에도 반영한다
                 onFavoriteChange={(placeId, favorite) => recommendations.syncFavorite(placeId, favorite)}
+                onCoupleChanged={() => void homeData.reload()}
               />
             }
           />
