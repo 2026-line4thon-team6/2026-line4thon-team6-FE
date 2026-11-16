@@ -702,7 +702,7 @@ function RecordMapRoute() {
           card={sharing.card}
           link={sharing.link}
           onClose={() => setSharing(null)}
-          onCopyLink={(url) => void copyText(url)}
+          onCopyLink={copyText}
           onShareChannel={(channel, url) => void handleShareChannel(sharing.card, channel, url)}
         />
       )}

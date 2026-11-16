@@ -651,6 +651,7 @@ describe('기록 지도 → 기록 공유', () => {
     await user.click(within(sheet).getByRole('button', { name: '링크 복사' }))
     // userEvent가 클립보드를 대신하므로 복사된 내용을 읽어 확인한다
     expect(await navigator.clipboard.readText()).toBe('https://bunbungus.app/cards/crd_01')
+    expect(await screen.findByText('링크를 복사했어요.')).toBeInTheDocument()
   })
 })
 
