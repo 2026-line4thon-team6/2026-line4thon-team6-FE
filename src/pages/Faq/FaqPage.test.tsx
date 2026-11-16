@@ -69,6 +69,19 @@ describe('질문 목록', () => {
     expect(screen.getByText('첫 줄')).toBeInTheDocument()
     expect(screen.getByText('둘째 줄')).toBeInTheDocument()
   })
+
+  it('답변의 Markdown(번호 목록 · 굵게)을 목록과 강조로 보여 준다', async () => {
+    const { user } = renderPage({
+      faqs: [{ id: 'faq-md', question: '목록 질문', answer: '이렇게 해 주세요.\n1. **마이** 화면 열기\n2. 프로필 누르기', order: 1 }],
+    })
+
+    await user.click(screen.getByRole('button', { name: '목록 질문' }))
+
+    expect(screen.getAllByRole('listitem').map((item) => item.textContent)).toEqual(
+      expect.arrayContaining(['마이 화면 열기', '프로필 누르기']),
+    )
+    expect(screen.getByText('마이').tagName).toBe('STRONG')
+  })
 })
 
 describe('상태', () => {
