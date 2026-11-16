@@ -1,6 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MOCK_CARD_DRIVE_ID, MOCK_ME_ID, mockFetchDriveCard, mockSaveCardDraft, resetMockCards } from '@/mocks/cards'
+import * as cardsApi from '@/api/cards'
 import useDriveCard from './useDriveCard'
 
 const jpg = (name = 'a.jpg') => new File(['x'], name, { type: 'image/jpeg' })
@@ -141,5 +142,23 @@ describe('저장', () => {
     const { data } = await mockFetchDriveCard(MOCK_CARD_DRIVE_ID)
     expect(data.status).toBe('DRAFT')
     expect(data.reflections[0]).toMatchObject({ text: '쓰다 만 소감', submitted: false })
+  })
+})
+
+describe('사진 링크 만료', () => {
+  it('사진 링크가 만료되기 전에 새 링크로 바꾸고, 쓰고 있던 소감은 그대로 둔다', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const { result } = await renderReady()
+    await act(() => result.current.addPhotos([jpg()]))
+    act(() => result.current.setMyText('쓰는 중'))
+    const refetch = vi.spyOn(cardsApi, 'fetchDriveCard')
+
+    // 목 서버의 사진 링크는 1시간 뒤 만료된다
+    await act(() => vi.advanceTimersByTimeAsync(60 * 60_000))
+
+    await waitFor(() => expect(refetch).toHaveBeenCalledTimes(1))
+    expect(result.current.card!.photos).toHaveLength(1)
+    expect(result.current.myText).toBe('쓰는 중')
+    vi.useRealTimers()
   })
 })

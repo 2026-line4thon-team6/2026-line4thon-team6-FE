@@ -1,18 +1,20 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
-import { MOCK_CATEGORIES } from '@/mocks/home'
+import { PLACE_CATEGORIES } from '@/constants/placeCategories'
+import type { PlaceCategory } from '@/types/place'
 import CategoryChip from './CategoryChip'
 
-const [sea] = MOCK_CATEGORIES
+const sea = PLACE_CATEGORIES.SEA
+const CATEGORIES = Object.entries(PLACE_CATEGORIES) as [PlaceCategory, typeof sea][]
 
 const meta = {
   title: 'Components/CategoryChip',
   component: CategoryChip,
   tags: ['autodocs'],
   args: {
-    icon: sea.iconUrl,
-    label: sea.name,
+    icon: sea.icon,
+    label: sea.label,
     selected: false,
     onClick: fn(),
   },
@@ -27,19 +29,19 @@ export const Selected: Story = {
   args: { selected: true },
 }
 
-// 홈 '스마트 탐색 & 큐레이션' 필터 목록 (백엔드 카테고리 목업)
+// 홈 '스마트 탐색 & 큐레이션' 필터 목록
 export const List: Story = {
   render: function Render() {
-    const [selectedId, setSelectedId] = useState(MOCK_CATEGORIES[0].id)
+    const [selected, setSelected] = useState<PlaceCategory>('SEA')
     return (
       <div style={{ display: 'flex', gap: 10 }}>
-        {MOCK_CATEGORIES.map(({ id, name, iconUrl }) => (
+        {CATEGORIES.map(([value, { label, icon }]) => (
           <CategoryChip
-            key={id}
-            icon={iconUrl}
-            label={name}
-            selected={id === selectedId}
-            onClick={() => setSelectedId(id)}
+            key={value}
+            icon={icon}
+            label={label}
+            selected={value === selected}
+            onClick={() => setSelected(value)}
           />
         ))}
       </div>

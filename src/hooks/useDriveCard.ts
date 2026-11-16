@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
-import { completeCard, fetchDriveCard, saveCardDraft, saveMyReflection, uploadCardPhoto } from '@/api/cards'
+import {
+  completeCard,
+  discardUploadedPhoto,
+  fetchDriveCard,
+  saveCardDraft,
+  saveMyReflection,
+  uploadCardPhoto,
+} from '@/api/cards'
 import { ApiError } from '@/api/client'
 import type { Card, Reflection } from '@/types/card'
+import { photoRefreshDelay } from '@/utils/photoRefresh'
 import { createIdempotencyKey } from '@/utils/share'
 
 // API 명세 정책 수치 (사진 2장 · 10MiB · JPEG/PNG/WebP · 소감 70자)
@@ -68,6 +76,29 @@ function useDriveCard(driveId: string, myUserId: string) {
     }
   }, [driveId, myUserId, attempt])
 
+  // 사진 링크(10분 서명 URL)가 만료되기 전에 새 링크만 받아 바꾼다.
+  // 쓰는 중인 내용을 덮지 않도록 카드 버전이 그대로일 때 사진 링크만 바꾼다
+  const photos = state.card?.photos
+  useEffect(() => {
+    if (!photos) return
+    const delay = photoRefreshDelay(photos, Date.now())
+    if (delay === null) return
+    let ignore = false
+    const timer = setTimeout(() => {
+      fetchDriveCard(driveId)
+        .then(({ data }) => {
+          const current = cardRef.current
+          if (ignore || !current || current.version !== data.version) return
+          setCard({ ...current, photos: data.photos })
+        })
+        .catch(() => {})
+    }, delay)
+    return () => {
+      ignore = true
+      clearTimeout(timer)
+    }
+  }, [photos, driveId])
+
   const retry = () => {
     setState({ status: 'loading', card: null })
     setAttempt((count) => count + 1)
@@ -117,12 +148,28 @@ function useDriveCard(driveId: string, myUserId: string) {
 
     if (selected.length > 0) {
       await run(async (current) => {
-        const ids = await Promise.all(
+        // 붙이지 못한 사진은 서버의 임시 저장 용량(200MiB)을 차지하므로 바로 지운다. 지우기 실패는 무시한다(24시간 뒤 만료)
+        const discard = (ids: string[]) =>
+          Promise.all(ids.map((id) => discardUploadedPhoto(id, { coupleId: current.coupleId }).catch(() => undefined)))
+
+        const results = await Promise.allSettled(
           selected.map((file) =>
             uploadCardPhoto(file, { coupleId: current.coupleId, idempotencyKey: createIdempotencyKey() }),
           ),
         )
-        await savePhotos(current, [...current.photos.map((photo) => photo.mediaId), ...ids])
+        const ids = results.flatMap((result) => (result.status === 'fulfilled' ? [result.value] : []))
+        const failed = results.find((result): result is PromiseRejectedResult => result.status === 'rejected')
+        if (failed) {
+          // 한 장이라도 실패하면 먼저 올라간 사진도 붙이지 않는다
+          await discard(ids)
+          throw failed.reason
+        }
+        try {
+          await savePhotos(current, [...current.photos.map((photo) => photo.mediaId), ...ids])
+        } catch (reason) {
+          await discard(ids)
+          throw reason
+        }
       })
     }
     if (tooMany) setError(MESSAGES.tooMany)

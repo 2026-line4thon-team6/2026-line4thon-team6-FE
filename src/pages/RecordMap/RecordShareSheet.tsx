@@ -5,6 +5,7 @@ import type { RecordSummary } from '@/types/record'
 import { formatDate } from '@/utils/formatDate'
 import type { ShareChannel, ShareLink } from '@/utils/share'
 import styles from './RecordShareSheet.module.scss'
+import RecordPhoto from '@/components/RecordPhoto/RecordPhoto'
 
 interface RecordShareSheetProps {
   card: RecordSummary
@@ -25,7 +26,7 @@ function RecordShareSheet({ card, link, onClose, onCopyLink, onShareChannel }: R
           {/* 미리보기와 같은 폴라로이드 카드를 줄여서 보여준다 */}
           <div className={styles.thumbnail} aria-hidden="true">
             <div className={styles.polaroid}>
-              <img className={styles.photo} src={card.thumbnailUrl} alt="" />
+              <RecordPhoto className={styles.photo} src={card.thumbnailUrl} />
               <span className={styles.polaroidTitle}>{card.title}</span>
               <span className={styles.polaroidDate}>{formatDate(card.driveDate)}</span>
             </div>
