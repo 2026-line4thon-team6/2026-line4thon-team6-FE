@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Navigate, Outlet, useLocation, useNavigate, useOutletContext, useSearchParams } from 'react-router'
 import { completeSocialLogin, login } from '@/api/auth'
 import type { Auth } from '@/hooks/useAuth'
@@ -32,6 +32,19 @@ export function MemberGate({ auth }: AuthRouteProps) {
   if (auth.status === 'signedOut') return <Navigate to={LOGIN_PATH} replace />
   if (auth.user && !auth.user.onboardingCompleted) return <Navigate to={ONBOARDING_PATHS.welcome} replace />
   return <Outlet />
+}
+
+interface GuestOrMemberGateProps extends AuthRouteProps {
+  // 로그인 전 사용자에게 대신 보여 줄 공개 화면
+  guest: ReactNode
+}
+
+// 로그인 없이도 열려야 하는 공유 링크 주소(예: /places/:placeId)에 쓴다.
+// 주소를 바꾸면 이미 퍼진 공유 링크가 깨지므로, 같은 주소에서 로그인 전이면 공개 화면을 그리고
+// 로그인했으면 MemberGate와 같은 규칙(가입 전이면 가입 질문으로)으로 회원 화면을 그린다
+export function GuestOrMemberGate({ auth, guest }: GuestOrMemberGateProps) {
+  if (auth.status === 'signedOut') return guest
+  return <MemberGate auth={auth} />
 }
 
 // L1 로그인 메인. 이미 로그인했으면 들어오지 않는다

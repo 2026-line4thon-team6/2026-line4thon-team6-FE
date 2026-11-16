@@ -5,8 +5,10 @@ import type {
   PlaceRecommendations,
   PlaceShare,
   PlaceSummary,
+  PublicPlace,
   SendToPartnerResult,
 } from '@/types/place'
+import { mockApiError } from './utils'
 
 // 백엔드 연동 전(VITE_API_BASE_URL 미설정)에 쓰는 장소 목 응답.
 // 백엔드 추천 카탈로그(HardcodedPlaceCatalog)와 같은 15곳 · 같은 id. 카테고리마다 3곳 (Figma Home_Components 카드)
@@ -109,6 +111,26 @@ export async function mockFetchPlaceShare(placeId: string): Promise<ApiResponse<
   getDetail(placeId)
   return {
     data: { url: `https://bunbungus.app/places/${placeId}`, access: 'PUBLIC_PLACE', expiresAt: null },
+    meta: meta(),
+  }
+}
+
+// 공개 장소 조회는 회원 상세와 같은 장소 목록에서 공개해도 되는 값만 골라 준다.
+// 없는 장소는 실서버처럼 404로 응답해 화면의 '찾을 수 없음' 상태를 확인할 수 있게 한다
+export async function mockFetchPublicPlace(placeId: string): Promise<ApiResponse<PublicPlace>> {
+  const detail = (store ??= createStore()).get(placeId)
+  if (!detail) throw mockApiError(404, 'RESOURCE_NOT_FOUND', '장소를 찾을 수 없습니다.')
+
+  const { place, introduction } = detail
+  return {
+    data: {
+      id: place.id,
+      name: place.name,
+      address: place.address,
+      coordinate: place.coordinate,
+      thumbnailUrl: place.thumbnailUrl,
+      introduction,
+    },
     meta: meta(),
   }
 }

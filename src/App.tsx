@@ -27,6 +27,7 @@ import usePendingCards from '@/hooks/usePendingCards'
 import useRecommendations from '@/hooks/useRecommendations'
 import usePlaceDetail from '@/hooks/usePlaceDetail'
 import usePlaylistLibrary from '@/hooks/usePlaylistLibrary'
+import usePublicPlace from '@/hooks/usePublicPlace'
 import usePwaInstall from '@/hooks/usePwaInstall'
 import useRadioEpisode from '@/hooks/useRadioEpisode'
 import useRadioGeneration from '@/hooks/useRadioGeneration'
@@ -68,6 +69,7 @@ import LegalDocumentPage from '@/pages/LegalDocument/LegalDocumentPage'
 import MyPage, { type MyMenu } from '@/pages/My/MyPage'
 import NotificationsPage from '@/pages/Notifications/NotificationsPage'
 import PlaceDetailPage from '@/pages/PlaceDetail/PlaceDetailPage'
+import PublicPlacePage from '@/pages/PublicPlace/PublicPlacePage'
 import RadioStoryPage from '@/pages/RadioStory/RadioStoryPage'
 import RecordDetailPage from '@/pages/RecordDetail/RecordDetailPage'
 import RecordCalendarSheet from '@/pages/RecordMap/RecordCalendarSheet'
@@ -78,6 +80,7 @@ import {
   AnniversaryStep,
   BirthdayStep,
   GenderStep,
+  GuestOrMemberGate,
   IntroStep,
   LoginRoute,
   MascotStep,
@@ -770,6 +773,19 @@ function PlaceDetailRouteByParam(props: Omit<PlaceDetailRouteProps, 'placeId'>) 
   return <PlaceDetailRoute key={placeId} placeId={placeId} {...props} />
 }
 
+// 공유 링크를 로그인 전 사용자가 열었을 때의 공개 장소 화면. 시작하기를 누르면 로그인 화면으로 간다
+function PublicPlaceRoute({ placeId }: { placeId: string }) {
+  const navigate = useNavigate()
+  const { status, place, retry } = usePublicPlace(placeId)
+
+  return <PublicPlacePage status={status} place={place} onRetry={retry} onStart={() => navigate(LOGIN_PATH)} />
+}
+
+function PublicPlaceRouteByParam() {
+  const { placeId = '' } = useParams()
+  return <PublicPlaceRoute key={placeId} placeId={placeId} />
+}
+
 // 마이 화면에 들어올 때마다 커플 요약을 새로 불러온다
 function MyRoute({ auth }: { auth: Auth }) {
   const navigate = useNavigate()
@@ -1161,6 +1177,11 @@ function App() {
             path="/drives/:driveId/card"
             element={<DriveCardRouteByParam userId={me.id} myNickname={me.nickname} partnerNickname={partnerNickname} />}
           />
+        </Route>
+
+        {/* 장소 공유 링크({PLACE_SHARE_BASE_URL}/places/{placeId})는 받은 사람이 로그인하지 않았어도 열려야 한다.
+            로그인 전이면 공개 장소 화면, 로그인했으면 기존 회원용 상세를 같은 주소에서 보여 준다 */}
+        <Route element={<GuestOrMemberGate auth={auth} guest={<PublicPlaceRouteByParam />} />}>
           <Route
             path="/places/:placeId"
             element={

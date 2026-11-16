@@ -2,6 +2,7 @@ import {
   mockFetchFavorites,
   mockFetchPlaceDetail,
   mockFetchPlaceShare,
+  mockFetchPublicPlace,
   mockFetchRecommendations,
   mockSendPlaceToPartner,
   mockSetPlaceFavorite,
@@ -13,6 +14,7 @@ import type {
   PlaceRecommendations,
   PlaceShare,
   PlaceSummary,
+  PublicPlace,
   SendToPartnerResult,
 } from '@/types/place'
 import type { Coordinate } from '@/types/route'
@@ -51,6 +53,14 @@ export function fetchPlaceShare(placeId: string): Promise<ApiResponse<PlaceShare
   if (USE_MOCK) return mockFetchPlaceShare(placeId)
 
   return apiFetch<PlaceShare>(`${path(placeId)}/share`)
+}
+
+// GET /public/places/{placeId} — 공유 링크를 받은 사람이 로그인 없이 보는 장소 정보.
+// 인증이 필요 없는 주소라 토큰 없이 부른다 (apiFetch는 토큰이 있을 때만 Authorization을 붙인다)
+export function fetchPublicPlace(placeId: string): Promise<ApiResponse<PublicPlace>> {
+  if (USE_MOCK) return mockFetchPublicPlace(placeId)
+
+  return apiFetch<PublicPlace>(`/public${path(placeId)}`)
 }
 
 // PUT · DELETE /me/favorite-places/{placeId} — 둘 다 멱등이라 같은 요청을 반복해도 안전하다
