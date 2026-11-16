@@ -41,6 +41,19 @@ describe('장소 정보', () => {
     expect(screen.getByText(/붉은 등대와 아름다운 노을이 어우러진/)).toBeInTheDocument()
   })
 
+  it('도로명 주소가 있으면 위치 아래에 전체 주소를 표시한다', () => {
+    renderPage({ detail: { ...OIDO, place: { ...OIDO.place, address: '경기 시흥시 정왕동 오이도로 175' } } })
+
+    expect(screen.getByText('경기 시흥시 · 약 1시간')).toBeInTheDocument()
+    expect(screen.getByText('경기 시흥시 정왕동 오이도로 175')).toBeInTheDocument()
+  })
+
+  it('주소가 지역과 같거나 비어 있으면 주소 줄을 따로 두지 않는다', () => {
+    renderPage({ detail: { ...OIDO, place: { ...OIDO.place, address: '' } } })
+
+    expect(screen.getAllByText(/경기 시흥시/)).toHaveLength(1)
+  })
+
   it('드라이브 정보 요약 4가지를 표시한다', () => {
     renderPage()
 

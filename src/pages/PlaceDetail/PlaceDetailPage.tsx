@@ -136,6 +136,8 @@ function PlaceDetailPage({
               <img src={pinIcon} alt="" />
               {place.region} · {duration}
             </p>
+            {/* 명세는 주소를 요구하지만 Figma 위치 줄은 '지역 · 시간'이라, 위치 줄은 그대로 두고 전체 주소를 한 줄 더 보여 준다 */}
+            {place.address && place.address !== place.region && <p className={styles.address}>{place.address}</p>}
           </div>
           <p className={styles.category}>
             <img src={category.icon} alt="" />
