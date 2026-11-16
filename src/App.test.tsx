@@ -382,10 +382,10 @@ describe('연인 초대', () => {
     expect(await screen.findByRole('button', { name: /누적 330km · D\+23/ })).toBeInTheDocument()
   })
 
-  it('코드를 비워 두고 완료를 누르면 연결하지 않고 홈으로 간다', async () => {
+  it('건너뛰기를 누르면 연결하지 않고 홈으로 간다', async () => {
     const user = renderApp('/couple/invite')
 
-    await user.click(await screen.findByRole('button', { name: '완료' }))
+    await user.click(await screen.findByRole('button', { name: '건너뛰기' }))
 
     expect(await screen.findByRole('heading', { level: 1, name: /오늘은 어디로 떠나볼까요/ })).toBeInTheDocument()
   })
@@ -441,7 +441,7 @@ describe('로그인 · 가입 (기능명세서 L1~L9)', () => {
     await user.type(await screen.findByRole('textbox', { name: '붕붕이 이름' }), '쌩쌩이')
     await user.click(screen.getByRole('button', { name: '다음' }))
 
-    // L9 연인 초대 → 코드 없이 완료(건너뛰기) → 메인 홈
+    // L9 연인 초대 → 건너뛰기 → 메인 홈
     expect(await screen.findByRole('heading', { level: 1, name: '연인 초대' })).toBeInTheDocument()
     expect((await mockFetchMe()).data).toMatchObject({
       nickname: '현우',
@@ -449,7 +449,7 @@ describe('로그인 · 가입 (기능명세서 L1~L9)', () => {
       gender: 'MALE',
       onboardingCompleted: true,
     })
-    await user.click(screen.getByRole('button', { name: '완료' }))
+    await user.click(screen.getByRole('button', { name: '건너뛰기' }))
     expect(await screen.findByRole('heading', { level: 1, name: /오늘은 어디로 떠나볼까요/ })).toBeInTheDocument()
   })
 

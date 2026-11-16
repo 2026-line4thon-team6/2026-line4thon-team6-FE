@@ -21,7 +21,7 @@ interface CoupleInvitePageProps {
   onRestore: (code: string) => Promise<string | null>
   // 연결에 성공했을 때 (메인 홈으로 이동)
   onConnected: () => void
-  // 코드를 비워 두고 완료를 눌렀을 때 (건너뛰기 → 메인 홈)
+  // 건너뛰기를 눌렀을 때 (연결하지 않고 메인 홈)
   onSkip: () => void
 }
 
@@ -52,11 +52,8 @@ function CoupleInvitePage({
   }
 
   const handleDone = async () => {
-    if (connecting) return
-    if (!partnerCode.trim()) {
-      onSkip()
-      return
-    }
+    // 건너뛰기 버튼이 따로 있으니, 코드를 비워 둔 완료(엔터 포함)는 아무것도 하지 않는다
+    if (connecting || !partnerCode.trim()) return
     setConnecting(true)
     const result = await onConnect(partnerCode)
     setConnecting(false)
@@ -156,9 +153,21 @@ function CoupleInvitePage({
       </main>
 
       <footer className={styles.footer}>
-        <Button size="cta" disabled={connecting} onClick={() => void handleDone()}>
-          {connecting ? '연결 중' : '완료'}
-        </Button>
+        {status === 'linked' ? (
+          // 이미 연결돼 있으면 입력할 코드가 없으니 완료로 바로 메인 홈에 간다
+          <Button size="cta" onClick={onSkip}>
+            완료
+          </Button>
+        ) : (
+          <>
+            <Button className={styles.skip} variant="secondary" size="cta" disabled={connecting} onClick={onSkip}>
+              건너뛰기
+            </Button>
+            <Button size="cta" disabled={connecting || !partnerCode.trim()} onClick={() => void handleDone()}>
+              {connecting ? '연결 중' : '완료'}
+            </Button>
+          </>
+        )}
       </footer>
 
       {restoreCode && (
