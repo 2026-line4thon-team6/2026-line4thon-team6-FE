@@ -6,7 +6,7 @@ import { defineConfig, loadEnv } from 'vite'
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   // 로컬에서 실서버에 붙을 때만 쓴다. 백엔드 CORS가 localhost를 허용하지 않아서
-  // 개발 서버가 /api 요청을 대신 보내면서 Origin 헤더를 떼어 낸다 (.env.example 참고)
+  // 개발 서버가 /api 요청을 대신 보내면서 Origin · Cookie 헤더를 떼어 낸다 (.env.example 참고)
   const proxyTarget = loadEnv(mode, process.cwd(), '').API_PROXY_TARGET
 
   return {
@@ -22,7 +22,11 @@ export default defineConfig(({ mode }) => {
               target: proxyTarget,
               changeOrigin: true,
               configure: (proxy) => {
-                proxy.on('proxyReq', (request) => request.removeHeader('origin'))
+                // localhost 에 쌓인 다른 개발용 쿠키까지 넘기면 nginx가 헤더가 너무 크다며 거절한다 (백엔드는 쿠키를 쓰지 않는다)
+                proxy.on('proxyReq', (request) => {
+                  request.removeHeader('origin')
+                  request.removeHeader('cookie')
+                })
               },
             },
           }

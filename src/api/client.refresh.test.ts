@@ -277,3 +277,15 @@ describe('액세스 토큰 자동 갱신', () => {
     expect(localStorage.getItem('bbus.auth')).not.toBeNull()
   })
 })
+
+describe('목 모드에서 남은 세션', () => {
+  it('실서버에서는 목 토큰(mock_)을 세션으로 보지 않고 지운다', async () => {
+    localStorage.setItem('bbus.auth', JSON.stringify({ accessToken: 'mock_access_token', refreshToken: 'mock_refresh_token' }))
+    const { hasStoredSession, restoreSession } = await loadWithBackend()
+
+    expect(hasStoredSession()).toBe(false)
+    expect(await restoreSession()).toBeNull()
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(localStorage.getItem('bbus.auth')).toBeNull()
+  })
+})

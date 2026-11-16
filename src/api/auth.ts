@@ -55,6 +55,16 @@ function clearTokens() {
   setAccessToken(null)
 }
 
+// 저장된 토큰. 백엔드 연결 전 목 모드에서 저장된 토큰(mock_)은 실서버에서 쓸 수 없으므로 지우고 없는 것으로 본다
+function readTokens(): StoredTokens | null {
+  const tokens = read<StoredTokens>(local, TOKEN_KEY)
+  if (!USE_MOCK && tokens?.accessToken.startsWith('mock_')) {
+    clearTokens()
+    return null
+  }
+  return tokens
+}
+
 // 리프레시 토큰까지 만료되거나 무효가 되어 세션이 끊겼을 때 앱에 알린다 (로그인 화면으로 보낸다)
 const sessionExpiredListeners = new Set<() => void>()
 
@@ -73,7 +83,7 @@ function expireSession() {
 // POST /auth/refresh — 저장된 리프레시 토큰으로 새 토큰 쌍을 받는다. 서버가 리프레시 토큰을 회전시키므로 둘 다 저장한다.
 // 리프레시 토큰이 만료 · 재사용(401)되면 세션을 끝낸다. 네트워크 오류 · 503 등은 세션을 남겨 두고 다음 요청에서 다시 시도한다
 async function refreshTokens(expiredToken: string): Promise<string> {
-  const tokens = read<StoredTokens>(local, TOKEN_KEY)
+  const tokens = readTokens()
   if (!tokens) {
     expireSession()
     throw new ApiError(401, null)
@@ -159,7 +169,7 @@ export async function login(provider: AuthProvider): Promise<AuthTokenResult | n
 
 // 기기에 로그인 세션이 남아 있는지. 첫 화면을 로그인 화면으로 보낼지 바로 정할 때 쓴다
 export function hasStoredSession() {
-  return USE_MOCK ? mockHasSession() : read<StoredTokens>(local, TOKEN_KEY) !== null
+  return USE_MOCK ? mockHasSession() : readTokens() !== null
 }
 
 // 앱을 열 때 저장된 세션으로 내 계정을 불러온다. 세션이 없거나 만료됐으면 null
@@ -168,7 +178,7 @@ export async function restoreSession(): Promise<Me | null> {
   try {
     if (USE_MOCK) return (await mockRestoreSession()).data
 
-    const tokens = read<StoredTokens>(local, TOKEN_KEY)
+    const tokens = readTokens()
     if (!tokens) return null
     setAccessToken(tokens.accessToken)
     return (await apiFetch<Me>('/me')).data
@@ -190,7 +200,7 @@ export async function logout(idempotencyKey: string): Promise<void> {
       await mockLogout()
       return
     }
-    const tokens = read<StoredTokens>(local, TOKEN_KEY)
+    const tokens = readTokens()
     if (tokens) {
       await apiFetch('/auth/logout', {
         method: 'POST',
