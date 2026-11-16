@@ -1,24 +1,60 @@
 import type { ApiMeta, ApiResponse, CursorPage, CursorParams } from '@/types/api'
-import type { PlaceCategory, PlaceDetail, PlaceShare, PlaceSummary, SendToPartnerResult } from '@/types/place'
-import { MOCK_SPOTS } from './home'
-import { paginate } from './utils'
+import type {
+  PlaceCategory,
+  PlaceDetail,
+  PlaceRecommendations,
+  PlaceShare,
+  PlaceSummary,
+  PublicPlace,
+  SendToPartnerResult,
+} from '@/types/place'
+import { mockApiError, paginate } from './utils'
 
 // 백엔드 연동 전(VITE_API_BASE_URL 미설정)에 쓰는 장소 목 응답.
-// 홈의 목 장소(MOCK_SPOTS)와 같은 15곳을 API 형식으로 바꿔 쓴다. 장소 id는 홈 카드의 id를 문자열로 쓴다
-const CATEGORY_BY_ID: Record<number, PlaceCategory> = {
-  1: 'SEA',
-  2: 'NIGHT_VIEW',
-  3: 'NEARBY_CAFE',
-  4: 'NATURE',
-  5: 'CAR_CAMPING',
-}
+// 백엔드 추천 카탈로그(HardcodedPlaceCatalog)와 같은 15곳 · 같은 id. 카테고리마다 3곳 (Figma Home_Components 카드)
+const place = (
+  id: string,
+  name: string,
+  region: string,
+  minutes: number,
+  hashtags: string[],
+  category: PlaceCategory,
+  isFavorite: boolean,
+  image: string,
+): PlaceSummary => ({
+  id,
+  name,
+  region,
+  address: region,
+  coordinate: { latitude: 37.3456, longitude: 126.6878 },
+  thumbnailUrl: `/mocks/spots/${image}.webp`,
+  category,
+  hashtags,
+  estimatedDurationSeconds: minutes * 60,
+  distanceMeters: null,
+  isFavorite,
+})
 
-// '약 1시간 10분' → 4200
-function toSeconds(travelTime: string) {
-  const hours = Number(/(\d+)시간/.exec(travelTime)?.[1] ?? 0)
-  const minutes = Number(/(\d+)분/.exec(travelTime)?.[1] ?? 0)
-  return (hours * 60 + minutes) * 60
-}
+export const MOCK_PLACES: PlaceSummary[] = [
+  place('plc_oido', '시흥 오이도', '경기 시흥시', 60, ['일몰', '해안도로'], 'SEA', true, 'oido'),
+  place('plc_heonhwaro', '강릉 헌화로', '강원 강릉시', 180, ['바다', '해안도로'], 'SEA', false, 'heonhwaro'),
+  place('plc_eurwangni', '인천 을왕리 해수욕장', '인천 영종구', 70, ['바다', '노을'], 'SEA', false, 'eurwangni'),
+  place('plc_namsan', '서울 남산 순환도로', '서울 중구', 20, ['도심드라이브', '서울'], 'NIGHT_VIEW', true, 'namsan'),
+  place('plc_banpo', '서울 반포한강공원', '서울 서초구', 30, ['한강', '데이트'], 'NIGHT_VIEW', false, 'banpo'),
+  place('plc_songdo', '인천 송도 센트럴파크', '인천 연수구', 60, ['야경', '도시전망'], 'NIGHT_VIEW', false, 'songdo'),
+  place('plc_bukhangang_cafe', '남양주 북한강 카페거리', '경기 남양주시', 50, ['리버뷰', '카페투어'], 'NEARBY_CAFE', true, 'bukhangang-cafe'),
+  place('plc_heyri', '파주 헤이리 예술마을', '경기 파주시', 60, ['감성카페', '데이트'], 'NEARBY_CAFE', false, 'heyri'),
+  place('plc_seojong_cafe', '양평 서종 카페거리', '경기 양평군', 60, ['자연뷰', '힐링'], 'NEARBY_CAFE', false, 'seojong-cafe'),
+  place('plc_dumulmeori', '양평 두물머리', '경기 양평군', 60, ['자연', '강변'], 'NATURE', true, 'dumulmeori'),
+  place('plc_cheongpyeong', '가평 청평호반', '경기 가평군', 60, ['호수', '자연 풍경'], 'NATURE', false, 'cheongpyeong'),
+  place('plc_sanjeong_lake', '포천 산정호수', '경기 포천시', 120, ['호수', '숲길'], 'NATURE', false, 'sanjeong-lake'),
+  place('plc_mongsanpo', '태안 몽산포 캠핑장', '충남 태안군', 180, ['차박', '바다'], 'CAR_CAMPING', true, 'mongsanpo'),
+  place('plc_jaraseom', '가평 자라섬 캠핑장', '경기 가평군', 60, ['차박', '캠핑'], 'CAR_CAMPING', false, 'jaraseom'),
+  place('plc_baengnoju', '포천 백로주 캠핑장', '경기 포천시', 120, ['차박', '힐링'], 'CAR_CAMPING', false, 'baengnoju'),
+]
+
+// 시흥 오이도 — Figma 상세 화면의 장소
+export const MOCK_PLACE_ID = 'plc_oido'
 
 // Figma 상세 화면(시흥 오이도)의 내용. 사진은 Figma의 대표 사진 1장 (70:1744)
 const OIDO: Omit<PlaceDetail, 'place'> = {
@@ -33,34 +69,20 @@ const OIDO: Omit<PlaceDetail, 'place'> = {
 
 function createStore(): Map<string, PlaceDetail> {
   return new Map(
-    MOCK_SPOTS.map((spot) => {
-      const id = String(spot.id)
-      const place: PlaceSummary = {
-        id,
-        name: spot.name,
-        region: spot.region,
-        address: spot.region,
-        coordinate: { latitude: 37.3456, longitude: 126.6878 },
-        thumbnailUrl: spot.imageUrl ?? null,
-        category: CATEGORY_BY_ID[spot.categoryId],
-        hashtags: spot.tags,
-        estimatedDurationSeconds: toSeconds(spot.travelTime),
-        distanceMeters: null,
-        isFavorite: spot.liked,
-      }
+    MOCK_PLACES.map((summary) => {
       const detail: PlaceDetail =
-        id === '1'
-          ? { place, ...OIDO }
+        summary.id === MOCK_PLACE_ID
+          ? { place: { ...summary }, ...OIDO }
           : {
-              place,
-              photos: spot.imageUrl ? [spot.imageUrl] : [],
-              introduction: `${spot.name}에서 둘만의 드라이브를 즐겨 보세요.`,
+              place: { ...summary },
+              photos: summary.thumbnailUrl ? [summary.thumbnailUrl] : [],
+              introduction: `${summary.name}에서 둘만의 드라이브를 즐겨 보세요.`,
               parkingInfo: null,
               recommendedVisitTime: null,
               mainRoads: [],
               previewRouteId: null,
             }
-      return [id, detail]
+      return [summary.id, detail]
     }),
   )
 }
@@ -70,7 +92,7 @@ let requestCount = 0
 
 const meta = (): ApiMeta => ({ requestId: `req_mock_place_${++requestCount}`, serverTime: new Date().toISOString() })
 
-// 테스트 · 스토리에서 처음 상태(홈 목 데이터의 찜 여부)로 되돌린다
+// 테스트 · 스토리에서 처음 상태(목 장소의 찜 여부)로 되돌린다
 export function resetMockPlaces() {
   store = null
 }
@@ -93,12 +115,32 @@ export async function mockFetchPlaceShare(placeId: string): Promise<ApiResponse<
   }
 }
 
+// 공개 장소 조회는 회원 상세와 같은 장소 목록에서 공개해도 되는 값만 골라 준다.
+// 없는 장소는 실서버처럼 404로 응답해 화면의 '찾을 수 없음' 상태를 확인할 수 있게 한다
+export async function mockFetchPublicPlace(placeId: string): Promise<ApiResponse<PublicPlace>> {
+  const detail = (store ??= createStore()).get(placeId)
+  if (!detail) throw mockApiError(404, 'RESOURCE_NOT_FOUND', '장소를 찾을 수 없습니다.')
+
+  const { place, introduction } = detail
+  return {
+    data: {
+      id: place.id,
+      name: place.name,
+      address: place.address,
+      coordinate: place.coordinate,
+      thumbnailUrl: place.thumbnailUrl,
+      introduction,
+    },
+    meta: meta(),
+  }
+}
+
 export async function mockSetPlaceFavorite(placeId: string, favorite: boolean): Promise<void> {
   const detail = getDetail(placeId)
   store!.set(placeId, { ...detail, place: { ...detail.place, isFavorite: favorite } })
 }
 
-// 찜한 장소만, 홈 목 데이터 순서대로. category를 생략하면 전체
+// 찜한 장소만, 목 장소 순서대로. category를 생략하면 전체
 export async function mockFetchFavorites(
   category?: PlaceCategory,
   { cursor, limit }: CursorParams = {},
@@ -114,6 +156,18 @@ export async function mockSendPlaceToPartner(placeId: string): Promise<ApiRespon
   const response = meta()
   return {
     data: { notificationId: `ntf_mock_${requestCount}`, recipientUserId: 'usr_partner', sentAt: response.serverTime },
+    meta: response,
+  }
+}
+
+// 카테고리별 추천. 백엔드처럼 카테고리마다 3곳이라 refreshToken으로 다시 받아도 같은 목록이다
+export async function mockFetchRecommendations(category: PlaceCategory): Promise<ApiResponse<PlaceRecommendations>> {
+  const items = [...(store ??= createStore()).values()]
+    .map(({ place: summary }) => summary)
+    .filter((summary) => summary.category === category)
+  const response = meta()
+  return {
+    data: { category, items, refreshToken: `rec_mock_${category}`, generatedAt: response.serverTime },
     meta: response,
   }
 }

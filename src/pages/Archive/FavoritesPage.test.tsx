@@ -25,7 +25,7 @@ const place = (overrides: Partial<PlaceSummary>): PlaceSummary => ({
 
 const PLACES = [
   place({}),
-  place({ id: 'plc_02', name: '인천 을왕리 해수욕장', region: '인천 중구', estimatedDurationSeconds: 4200, hashtags: ['바다', '노을'] }),
+  place({ id: 'plc_02', name: '인천 을왕리 해수욕장', region: '인천 영종구', estimatedDurationSeconds: 4200, hashtags: ['바다', '노을'] }),
 ]
 
 function renderPage(props: Partial<Props> = {}) {
@@ -74,7 +74,7 @@ describe('코스 카드', () => {
     renderPage()
 
     const card = screen.getByRole('article', { name: '인천 을왕리 해수욕장' })
-    expect(card).toHaveTextContent('인천 중구 · 약 1시간 10분')
+    expect(card).toHaveTextContent('인천 영종구 · 약 1시간 10분')
     expect(within(card).getAllByRole('listitem').map((tag) => tag.textContent)).toEqual(['#바다', '#노을'])
   })
 

@@ -15,7 +15,6 @@ function renderPage(props: Partial<Props> = {}) {
     onChangeStartDate: vi.fn().mockResolvedValue(null),
     onRenameMascot: vi.fn().mockResolvedValue(null),
     onUpdateProfile: vi.fn().mockResolvedValue(null),
-    onCopyInviteCode: vi.fn().mockResolvedValue(undefined),
     onDisconnect: vi.fn().mockResolvedValue(null),
     onDisconnected: vi.fn(),
   }
@@ -24,7 +23,6 @@ function renderPage(props: Partial<Props> = {}) {
       status="ready"
       couple={MOCK_COUPLE.couple}
       me={MOCK_ME}
-      inviteCode="jsd82nk9"
       today="2026-11-13"
       {...handlers}
       {...props}
@@ -163,19 +161,11 @@ describe('내 정보 편집 팝업', () => {
 })
 
 describe('커플 연결', () => {
-  it('커플 코드 복사하기를 누르면 코드를 복사하고 안내를 잠깐 띄운다', async () => {
-    const { user, onCopyInviteCode } = renderPage()
+  it('연결하면 커플 코드가 소진되므로 커플 코드 복사 행을 보여 주지 않는다', () => {
+    renderPage()
 
-    await user.click(screen.getByRole('button', { name: /커플 코드 복사하기/ }))
-
-    expect(onCopyInviteCode).toHaveBeenCalledWith('jsd82nk9')
-    expect(await screen.findByRole('status')).toHaveTextContent('커플 코드가 복사되었습니다.')
-  })
-
-  it('커플 코드를 불러오지 못했으면 복사할 수 없다', () => {
-    renderPage({ inviteCode: null })
-
-    expect(screen.getByRole('button', { name: /커플 코드 복사하기/ })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: /커플 코드 복사하기/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /커플 연결 끊기/ })).toBeInTheDocument()
   })
 
   it("'커플 연결 끊기' → '연결 해제'를 누르면 연결을 해제하고 알린다", async () => {

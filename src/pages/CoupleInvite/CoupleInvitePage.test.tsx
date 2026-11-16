@@ -7,13 +7,17 @@ import CoupleInvitePage from './CoupleInvitePage'
 // 기능명세서 'L9 연인 코드 (연인 초대 · 연결)' · Figma 'Onboarding_UI > 연인 초대'(484:14329) 기준
 type Props = ComponentProps<typeof CoupleInvitePage>
 
+const connected = { status: 'connected' } as const
+const failed = (message: string) => ({ status: 'failed', message }) as const
+
 function renderPage(props: Partial<Props> = {}) {
   const handlers = {
     onBack: vi.fn(),
     onRetry: vi.fn(),
     onCopy: vi.fn().mockResolvedValue(undefined),
     onShare: vi.fn().mockResolvedValue('shared' as const),
-    onConnect: vi.fn().mockResolvedValue(null),
+    onConnect: vi.fn().mockResolvedValue(connected),
+    onRestore: vi.fn().mockResolvedValue(null),
     onConnected: vi.fn(),
     onSkip: vi.fn(),
   }
@@ -96,7 +100,7 @@ describe('연인 코드 입력 · 완료', () => {
   })
 
   it('연결에 실패하면 입력칸 아래에 안내하고, 다시 입력하면 안내를 지운다', async () => {
-    const { user, onConnected } = renderPage({ onConnect: vi.fn().mockResolvedValue('코드를 다시 확인해 주세요.') })
+    const { user, onConnected } = renderPage({ onConnect: vi.fn().mockResolvedValue(failed('코드를 다시 확인해 주세요.')) })
     const input = screen.getByRole('textbox', { name: '연인의 코드를 알고 있다면?' })
 
     await user.type(input, 'nope')
@@ -121,12 +125,55 @@ describe('연인 코드 입력 · 완료', () => {
   })
 
   it('연결하는 동안에는 완료 버튼을 막는다', async () => {
-    const { user } = renderPage({ onConnect: vi.fn(() => new Promise<string | null>(() => {})) })
+    const { user } = renderPage({ onConnect: vi.fn(() => new Promise<never>(() => {})) })
 
     await user.type(screen.getByRole('textbox', { name: '연인의 코드를 알고 있다면?' }), 'minji2026')
     await user.click(screen.getByRole('button', { name: '완료' }))
 
     expect(screen.getByRole('button', { name: '연결 중' })).toBeDisabled()
+  })
+})
+
+describe('예전에 연결했던 연인 (연결 복구)', () => {
+  const restoreRequired = { onConnect: vi.fn().mockResolvedValue({ status: 'restore' }) }
+
+  async function openRestoreSheet(props: Partial<Props> = {}) {
+    const page = renderPage({ ...restoreRequired, ...props })
+    await page.user.type(screen.getByRole('textbox', { name: '연인의 코드를 알고 있다면?' }), 'minji2025')
+    await page.user.click(screen.getByRole('button', { name: '완료' }))
+    return { ...page, sheet: within(await screen.findByRole('dialog', { name: '예전에 연결했던 연인이에요' })) }
+  }
+
+  it('다시 연결할지 묻고, 다시 연결하기를 누르면 복구한 뒤 다음 화면으로 넘어간다', async () => {
+    const { user, sheet, onRestore, onConnected } = await openRestoreSheet()
+
+    expect(sheet.getByText(/다시 연결할까요\?/)).toBeInTheDocument()
+    expect(onConnected).not.toHaveBeenCalled()
+
+    await user.click(sheet.getByRole('button', { name: '다시 연결하기' }))
+
+    expect(onRestore).toHaveBeenCalledWith('minji2025')
+    expect(onConnected).toHaveBeenCalled()
+  })
+
+  it('복구에 실패하면 시트 안에 안내한다', async () => {
+    const { user, sheet, onConnected } = await openRestoreSheet({
+      onRestore: vi.fn().mockResolvedValue('다시 연결할 예전 연결 정보가 없어요. 연인의 새 코드를 확인해 주세요.'),
+    })
+
+    await user.click(sheet.getByRole('button', { name: '다시 연결하기' }))
+
+    expect(await sheet.findByRole('alert')).toHaveTextContent('다시 연결할 예전 연결 정보가 없어요.')
+    expect(onConnected).not.toHaveBeenCalled()
+  })
+
+  it('취소하면 시트를 닫고 연결하지 않는다', async () => {
+    const { user, sheet, onRestore } = await openRestoreSheet()
+
+    await user.click(sheet.getByRole('button', { name: '취소' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(onRestore).not.toHaveBeenCalled()
   })
 })
 

@@ -8,7 +8,7 @@ import useCardDetail from './useCardDetail'
 
 vi.mock('@/api/cards')
 
-const CARD = { id: 'crd_01', coupleId: 'cpl_01', version: 1, title: '우리의 첫 바다 드라이브' } as Card
+const CARD = { id: 'crd_01', coupleId: 'cpl_01', version: 1, title: '우리의 첫 바다 드라이브', photos: [] } as unknown as Card
 const response = (card: Card): ApiResponse<Card> => ({ data: card, meta: { requestId: 'req', serverTime: '' } })
 const apiError = (status: number, code: string) =>
   new ApiError(status, { error: { code, message: '', details: [], retryable: false } })
@@ -41,6 +41,14 @@ describe('useCardDetail', () => {
 
     act(() => result.current.retry())
     await waitFor(() => expect(result.current.status).toBe('ready'))
+  })
+
+  it('완료하지 않은 채 작성 기간이 지난 카드(410)도 사라진 카드로 본다', async () => {
+    vi.mocked(fetchCard).mockRejectedValueOnce(apiError(410, 'CARD_EDIT_WINDOW_CLOSED'))
+
+    const { result } = renderHook(() => useCardDetail('crd_old'))
+
+    await waitFor(() => expect(result.current.status).toBe('notFound'))
   })
 
   it('삭제하면 카드의 커플 id · 버전으로 지우고 deleted를 돌려준다', async () => {
@@ -100,5 +108,22 @@ describe('useCardDetail', () => {
     })
 
     expect(outcome).toBe('failed')
+  })
+
+  it('사진 링크가 만료되기 30초 전에 카드를 다시 불러와 새 링크로 바꾼다', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const expiresAt = new Date(Date.now() + 2 * 60_000).toISOString()
+    const withPhoto = { ...CARD, photos: [{ mediaId: 'med_1', url: 'old', urlExpiresAt: expiresAt, order: 0 }] } as Card
+    const refreshed = { ...withPhoto, photos: [{ ...withPhoto.photos[0], url: 'new', urlExpiresAt: '2099-01-01T00:00:00Z' }] } as Card
+    vi.mocked(fetchCard).mockResolvedValueOnce(response(withPhoto)).mockResolvedValueOnce(response(refreshed))
+
+    const { result } = renderHook(() => useCardDetail('crd_01'))
+    await waitFor(() => expect(result.current.card?.photos[0].url).toBe('old'))
+
+    await act(() => vi.advanceTimersByTimeAsync(90_000))
+
+    await waitFor(() => expect(result.current.card?.photos[0].url).toBe('new'))
+    expect(fetchCard).toHaveBeenCalledTimes(2)
+    vi.useRealTimers()
   })
 })

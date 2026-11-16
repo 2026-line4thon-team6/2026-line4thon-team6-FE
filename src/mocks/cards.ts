@@ -34,7 +34,7 @@ function createCard(now = Date.now()): Card {
     driveDate: '2026-11-03',
     region: '시흥 오이도',
     destination: {
-      placeId: '1',
+      placeId: 'plc_oido',
       name: '시흥 오이도',
       address: '경기 시흥시 정왕동',
       coordinate: { latitude: 37.3456, longitude: 126.6878 },
@@ -123,6 +123,10 @@ export async function mockUploadCardPhoto(file: File): Promise<string> {
   return mediaId
 }
 
+export async function mockDiscardUploadedPhoto(mediaId: string): Promise<void> {
+  uploads.delete(mediaId)
+}
+
 export async function mockSaveCardDraft(cardId: string, patch: CardDraftPatch): Promise<ApiResponse<Card>> {
   const current = getCard(cardId)
   checkVersion(patch.expectedVersion, current.version)
@@ -163,6 +167,7 @@ export async function mockSaveMyReflection(cardId: string, body: ReflectionPut):
     submittedAt: mine?.submittedAt ?? (body.submitted ? now : null),
     updatedAt: now,
     version: (mine?.version ?? 0) + 1,
+    role: 'PASSENGER', // 목: 나(민준)는 동승자
   }
   card = {
     ...current,
@@ -205,6 +210,7 @@ const RECORD_PARTNER = recordAuthor(PARTNER_ID, '민지')
 
 const submittedReflection = (who: CardAuthor, text: string, submittedAt: string): Reflection => ({
   author: who,
+  role: who.id === PARTNER_ID ? 'DRIVER' : 'PASSENGER',
   text,
   submitted: true,
   submittedAt,
@@ -224,9 +230,10 @@ export async function mockFetchCard(cardId: string): Promise<ApiResponse<Card>> 
   if (!record) throw recordNotFound()
 
   const submittedAt = record.completedAt ?? `${record.driveDate}T09:00:00Z`
-  const photos = [record.thumbnailUrl, ...(index % 3 === 2 ? [] : [records[(index + 1) % records.length]!.thumbnailUrl])].map(
-    (url, order) => ({ mediaId: `med_${cardId}_${order}`, url, urlExpiresAt: '2099-01-01T00:00:00Z', order }),
-  )
+  // 사진 없는 기록(thumbnailUrl null)은 사진 0장
+  const photos = (record.thumbnailUrl ? [record.thumbnailUrl, ...(index % 3 === 2 ? [] : [records[(index + 1) % records.length]!.thumbnailUrl])] : [])
+    .filter((url): url is string => url !== null)
+    .map((url, order) => ({ mediaId: `med_${cardId}_${order}`, url, urlExpiresAt: '2099-01-01T00:00:00Z', order }))
   // 기록마다 소감 상태를 섞는다: 둘 다 씀 · 나만 씀(상대방 미작성) · 둘 다 씀 · 상대방만 씀(나 미작성)
   const wrote = { me: index % 4 !== 3, partner: index % 2 === 0 || index % 4 === 3 }
   const reflections = [
@@ -260,7 +267,7 @@ export async function mockFetchCard(cardId: string): Promise<ApiResponse<Card>> 
       canEdit: false,
       canDelete: true,
       version: 1,
-      driverUserId: null,
+      driverUserId: PARTNER_ID,
     },
     meta: meta(),
   }

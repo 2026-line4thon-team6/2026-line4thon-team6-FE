@@ -73,23 +73,23 @@ describe('useFavorites', () => {
   })
 
   it('더 보기는 같은 카테고리와 nextCursor로 다음 페이지를 불러와 뒤에 붙인다', async () => {
-    await mockSetPlaceFavorite('2', true) // 바다 카테고리 찜을 2개로 만든다
+    await mockSetPlaceFavorite('plc_heonhwaro', true) // 바다 카테고리 찜을 2개로 만든다
     const spy = vi
       .spyOn(placesApi, 'fetchFavorites')
       .mockImplementation((category, { cursor } = {}) => mockFetchFavorites(category, { cursor, limit: 1 }))
     const { result } = renderHook(() => useFavorites())
     await waitFor(() => expect(result.current.hasMore).toBe(true))
-    expect(result.current.places.map(({ id }) => id)).toEqual(['1'])
+    expect(result.current.places.map(({ id }) => id)).toEqual(['plc_oido'])
 
     await act(() => result.current.loadMore())
 
     expect(spy).toHaveBeenLastCalledWith('SEA', { cursor: '1' })
-    expect(result.current.places.map(({ id }) => id)).toEqual(['1', '2'])
+    expect(result.current.places.map(({ id }) => id)).toEqual(['plc_oido', 'plc_heonhwaro'])
     expect(result.current.hasMore).toBe(false)
   })
 
   it('카테고리를 바꾸면 이전 카테고리의 커서로 더 보기를 하지 않는다', async () => {
-    await mockSetPlaceFavorite('2', true)
+    await mockSetPlaceFavorite('plc_heonhwaro', true)
     const spy = vi
       .spyOn(placesApi, 'fetchFavorites')
       .mockImplementation((category, { cursor } = {}) => mockFetchFavorites(category, { cursor, limit: 1 }))
@@ -102,7 +102,7 @@ describe('useFavorites', () => {
     expect(result.current.hasMore).toBe(false)
     await waitFor(() => expect(result.current.status).toBe('ready'))
     expect(spy).toHaveBeenLastCalledWith('NIGHT_VIEW', { cursor: undefined })
-    expect(result.current.places.map(({ id }) => id)).toEqual(['4'])
+    expect(result.current.places.map(({ id }) => id)).toEqual(['plc_namsan'])
   })
 
   it('불러오지 못하면 error, 다시 시도하면 다시 불러온다', async () => {
