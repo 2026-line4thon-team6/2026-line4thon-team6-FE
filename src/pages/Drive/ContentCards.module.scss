@@ -16,15 +16,6 @@
   border-radius: 20px;
   text-align: left;
   background-color: color('coral-3');
-
-  &:active .arrow {
-    background-color: color('coral-pressed');
-  }
-
-  &:focus-visible {
-    outline: 2px solid color('coral-pressed');
-    outline-offset: 2px;
-  }
 }
 
 .playlistLabel {
@@ -51,10 +42,20 @@
   justify-content: center;
   width: 30px;
   height: 30px;
+  padding: 0;
   border: 0.5px solid color('coral');
   border-radius: 18px;
   background-color: color('coral');
   filter: drop-shadow(0 0 5px rgb(0 0 0 / 5%));
+
+  &:active {
+    background-color: color('coral-pressed');
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
 
   img {
     transform: scaleX(-1);

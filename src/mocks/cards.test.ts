@@ -129,7 +129,7 @@ describe('POST /cards/{cardId}/complete', () => {
   })
 })
 
-describe('GET /cards/pending', () => {
+describe('미작성 카드 (GET /home 의 pendingCards)', () => {
   it('저장 전 카드의 남은 시간을 돌려준다 (24시간 이하)', async () => {
     const { data } = await mockFetchPendingCards()
 

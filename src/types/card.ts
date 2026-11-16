@@ -1,6 +1,6 @@
 // API 명세의 Card · Reflection · PendingCard 스키마
 // (GET /drives/{driveId}/card, PATCH /cards/{cardId}/draft, PUT /cards/{cardId}/reflections/me,
-//  POST /cards/{cardId}/complete, GET /cards/pending)
+//  POST /cards/{cardId}/complete, GET /home 의 pendingCards)
 
 // UNWRITTEN: 아직 아무것도 안 씀 / DRAFT: 임시저장 / COMPLETED: 저장 완료 / EXPIRED: 24시간 지나 사라짐
 export type CardStatus = 'UNWRITTEN' | 'DRAFT' | 'COMPLETED' | 'EXPIRED'
@@ -71,7 +71,7 @@ export interface Card {
   driverUserId: string
 }
 
-// GET /cards/pending — 24시간 안에 아직 저장하지 않은 카드 (마감이 빠른 순)
+// GET /home 의 pendingCards — 24시간 안에 아직 저장하지 않은 카드 (마감이 빠른 순)
 export interface PendingCard {
   cardId: string
   driveId: string

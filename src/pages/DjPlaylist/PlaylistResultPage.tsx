@@ -1,4 +1,4 @@
-import { useRef, useState, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type PointerEvent } from 'react'
 import dragDots from '@/assets/icons/dj/drag-dots.svg'
 import GlassIconButton from '@/components/GlassIconButton/GlassIconButton'
 import type { Playlist, PlaylistTrack } from '@/types/playlist'
@@ -7,6 +7,17 @@ import styles from './PlaylistResultPage.module.scss'
 
 // Figma 곡 한 줄(47) + 위아래 여백(10) + 구분선
 const ROW_PITCH = 67
+const EDGE = 72
+const MAX_SPEED = 14
+const FRAME_MS = 16
+
+function scrollParent(element: HTMLElement): HTMLElement {
+  for (let node = element.parentElement; node; node = node.parentElement) {
+    const { overflowY } = getComputedStyle(node)
+    if ((overflowY === 'auto' || overflowY === 'scroll') && node.scrollHeight > node.clientHeight) return node
+  }
+  return (document.scrollingElement as HTMLElement | null) ?? document.documentElement
+}
 const SWIPE_OPEN = 72
 
 interface PlaylistResultPageProps {
@@ -136,6 +147,9 @@ function PlaylistResultPage({
 }: PlaylistResultPageProps) {
   const [openId, setOpenId] = useState<string | null>(null)
   const [drag, setDrag] = useState<{ id: string; startY: number; dy: number } | null>(null)
+  const scroller = useRef<HTMLElement | null>(null)
+  const pointerY = useRef(0)
+  const footer = useRef<HTMLElement>(null)
   const keywords = [...playlist.moods, playlist.weather, ...playlist.genres].map(keywordOf)
 
   const tracks = playlist.tracks
@@ -152,6 +166,32 @@ function PlaylistResultPage({
     if (targetIndex <= index && index < dragIndex) return ROW_PITCH
     return 0
   }
+
+  const dragging = drag !== null
+  useEffect(() => {
+    const element = scroller.current
+    if (!dragging || !element) return
+    const tick = () => {
+      const isPage = element === document.scrollingElement
+      const top = isPage ? 0 : element.getBoundingClientRect().top
+      const bottom =
+        footer.current?.getBoundingClientRect().top ??
+        (isPage ? window.innerHeight : element.getBoundingClientRect().bottom)
+      const y = pointerY.current
+      const down = Math.min(1, Math.max(0, (y - (bottom - EDGE)) / EDGE))
+      const up = Math.min(1, Math.max(0, (top + EDGE - y) / EDGE))
+      const speed = down - up
+      if (speed !== 0) {
+        const before = element.scrollTop
+        element.scrollTop += speed * MAX_SPEED
+        if (element.scrollTop !== before) {
+          setDrag((prev) => (prev ? { ...prev, dy: y + element.scrollTop - prev.startY } : prev))
+        }
+      }
+    }
+    const timer = setInterval(tick, FRAME_MS)
+    return () => clearInterval(timer)
+  }, [dragging])
 
   const endDrag = () => {
     if (!drag) return
@@ -214,18 +254,24 @@ function PlaylistResultPage({
               onDragStart={(event) => {
                 event.currentTarget.setPointerCapture?.(event.pointerId)
                 setOpenId(null)
-                setDrag({ id: track.id, startY: event.clientY, dy: 0 })
+                scroller.current = scrollParent(event.currentTarget)
+                pointerY.current = event.clientY
+                setDrag({ id: track.id, startY: event.clientY + scroller.current.scrollTop, dy: 0 })
               }}
-              onDragMove={(event) =>
-                setDrag((prev) => (prev && prev.id === track.id ? { ...prev, dy: event.clientY - prev.startY } : prev))
-              }
+              onDragMove={(event) => {
+                pointerY.current = event.clientY
+                const scrollTop = scroller.current?.scrollTop ?? 0
+                setDrag((prev) =>
+                  prev && prev.id === track.id ? { ...prev, dy: event.clientY + scrollTop - prev.startY } : prev,
+                )
+              }}
               onDragEnd={endDrag}
             />
           ))}
         </ol>
       </main>
 
-      <footer className={styles.footer}>
+      <footer ref={footer} className={styles.footer}>
         <button type="button" className={styles.restart} onClick={onRestart}>
           다시 만들기
         </button>

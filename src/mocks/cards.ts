@@ -34,7 +34,7 @@ function createCard(now = Date.now()): Card {
     driveDate: '2026-11-03',
     region: '시흥 오이도',
     destination: {
-      placeId: '1',
+      placeId: 'plc_oido',
       name: '시흥 오이도',
       address: '경기 시흥시 정왕동',
       coordinate: { latitude: 37.3456, longitude: 126.6878 },
@@ -121,6 +121,10 @@ export async function mockUploadCardPhoto(file: File): Promise<string> {
   const url = typeof URL.createObjectURL === 'function' ? URL.createObjectURL(file) : `/mocks/cards/${mediaId}`
   uploads.set(mediaId, url)
   return mediaId
+}
+
+export async function mockDiscardUploadedPhoto(mediaId: string): Promise<void> {
+  uploads.delete(mediaId)
 }
 
 export async function mockSaveCardDraft(cardId: string, patch: CardDraftPatch): Promise<ApiResponse<Card>> {
