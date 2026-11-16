@@ -109,4 +109,13 @@ describe('useRecordMap', () => {
       vi.useRealTimers()
     }
   })
+
+  it('연인과 연결되지 않아 서버가 403 COUPLE_REQUIRED를 주면 coupleRequired 상태가 된다', async () => {
+    const { ApiError } = await vi.importActual<typeof import('@/api/client')>('@/api/client')
+    vi.mocked(fetchRecordMap).mockRejectedValue(new ApiError(403, { error: { code: 'COUPLE_REQUIRED', message: '', details: [], retryable: false }, meta: { requestId: 'r', serverTime: '' } }))
+
+    const { result } = renderHook(() => useRecordMap())
+
+    await waitFor(() => expect(result.current.status).toBe('coupleRequired'))
+  })
 })

@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { fetchRecords, type FetchRecordsParams } from '@/api/records'
 import type { RecordSummary } from '@/types/record'
 import { THUMBNAIL_REFRESH_MS } from '@/utils/photoRefresh'
-import type { RecordMapFilter } from './useRecordMap'
+import { isCoupleRequired, type RecordMapFilter } from './useRecordMap'
 
 interface State {
-  status: 'loading' | 'ready' | 'error'
+  status: 'loading' | 'ready' | 'error' | 'coupleRequired'
   records: RecordSummary[]
   filteredCount: number
   nextCursor: string | null
@@ -55,8 +55,8 @@ function useRecords({ q, date }: RecordMapFilter = {}) {
           loadingMore: false,
         })
       })
-      .catch(() => {
-        if (!ignore) setState({ ...INITIAL, status: 'error' })
+      .catch((reason: unknown) => {
+        if (!ignore) setState({ ...INITIAL, status: isCoupleRequired(reason) ? 'coupleRequired' : 'error' })
       })
 
     return () => {

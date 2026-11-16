@@ -325,6 +325,27 @@ describe('RecordMapPage', () => {
     })
   })
 
+  describe('연인과 연결 전', () => {
+    it.each(['map', 'list'] as const)('%s: 오류 대신 연결 안내와 연인 초대 버튼을 보여준다', async (view) => {
+      const onConnectRequired = vi.fn()
+      const { user } = renderPage({
+        view,
+        mapStatus: 'coupleRequired',
+        listStatus: 'coupleRequired',
+        markers: [],
+        records: [],
+        totalCount: null,
+        onConnectRequired,
+      })
+
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+      expect(screen.getByText('연인과 연결하면 함께한 드라이브 기록을 볼 수 있어요')).toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: '연인 초대하기' }))
+
+      expect(onConnectRequired).toHaveBeenCalled()
+    })
+  })
+
   describe('하단 네비바', () => {
     it('기록 지도 탭이 선택되어 있고, 다른 탭으로 이동할 수 있다', async () => {
       const { user, onTabChange } = renderPage()
