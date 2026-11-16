@@ -23,7 +23,7 @@ const playlist: Playlist = {
     durationSeconds: durationSeconds as number,
     albumImageUrl: null,
     providerUri: null,
-    externalUrl: null,
+    externalUrl: `https://open.spotify.com/track/sp_${index}`,
     order: index + 1,
   })),
   trackCount: 3,
@@ -41,7 +41,7 @@ const renderPage = (props: Partial<Parameters<typeof PlaylistResultPage>[0]> = {
       onReorder={vi.fn()}
       onDelete={vi.fn()}
       onRestart={vi.fn()}
-      onPlayAll={vi.fn()}
+      onSave={vi.fn()}
       onBack={vi.fn()}
       {...props}
     />,
@@ -83,5 +83,19 @@ describe('DJ 플레이리스트 생성 완료', () => {
     fireEvent.pointerUp(body, { clientX: 220 })
     await userEvent.click(within(row).getByRole('button', { name: '삭제' }))
     expect(onDelete).toHaveBeenCalledWith('trk_2')
+  })
+
+  it('곡을 누르면 스포티파이 곡 페이지를 새 창으로 열고, 밀다가 놓으면 열지 않는다', () => {
+    renderPage()
+    const link = screen.getByRole('link', { name: /Love wins all - 아이유, 스포티파이에서 듣기/ })
+    expect(link).toHaveAttribute('href', 'https://open.spotify.com/track/sp_1')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(fireEvent.click(link)).toBe(true)
+
+    const body = link.parentElement!
+    fireEvent.pointerDown(body, { clientX: 300 })
+    fireEvent.pointerMove(body, { clientX: 260 })
+    fireEvent.pointerUp(body, { clientX: 260 })
+    expect(fireEvent.click(link)).toBe(false)
   })
 })

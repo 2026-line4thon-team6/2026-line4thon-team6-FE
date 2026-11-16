@@ -14,7 +14,7 @@ import {
 } from '@/mocks/couples'
 import { mockFetchFavorites, mockFetchPublicPlace, resetMockPlaces } from '@/mocks/places'
 import { resetMockCards } from '@/mocks/cards'
-import { resetMockDjPlaylists } from '@/mocks/djPlaylists'
+import { mockGetPlaylist, resetMockDjPlaylists } from '@/mocks/djPlaylists'
 import { resetMockRadio } from '@/mocks/radio'
 import { resetMockGames } from '@/mocks/games'
 import { resetMockJobs, setMockGenerateMs } from '@/mocks/jobs'
@@ -962,6 +962,18 @@ describe('드라이브 주행 · 마치기', () => {
     await waitFor(() => expect(screen.queryByText('기록이 중단되었어요.')).not.toBeInTheDocument())
   })
 
+  it('일시정지 중에는 같은 자리 버튼이 재생 버튼으로 바뀌고, 누르면 주행을 재개한다', async () => {
+    const user = await startDriving()
+
+    await user.click(screen.getByRole('button', { name: '주행 기록 일시정지' }))
+    const resume = await screen.findByRole('button', { name: '주행 기록 재개' })
+    expect(screen.queryByRole('button', { name: '주행 기록 일시정지' })).not.toBeInTheDocument()
+
+    await user.click(resume)
+    expect(await screen.findByRole('button', { name: '주행 기록 일시정지' })).toBeInTheDocument()
+    expect(screen.queryByText('기록이 중단되었어요.')).not.toBeInTheDocument()
+  })
+
   it('나가기 → 드라이브 종료를 누르면 도착 팝업 없이 홈으로 간다', async () => {
     const user = await startDriving()
 
@@ -1060,6 +1072,22 @@ describe('드라이브 주행 · 마치기', () => {
 
     await user.click(screen.getByRole('button', { name: '다시 만들기' }))
     expect(await screen.findByRole('button', { name: /AI 플레이리스트 만들기/ })).toBeInTheDocument()
+  })
+
+  it('DJ 플레이리스트: 생성 완료에서 저장하기를 누르면 저장하고 드라이브 화면으로 돌아간다', async () => {
+    setMockGenerateMs(300)
+    const user = await startDriving()
+
+    await user.click(screen.getByRole('button', { name: /DJ 플레이리스트/ }))
+    await user.click(within(await screen.findByRole('list', { name: '분위기' })).getByRole('button', { name: /신나는/ }))
+    await user.click(within(screen.getByRole('list', { name: '날씨' })).getByRole('button', { name: /맑음/ }))
+    await user.click(screen.getByRole('button', { name: /AI 플레이리스트 만들기/ }))
+    await screen.findByRole('heading', { name: '노을처럼 따뜻한 우리' }, { timeout: 3000 })
+
+    await user.click(screen.getByRole('button', { name: '저장하기' }))
+
+    expect(await screen.findByRole('button', { name: '드라이브 마치기' })).toBeInTheDocument()
+    expect((await mockGetPlaylist('ply_mock_1')).data.savedByMe).toBe(true)
   })
 
   it('라디오: 카드 → 사연 입력 → 보내기 → 재생 중 → 중단하기', async () => {

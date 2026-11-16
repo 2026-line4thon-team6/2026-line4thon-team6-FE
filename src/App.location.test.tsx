@@ -1,4 +1,4 @@
-import { act, render, screen, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -99,10 +99,9 @@ describe('목적지 도착', () => {
     await startDriving()
 
     moveTo(at(HANGANG, 10, 1))
-    await act(() => new Promise((resolve) => setTimeout(resolve, 50)))
 
+    await waitFor(() => expect(mockRecordedGps('drv_mock_1').at(-1)?.coordinate).toEqual(HANGANG))
     expect(screen.queryByRole('dialog', { name: /목적지에 도착했어요!/ })).not.toBeInTheDocument()
-    expect(mockRecordedGps('drv_mock_1').at(-1)?.coordinate).toEqual(HANGANG)
     expect(mockEndRequests).toHaveLength(0)
   })
 

@@ -208,9 +208,8 @@ function DrivePage({
                 <>
                   <GlassIconButton icon="exit" aria-label="드라이브 마치기" onClick={() => setConfirmingEnd(true)} />
                   <GlassIconButton
-                    icon="pause"
-                    aria-label="주행 기록 일시정지"
-                    aria-pressed={paused}
+                    icon={paused ? 'play' : 'pause'}
+                    aria-label={paused ? '주행 기록 재개' : '주행 기록 일시정지'}
                     onClick={paused ? onResume : onPause}
                   />
                 </>

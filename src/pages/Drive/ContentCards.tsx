@@ -24,7 +24,7 @@ interface ContentCardsProps {
 function ContentCards({ onPlaylistClick, onContentClick, radioPlaying = false }: ContentCardsProps) {
   return (
     <div className={styles.cards}>
-      <div className={styles.playlist}>
+      <button type="button" className={styles.playlist} onClick={onPlaylistClick}>
         <span className={styles.playlistLabel}>DJ 플레이리스트</span>
         <span className={styles.playlistRow}>
           <span className={styles.playlistText}>
@@ -32,16 +32,11 @@ function ContentCards({ onPlaylistClick, onContentClick, radioPlaying = false }:
             <br />
             플레이리스트를 만들러 가볼까요?
           </span>
-          <button
-            type="button"
-            className={styles.arrow}
-            aria-label="DJ 플레이리스트 만들러 가기"
-            onClick={onPlaylistClick}
-          >
+          <span className={styles.arrow} aria-hidden>
             <img src={chevronIcon} alt="" />
-          </button>
+          </span>
         </span>
-      </div>
+      </button>
 
       <ul className={styles.games}>
         {GAMES.map(({ kind, title, description, image, box: [left, top, width, height] }) => (

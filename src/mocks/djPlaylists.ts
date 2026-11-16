@@ -61,7 +61,7 @@ function buildPlaylist(id: string, request: CreatePlaylistRequest): Playlist {
     durationSeconds,
     albumImageUrl: null,
     providerUri: null,
-    externalUrl: null,
+    externalUrl: `https://open.spotify.com/search/${encodeURIComponent(`${title} ${artist}`)}`,
     order: index + 1,
   }))
   return {
