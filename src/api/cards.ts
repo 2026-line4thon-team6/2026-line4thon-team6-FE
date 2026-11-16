@@ -121,6 +121,16 @@ function readBytes(file: Blob): Promise<ArrayBuffer> {
 }
 
 // 서버가 받은 바이트와 같은지 확인하는 해시. crypto.subtle은 https · localhost에서만 쓸 수 있다
+// 서버는 파일 이름을 200자까지 받는다. 넘으면 확장자를 살려 앞부분을 줄인다
+const MAX_FILE_NAME = 200
+
+function shortenFileName(name: string): string {
+  if (name.length <= MAX_FILE_NAME) return name
+  const dot = name.lastIndexOf('.')
+  const extension = dot > 0 && name.length - dot <= 10 ? name.slice(dot) : ''
+  return name.slice(0, MAX_FILE_NAME - extension.length) + extension
+}
+
 async function sha256Hex(file: Blob): Promise<string> {
   // 복사해서 넘긴다. 테스트(jsdom)의 FileReader 결과는 다른 realm의 ArrayBuffer라 그대로는 digest가 받지 않는다
   const digest = await crypto.subtle.digest('SHA-256', new Uint8Array(new Uint8Array(await readBytes(file))))
@@ -136,7 +146,7 @@ export async function uploadCardPhoto(file: File, { coupleId, idempotencyKey }: 
   const { data } = await apiFetch<MediaUpload>('/media/uploads', {
     method: 'POST',
     headers: { 'X-Couple-Id': coupleId, 'Idempotency-Key': idempotencyKey },
-    body: JSON.stringify({ fileName: file.name, contentType: file.type, bytes: file.size, purpose: 'CARD_PHOTO' }),
+    body: JSON.stringify({ fileName: shortenFileName(file.name), contentType: file.type, bytes: file.size, purpose: 'CARD_PHOTO' }),
   })
 
   const response = await fetch(data.uploadUrl, { method: data.method, headers: data.requiredHeaders, body: file })

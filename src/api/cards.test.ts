@@ -109,6 +109,23 @@ describe('uploadCardPhoto', () => {
     maxBytes: 10485760,
   }
 
+  it('파일 이름이 200자를 넘으면 확장자를 살려 200자로 줄여 보낸다 (서버 제한)', async () => {
+    fetchMock
+      .mockResolvedValueOnce(json(201, { data: ticket, meta: {} }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(json(200, { data: { id: 'med_01', status: 'READY' }, meta: {} }))
+    const { uploadCardPhoto } = await loadWithBackend()
+
+    await uploadCardPhoto(new File(['abc'], `${'가'.repeat(250)}.jpeg`, { type: 'image/jpeg' }), {
+      coupleId: 'cpl_01',
+      idempotencyKey: 'upload-key-0000001',
+    })
+
+    const { fileName } = JSON.parse(String((fetchMock.mock.calls[0][1] as RequestInit).body)) as { fileName: string }
+    expect(fileName).toHaveLength(200)
+    expect(fileName.endsWith('.jpeg')).toBe(true)
+  })
+
   it('업로드 주소로 올린 뒤 파일 해시로 업로드 완료를 알려야 카드에 붙일 수 있는 mediaId를 돌려준다', async () => {
     fetchMock
       .mockResolvedValueOnce(json(201, { data: ticket, meta: {} }))
