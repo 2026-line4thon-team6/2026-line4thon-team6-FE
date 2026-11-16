@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
+import type { ClearDriveOutcome, DisconnectResult } from '@/hooks/useCouplePage'
 import { MOCK_COUPLE, MOCK_ME } from '@/mocks/couples'
 import CouplePage from './CouplePage'
 
@@ -22,8 +23,10 @@ const meta = {
     onChangeStartDate: resolved(null),
     onRenameMascot: resolved(null),
     onUpdateProfile: resolved(null),
-    onDisconnect: resolved(null),
+    onDisconnect: fn(async (): Promise<DisconnectResult> => null),
     onDisconnected: fn(),
+    onClearActiveDrive: fn(async (): Promise<ClearDriveOutcome> => 'cancelled'),
+    onGoDrive: fn(),
   },
 } satisfies Meta<typeof CouplePage>
 
@@ -35,7 +38,11 @@ export const Default: Story = {}
 
 // 진행 중인 드라이브가 있어 연결을 해제할 수 없을 때
 export const DisconnectBlocked: Story = {
-  args: { onDisconnect: resolved('진행 중인 드라이브를 먼저 끝낸 뒤 해제해 주세요.') },
+  args: {
+    onDisconnect: fn(
+      async (): Promise<DisconnectResult> => ({ message: '진행 중인 드라이브를 먼저 끝낸 뒤 해제해 주세요.', activeDrive: true }),
+    ),
+  },
 }
 
 export const Unlinked: Story = {

@@ -4,7 +4,9 @@ import * as couplesApi from '@/api/couples'
 import { ApiError } from '@/api/client'
 import { mockFetchMyCouple, mockRenameMascot, resetMockCouple } from '@/mocks/couples'
 import type { UpdateMeRequest } from '@/types/me'
-import useCouplePage from './useCouplePage'
+import * as drivesApi from '@/api/drives'
+import type { Drive } from '@/types/drive'
+import useCouplePage, { type DisconnectResult } from './useCouplePage'
 
 const apiError = (status: number, code: string) =>
   new ApiError(status, {
@@ -164,12 +166,12 @@ describe('커플 연결이 바뀐 뒤의 수정 (403)', () => {
     vi.spyOn(couplesApi, 'disconnectCouple').mockRejectedValue(apiError(403, 'COUPLE_REQUIRED'))
     vi.spyOn(couplesApi, 'fetchMyCouple').mockResolvedValue(disconnected)
 
-    let error: string | null = null
+    let error: DisconnectResult = null
     await act(async () => {
       error = await result.current.disconnect()
     })
 
-    expect(error).toBe('커플 연결 상태가 바뀌었어요. 새로 불러온 정보를 확인해 주세요.')
+    expect(error).toEqual({ message: '커플 연결 상태가 바뀌었어요. 새로 불러온 정보를 확인해 주세요.', activeDrive: false })
     expect(result.current.status).toBe('unlinked')
   })
 
@@ -190,7 +192,7 @@ describe('연결 해제', () => {
   it('연결을 해제하면 성공(null)을 돌려준다', async () => {
     const { result } = await renderReady()
 
-    let error: string | null = 'x'
+    let error: DisconnectResult = { message: 'x', activeDrive: false }
     await act(async () => {
       error = await result.current.disconnect()
     })
@@ -208,11 +210,56 @@ describe('연결 해제', () => {
       }),
     )
 
-    let error: string | null = null
+    let error: DisconnectResult = null
     await act(async () => {
       error = await result.current.disconnect()
     })
 
-    expect(error).toBe('진행 중인 드라이브를 먼저 끝낸 뒤 해제해 주세요.')
+    expect(error).toEqual({ message: '진행 중인 드라이브를 먼저 끝낸 뒤 해제해 주세요.', activeDrive: true })
+  })
+})
+
+describe('연결 해제를 막는 드라이브 정리', () => {
+  const drive = (status: Drive['status']) => ({ id: 'drv_1', coupleId: 'cpl_1', controlVersion: 3, status }) as Drive
+  const active = (value: Drive | null) => ({ data: { drive: value }, meta: { requestId: 'r', serverTime: '' } })
+
+  it('준비 중(PREPARING)인 드라이브는 바로 취소하고 cancelled를 돌려준다', async () => {
+    const { result } = await renderReady()
+    vi.spyOn(drivesApi, 'getActiveDrive').mockResolvedValue(active(drive('PREPARING')))
+    const cancel = vi.spyOn(drivesApi, 'cancelPreparedDrive').mockResolvedValue({ data: drive('CANCELLED'), meta: { requestId: 'r', serverTime: '' } })
+
+    let outcome: string | undefined
+    await act(async () => {
+      outcome = await result.current.clearActiveDrive()
+    })
+
+    expect(outcome).toBe('cancelled')
+    expect(cancel).toHaveBeenCalledWith('drv_1', { expectedVersion: 3 }, expect.objectContaining({ coupleId: 'cpl_1' }))
+  })
+
+  it.each(['ACTIVE', 'PAUSED'] as const)('출발한(%s) 드라이브는 취소하지 않고 드라이브 화면으로 보내도록 goDrive를 돌려준다', async (status) => {
+    const { result } = await renderReady()
+    vi.spyOn(drivesApi, 'getActiveDrive').mockResolvedValue(active(drive(status)))
+    const cancel = vi.spyOn(drivesApi, 'cancelPreparedDrive')
+
+    let outcome: string | undefined
+    await act(async () => {
+      outcome = await result.current.clearActiveDrive()
+    })
+
+    expect(outcome).toBe('goDrive')
+    expect(cancel).not.toHaveBeenCalled()
+  })
+
+  it('그 사이 드라이브가 끝났으면 none을 돌려준다', async () => {
+    const { result } = await renderReady()
+    vi.spyOn(drivesApi, 'getActiveDrive').mockResolvedValue(active(null))
+
+    let outcome: string | undefined
+    await act(async () => {
+      outcome = await result.current.clearActiveDrive()
+    })
+
+    expect(outcome).toBe('none')
   })
 })
