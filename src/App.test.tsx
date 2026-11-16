@@ -215,7 +215,7 @@ describe('마이 화면', () => {
   it.each([
     ['개인정보 처리 방침', '개인정보 처리방침', '제1조 개인정보의 수집 항목 및 방법'],
     ['이용 약관', '이용 약관', '제1조 목적'],
-    ['오픈소스 라이선스', '오픈소스 라이선스', '[라이선스 전문]'],
+    ['오픈소스 라이선스', '오픈소스 라이선스', 'React Router'],
   ])("'%s'를 누르면 문서 화면으로 이동하고, 뒤로가면 마이 화면으로 돌아온다", async (menu, title, text) => {
     const user = renderApp('/my')
 
@@ -235,7 +235,7 @@ describe('마이 화면', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: '자주 묻는 질문' })).toBeInTheDocument()
     await user.click(await screen.findByRole('button', { name: '연인과 어떻게 연결하나요?' }))
-    expect(screen.getByText(/마이 화면의 프로필 카드를 눌러/)).toBeInTheDocument()
+    expect(screen.getByText(/연인 초대 화면에서 코드를 주고받으면/)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: '뒤로가기' }))
     expect(await screen.findByRole('button', { name: /누적 330km/ })).toBeInTheDocument()

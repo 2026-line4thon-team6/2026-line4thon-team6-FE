@@ -1,5 +1,6 @@
 import { useId, useState } from 'react'
 import chevronIcon from '@/assets/icons/chevron-gray.svg'
+import MarkdownText from '@/components/MarkdownText/MarkdownText'
 import ArchiveLayout from '@/pages/Archive/ArchiveLayout'
 import type { Faq } from '@/types/faq'
 import styles from './FaqPage.module.scss'
@@ -70,9 +71,7 @@ function FaqItem({ faq, open, onToggle }: FaqItemProps) {
 
       {open && (
         <div id={answerId} className={styles.answer}>
-          {faq.answer.split('\n').map((line, index) => (
-            <p key={index}>{line}</p>
-          ))}
+          <MarkdownText className={styles.answerText} text={faq.answer} />
         </div>
       )}
     </li>

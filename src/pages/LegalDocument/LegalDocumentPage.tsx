@@ -1,5 +1,6 @@
 import Button from '@/components/Button/Button'
 import GlassIconButton from '@/components/GlassIconButton/GlassIconButton'
+import MarkdownText from '@/components/MarkdownText/MarkdownText'
 import type { LegalDocumentStatus } from '@/hooks/useLegalDocument'
 import type { LegalDocument, LegalDocumentType } from '@/types/legal'
 import styles from './LegalDocumentPage.module.scss'
@@ -30,11 +31,7 @@ function LegalDocumentPage({ type, status, document, onBack, onRetry }: LegalDoc
 
       <main className={styles.body}>
         {status === 'ready' && document ? (
-          <div className={styles.content}>
-            {document.content.split('\n').map((line, index) => (
-              <p key={index}>{line}</p>
-            ))}
-          </div>
+          <MarkdownText className={styles.content} text={document.content} />
         ) : status === 'notFound' ? (
           // 서버에 아직 등록되지 않은 문서라 다시 시도해도 같으므로 버튼 없이 안내만 한다
           <p className={styles.message}>아직 준비 중인 문서예요.</p>

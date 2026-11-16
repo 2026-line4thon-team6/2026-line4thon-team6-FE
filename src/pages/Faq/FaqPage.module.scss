@@ -63,11 +63,15 @@
 }
 
 .answer {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
   padding: 0 18px 16px 39px; // 질문 글자(Q 표시 뒤)와 왼쪽 줄을 맞춘다
+}
+
+// 답변은 질문보다 한 단계 작은 14px 회색. 목록 · 굵게는 MarkdownText가 그린다
+.answerText {
   @include typo('body-s');
-  color: color('gray-600');
-  overflow-wrap: anywhere;
+
+  // 마지막 문단 · 목록 아래 여백은 답변 칸 여백과 겹치지 않게 뺀다
+  > :last-child {
+    margin-bottom: 0;
+  }
 }

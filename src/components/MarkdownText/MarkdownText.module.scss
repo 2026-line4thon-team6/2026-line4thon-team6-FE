@@ -1,0 +1,63 @@
+// 약관 등 긴 글 본문. 조항 제목 · 목록 · 문단 사이 간격으로 읽기 쉽게 나눈다
+.markdown {
+  @include typo('caption');
+  color: color('gray-600');
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+
+  h2 {
+    margin: 0 0 12px;
+    @include typo('body-m-bold');
+    color: color('black');
+  }
+
+  h3 {
+    margin: 24px 0 8px;
+    @include typo('body-s-bold');
+    color: color('black');
+  }
+
+  h4 {
+    margin: 16px 0 6px;
+    @include typo('caption-bold');
+    color: color('black');
+  }
+
+  // 맨 처음 제목은 위 여백 없이 붙인다
+  > :first-child {
+    margin-top: 0;
+  }
+
+  p {
+    margin: 0 0 8px;
+  }
+
+  ul,
+  ol {
+    margin: 0 0 8px;
+    padding-left: 18px;
+  }
+
+  ul {
+    list-style: disc;
+  }
+
+  ol {
+    list-style: decimal;
+  }
+
+  li + li {
+    margin-top: 4px;
+  }
+
+  strong {
+    font-weight: 600;
+    color: color('black');
+  }
+
+  hr {
+    margin: 20px 0;
+    border: 0;
+    border-top: 1px solid color('divider');
+  }
+}
