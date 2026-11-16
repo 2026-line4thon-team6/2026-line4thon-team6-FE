@@ -34,7 +34,7 @@ function createCard(now = Date.now()): Card {
     driveDate: '2026-11-03',
     region: '시흥 오이도',
     destination: {
-      placeId: '1',
+      placeId: 'plc_oido',
       name: '시흥 오이도',
       address: '경기 시흥시 정왕동',
       coordinate: { latitude: 37.3456, longitude: 126.6878 },

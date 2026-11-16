@@ -26,6 +26,15 @@ export interface PlaceDetail {
   previewRouteId: string | null // 위치를 모르면 null → 경로 미리보기를 보여주지 않는다
 }
 
+// GET /places/recommendations?category — 홈 '스마트 탐색 & 큐레이션'의 카테고리별 추천 (최대 7곳)
+// refreshToken을 다음 요청에 보내면 다른 추천을 받는다 (지금 백엔드는 카테고리마다 3곳이라 같은 목록)
+export interface PlaceRecommendations {
+  category: PlaceCategory
+  items: PlaceSummary[]
+  refreshToken: string | null
+  generatedAt: string
+}
+
 // GET /places/{placeId}/share
 export interface PlaceShare {
   url: string
