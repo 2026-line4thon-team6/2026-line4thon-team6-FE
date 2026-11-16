@@ -5,6 +5,8 @@ import searchIcon from '@/assets/icons/search-gray.svg'
 import mascotImage from '@/assets/images/record-map-mascot.webp'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
 import BottomNavBar from '@/components/BottomNavBar/BottomNavBar'
+import PendingCardBanner from '@/components/PendingCardBanner/PendingCardBanner'
+import type { PendingSummary } from '@/hooks/usePendingCards'
 import type { RecordMapMarker, RecordSummary } from '@/types/record'
 import { formatDate } from '@/utils/formatDate'
 import RecordListItem from './RecordListItem'
@@ -39,6 +41,10 @@ interface RecordMapPageProps {
   onShare: (card: RecordSummary) => void
   onRetry: () => void
   onTabChange?: (tab: NavTab) => void
+  // 24시간 안에 저장하지 않은 드라이브 카드 (홈과 같은 GET /home 의 pendingCards). 없으면 null
+  pendingCard?: PendingSummary | null
+  // 배너를 누르면 마감이 가장 빠른 카드의 작성 화면으로 간다
+  onPendingCardClick?: (driveId: string) => void
 }
 
 const VIEWS: { value: RecordView; label: string }[] = [
@@ -87,6 +93,8 @@ function RecordMapPage({
   onShare,
   onRetry,
   onTabChange,
+  pendingCard = null,
+  onPendingCardClick,
 }: RecordMapPageProps) {
   const [query, setQuery] = useState(searchedQuery)
   // 사진 마커를 누르면 그 목적지의 최신 기록을 미리보기로 띄운다
@@ -151,6 +159,17 @@ function RecordMapPage({
             <img src={calendarIcon} alt="" width={17} height={19} />
           </button>
         </form>
+
+        {/* 기능명세서 드라이브 18: 기록 지도에서도 24시간 동안 '카드 작성 이어서 하기'를 띄운다.
+            지도 조작(마커 · 보기 전환)을 가리지 않게 검색창 바로 아래에 둔다 */}
+        {pendingCard && (
+          <PendingCardBanner
+            className={styles.pendingBanner}
+            count={pendingCard.count}
+            remainingSeconds={pendingCard.remainingSeconds}
+            onClick={() => onPendingCardClick?.(pendingCard.driveId)}
+          />
+        )}
       </div>
 
       {view === 'list' && listStatus === 'ready' && (

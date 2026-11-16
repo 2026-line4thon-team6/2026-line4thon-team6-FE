@@ -53,6 +53,7 @@ function renderPage(props: Partial<Props> = {}) {
     onShare: vi.fn(),
     onRetry: vi.fn(),
     onTabChange: vi.fn(),
+    onPendingCardClick: vi.fn(),
   }
   render(
     <RecordMapPage
@@ -241,6 +242,30 @@ describe('RecordMapPage', () => {
       await user.keyboard('{Escape}')
 
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+  })
+
+  // 기능명세서 드라이브 18: 기록 지도에서도 24시간 동안 '카드 작성 이어서 하기'를 띄운다
+  describe('미작성 카드 이어서 쓰기', () => {
+    const PENDING = { count: 2, driveId: 'drv_02', remainingSeconds: 3 * 3600 }
+
+    it('미작성 카드가 있으면 배너를 보여주고, 누르면 마감이 가장 빠른 카드를 연다', async () => {
+      const { user, onPendingCardClick } = renderPage({ pendingCard: PENDING })
+
+      await user.click(screen.getByRole('button', { name: /미작성 드라이브 카드 2개/ }))
+      expect(onPendingCardClick).toHaveBeenCalledWith('drv_02')
+    })
+
+    it('목록형에서도 배너를 보여준다', () => {
+      renderPage({ view: 'list', pendingCard: PENDING })
+
+      expect(screen.getByRole('button', { name: /미작성 드라이브 카드 2개/ })).toBeInTheDocument()
+    })
+
+    it('미작성 카드가 없으면 배너를 보여주지 않는다', () => {
+      renderPage({ pendingCard: null })
+
+      expect(screen.queryByRole('button', { name: /미작성 드라이브 카드/ })).not.toBeInTheDocument()
     })
   })
 

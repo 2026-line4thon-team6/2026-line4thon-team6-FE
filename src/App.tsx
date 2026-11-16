@@ -624,9 +624,22 @@ function RouteSettingRoute() {
 // 기록 지도. 검색어나 날짜가 바뀌면 지도 마커와 기록 목록을 그 조건으로 다시 불러온다.
 // 검색어와 날짜는 함께 쓰지 않는다. 상단의 '총 N번'은 조건과 관계없는 목록 API의 totalCount를 쓴다
 // 보기 방식 · 검색어 · 날짜는 주소(?view=list&q=...&date=...)에 둔다. 기록 상세에 갔다가 돌아와도 보던 조건이 그대로 남는다
-function RecordMapRoute() {
+interface RecordMapRouteProps {
+  // GET /home 의 미작성 카드 (홈 배너와 같은 데이터). 아직 불러오지 않았으면 null
+  pendingCards: PendingCard[] | null
+  pendingReceivedAt: number
+  // 들어올 때마다 홈 데이터를 새로 불러온다. 카드 작성에서 나가 바로 기록 지도로 와도 배너가 맞게 뜬다
+  onEnter: () => void
+}
+
+function RecordMapRoute({ pendingCards, pendingReceivedAt, onEnter }: RecordMapRouteProps) {
   const navigate = useNavigate()
   const goTab = useTabNavigate()
+  const pendingCard = usePendingCards(pendingCards, pendingReceivedAt)
+
+  // 처음 마운트 때만 부른다 (onEnter는 렌더마다 새 함수라 의존성에 넣지 않는다)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => onEnter(), [])
   const [searchParams, setSearchParams] = useSearchParams()
   const view: RecordView = searchParams.get('view') === 'list' ? 'list' : 'map'
   const query = searchParams.get('q') ?? ''
@@ -706,6 +719,8 @@ function RecordMapRoute() {
         onDateClear={() => updateFilter({ date: null })}
         onCardClick={(card) => navigate(`/cards/${encodeURIComponent(card.cardId)}`)}
         onShare={handleShare}
+        pendingCard={pendingCard}
+        onPendingCardClick={(driveId) => navigate(cardPath(driveId))}
       />
       {sharing && (
         <RecordShareSheet
@@ -1172,7 +1187,16 @@ function App() {
               />
             }
           />
-          <Route path="/map" element={<RecordMapRoute />} />
+          <Route
+            path="/map"
+            element={
+              <RecordMapRoute
+                pendingCards={homeData.pendingCards}
+                pendingReceivedAt={homeData.receivedAt}
+                onEnter={() => void homeData.reload()}
+              />
+            }
+          />
           <Route
             path="/cards/:cardId"
             element={

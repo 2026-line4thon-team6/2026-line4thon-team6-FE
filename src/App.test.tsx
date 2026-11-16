@@ -1211,6 +1211,16 @@ describe('드라이브 카드 작성', () => {
     expect(await screen.findByRole('button', { name: /미작성 드라이브 카드 1개/ })).toBeInTheDocument()
   })
 
+  // 기능명세서 드라이브 18: 기록 지도에서도 24시간 동안 '카드 작성 이어서 하기'를 띄운다
+  it('기록 지도에도 미작성 카드 배너가 뜨고, 누르면 그 카드 작성 화면으로 간다', async () => {
+    const user = renderApp('/map')
+
+    await user.click(await screen.findByRole('button', { name: /미작성 드라이브 카드 1개/ }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: '2026년 11월 3일' })).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: '내 한 줄 소감' })).toBeInTheDocument()
+  })
+
   it('카드 작성 주소로 바로 들어올 수 있다', async () => {
     renderApp('/drives/drv_01/card')
 
