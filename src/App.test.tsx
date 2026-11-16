@@ -4,7 +4,14 @@ import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { logout } from '@/api/auth'
 import { prepareDrive } from '@/api/drives'
-import { MOCK_PARTNER_INVITE_CODE, MOCK_RESTORE_INVITE_CODE, mockEndSession, mockFetchMe, resetMockCouple } from '@/mocks/couples'
+import {
+  MOCK_PARTNER_INVITE_CODE,
+  MOCK_RESTORE_INVITE_CODE,
+  mockDisconnectCouple,
+  mockEndSession,
+  mockFetchMe,
+  resetMockCouple,
+} from '@/mocks/couples'
 import { mockFetchFavorites, mockFetchPublicPlace, resetMockPlaces } from '@/mocks/places'
 import { resetMockCards } from '@/mocks/cards'
 import { resetMockDjPlaylists } from '@/mocks/djPlaylists'
@@ -686,6 +693,15 @@ describe('드라이브 모드 진입', () => {
 
     expect(await screen.findByRole('button', { name: '경로 탐색' })).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('연인과 연결돼 있지 않으면 드라이브 시작하기가 연인 초대 화면으로 보낸다', async () => {
+    await mockDisconnectCouple()
+    const user = renderApp()
+
+    await user.click(await screen.findByRole('button', { name: '드라이브 시작하기' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: '연인 초대' })).toBeInTheDocument()
   })
 
   it('장소 상세의 드라이브 시작하기에서도 드라이브명 시트가 열린다', async () => {

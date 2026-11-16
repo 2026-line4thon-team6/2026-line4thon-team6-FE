@@ -230,6 +230,7 @@ function PlaceDetailRoute({ placeId, couple, mascotName, myUserId, onFavoriteCha
         onSubmit={(name) => void drive.submit(name)}
         onClose={drive.closeSheet}
       />
+      {drive.toast && <Toast message={drive.toast} onDone={drive.clearToast} />}
     </>
   )
 }
@@ -1056,12 +1057,17 @@ function HomeRoute({
         />
       )}
       {/* 웹앱은 기기 설정 화면을 직접 열 수 없어 문구로 안내한다. 홈은 위치 없이도 쓸 수 있어 막지 않는 토스트로 띄운다 */}
-      {locationNoticeOpen && (
-        <Toast
-          message="브라우저 설정에서 위치 권한을 허용하면 주변 날씨와 교통 정보를 볼 수 있어요."
-          duration={4000}
-          onDone={onLocationNoticeDone}
-        />
+      {/* 토스트는 같은 자리에 뜨므로 드라이브 시작 실패를 먼저 보여 준다 */}
+      {drive.toast ? (
+        <Toast message={drive.toast} onDone={drive.clearToast} />
+      ) : (
+        locationNoticeOpen && (
+          <Toast
+            message="브라우저 설정에서 위치 권한을 허용하면 주변 날씨와 교통 정보를 볼 수 있어요."
+            duration={4000}
+            onDone={onLocationNoticeDone}
+          />
+        )
       )}
     </>
   )
