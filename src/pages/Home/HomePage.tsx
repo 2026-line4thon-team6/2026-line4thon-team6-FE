@@ -48,6 +48,8 @@ interface HomePageProps {
   // 24시간 안에 저장하지 않은 드라이브 카드 (GET /home 의 pendingCards). 없으면 null
   pendingCard?: PendingSummary | null
   activeDrive?: boolean
+  // 남은 드라이브가 출발 전(준비 중)이면 배너 문구를 바꾼다
+  activeDrivePreparing?: boolean
   onNotificationClick?: () => void
   onStartDrive?: () => void
   onCategoryChange?: (category: PlaceCategory) => void
@@ -66,6 +68,7 @@ function HomePage({
   timeOfDay,
   pendingCard = null,
   activeDrive = false,
+  activeDrivePreparing = false,
   onNotificationClick,
   onStartDrive,
   onCategoryChange,
@@ -99,7 +102,11 @@ function HomePage({
         </h1>
 
         {activeDrive ? (
-          <ActiveDriveBanner className={styles.pendingBanner} onClick={() => onActiveDriveClick?.()} />
+          <ActiveDriveBanner
+            className={styles.pendingBanner}
+            preparing={activeDrivePreparing}
+            onClick={() => onActiveDriveClick?.()}
+          />
         ) : (
           pendingCard && (
             <PendingCardBanner

@@ -1061,7 +1061,8 @@ function HomeRoute({
         onCategoryChange={onCategoryChange}
         carConnected
         pendingCard={summary}
-        activeDrive={activeDrive}
+        activeDrive={activeDrive !== 'none'}
+        activeDrivePreparing={activeDrive === 'preparing'}
         onActiveDriveClick={() => navigate('/drive')}
         onNotificationClick={() => navigate('/notifications')}
         onSpotClick={(id) => navigate(`/places/${id}`)}
