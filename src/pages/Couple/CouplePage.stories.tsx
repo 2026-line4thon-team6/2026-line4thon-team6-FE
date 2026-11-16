@@ -16,14 +16,12 @@ const meta = {
     status: 'ready',
     couple: MOCK_COUPLE.couple,
     me: MOCK_ME,
-    inviteCode: 'jsd82nk9',
     today: '2026-11-13',
     onBack: fn(),
     onRetry: fn(),
     onChangeStartDate: resolved(null),
     onRenameMascot: resolved(null),
     onUpdateProfile: resolved(null),
-    onCopyInviteCode: fn(async () => {}),
     onDisconnect: resolved(null),
     onDisconnected: fn(),
   },
@@ -38,10 +36,6 @@ export const Default: Story = {}
 // 진행 중인 드라이브가 있어 연결을 해제할 수 없을 때
 export const DisconnectBlocked: Story = {
   args: { onDisconnect: resolved('진행 중인 드라이브를 먼저 끝낸 뒤 해제해 주세요.') },
-}
-
-export const NoInviteCode: Story = {
-  args: { inviteCode: null },
 }
 
 export const Unlinked: Story = {

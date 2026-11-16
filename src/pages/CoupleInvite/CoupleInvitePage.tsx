@@ -2,7 +2,9 @@ import { useId, useState } from 'react'
 import Button from '@/components/Button/Button'
 import GlassIconButton from '@/components/GlassIconButton/GlassIconButton'
 import Toast from '@/components/Toast/Toast'
+import type { CoupleJoinResult } from '@/types/couple'
 import styles from './CoupleInvitePage.module.scss'
+import RestoreSheet from './RestoreSheet'
 
 interface CoupleInvitePageProps {
   // linked: 이미 연인과 연결돼 있음
@@ -13,8 +15,10 @@ interface CoupleInvitePageProps {
   onCopy: (code: string) => Promise<void>
   // 기기 공유 화면을 열었으면 'shared', 지원하지 않아 대신 복사했으면 'copied'
   onShare: (code: string) => Promise<'shared' | 'copied'>
-  // 성공하면 null, 실패하면 안내 문구
-  onConnect: (code: string) => Promise<string | null>
+  // 예전에 연결했던 연인이면 restore → 다시 연결할지 묻는다
+  onConnect: (code: string) => Promise<CoupleJoinResult>
+  // 예전 커플 연결 복구. 성공하면 null, 실패하면 안내 문구
+  onRestore: (code: string) => Promise<string | null>
   // 연결에 성공했을 때 (메인 홈으로 이동)
   onConnected: () => void
   // 코드를 비워 두고 완료를 눌렀을 때 (건너뛰기 → 메인 홈)
@@ -30,6 +34,7 @@ function CoupleInvitePage({
   onCopy,
   onShare,
   onConnect,
+  onRestore,
   onConnected,
   onSkip,
 }: CoupleInvitePageProps) {
@@ -37,6 +42,8 @@ function CoupleInvitePage({
   const [connecting, setConnecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  // 다시 연결할지 묻는 중인 연인 코드
+  const [restoreCode, setRestoreCode] = useState<string | null>(null)
   const errorId = useId()
 
   const handleShare = async () => {
@@ -51,10 +58,17 @@ function CoupleInvitePage({
       return
     }
     setConnecting(true)
-    const message = await onConnect(partnerCode)
+    const result = await onConnect(partnerCode)
     setConnecting(false)
-    if (message) setError(message)
-    else onConnected()
+    if (result.status === 'connected') onConnected()
+    else if (result.status === 'restore') setRestoreCode(partnerCode)
+    else setError(result.message)
+  }
+
+  const handleRestore = async (code: string) => {
+    const message = await onRestore(code)
+    if (!message) onConnected()
+    return message
   }
 
   return (
@@ -147,6 +161,9 @@ function CoupleInvitePage({
         </Button>
       </footer>
 
+      {restoreCode && (
+        <RestoreSheet onRestore={() => handleRestore(restoreCode)} onClose={() => setRestoreCode(null)} />
+      )}
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}
     </div>
   )

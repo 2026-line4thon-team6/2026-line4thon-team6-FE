@@ -3,7 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as couplesApi from '@/api/couples'
 import { ApiError } from '@/api/client'
 import { mockFetchMyCouple, mockRenameMascot, resetMockCouple } from '@/mocks/couples'
+import type { UpdateMeRequest } from '@/types/me'
 import useCouplePage from './useCouplePage'
+
+const apiError = (status: number, code: string) =>
+  new ApiError(status, {
+    error: { code, message: code, details: [], retryable: false },
+    meta: { requestId: 'req', serverTime: '2026-11-13T00:00:00Z' },
+  })
 
 async function renderReady() {
   const hook = renderHook(() => useCouplePage())
@@ -20,22 +27,14 @@ afterEach(() => {
 })
 
 describe('불러오기', () => {
-  it('커플 정보 · 내 계정 · 커플 코드를 함께 불러온다', async () => {
+  it('커플 정보 · 내 계정을 함께 불러온다 (연결하면 내 코드는 소진돼 조회하지 않는다)', async () => {
+    const fetchInvite = vi.spyOn(couplesApi, 'fetchMyInvite')
     const { result } = await renderReady()
 
     expect(result.current.status).toBe('ready')
     expect(result.current.couple?.startDate).toBe('2026-10-20')
     expect(result.current.me?.id).toBe('usr_minjun')
-    expect(result.current.inviteCode).toBe('jsd82nk9')
-  })
-
-  it('커플 코드를 불러오지 못해도 화면은 보여 준다', async () => {
-    vi.spyOn(couplesApi, 'fetchMyInvite').mockRejectedValue(new ApiError(404, null))
-
-    const { result } = await renderReady()
-
-    expect(result.current.status).toBe('ready')
-    expect(result.current.inviteCode).toBeNull()
+    expect(fetchInvite).not.toHaveBeenCalled()
   })
 
   it('연결된 커플이 없으면 unlinked', async () => {
@@ -84,6 +83,14 @@ describe('수정', () => {
     expect(result.current.couple?.members.find((member) => member.id === 'usr_minjun')?.nickname).toBe('준이')
   })
 
+  it('바꿀 값이 없는 빈 요청(PATCH /me {} → 422)은 타입에서 막는다', () => {
+    // @ts-expect-error 닉네임 · 생년월일 중 하나는 있어야 한다
+    const empty: UpdateMeRequest = {}
+    const onlyBirthDate: UpdateMeRequest = { birthDate: null }
+
+    expect([empty, onlyBirthDate]).toHaveLength(2)
+  })
+
   it('서버가 거절하면 안내 문구를 돌려준다', async () => {
     const { result } = await renderReady()
 
@@ -107,6 +114,75 @@ describe('수정', () => {
 
     expect(error).toBe('연인이 먼저 정보를 바꿨어요. 새로 불러온 정보를 확인해 주세요.')
     expect(result.current.couple?.mascotName).toBe('연인이바꾼이름')
+  })
+})
+
+describe('커플 연결이 바뀐 뒤의 수정 (403)', () => {
+  const disconnected = {
+    data: { couple: null, connectionStatus: 'DISCONNECTED' as const },
+    meta: { requestId: 'req', serverTime: '2026-11-13T00:00:00Z' },
+  }
+
+  it.each(['COUPLE_CONTEXT_CHANGED', 'COUPLE_REQUIRED'])(
+    '%s면 커플 정보를 다시 불러오고, 연결이 끊겼으면 unlinked로 바꾼다',
+    async (code) => {
+      const { result } = await renderReady()
+      vi.spyOn(couplesApi, 'renameMascot').mockRejectedValue(apiError(403, code))
+      vi.spyOn(couplesApi, 'fetchMyCouple').mockResolvedValue(disconnected)
+
+      let error: string | null = null
+      await act(async () => {
+        error = await result.current.renameMascot('씽씽이')
+      })
+
+      expect(error).toBe('커플 연결 상태가 바뀌었어요. 새로 불러온 정보를 확인해 주세요.')
+      expect(result.current.status).toBe('unlinked')
+      expect(result.current.couple).toBeNull()
+    },
+  )
+
+  it('다른 커플로 바뀌었으면 새 커플 정보로 바꾼다', async () => {
+    const { result } = await renderReady()
+    const { data } = await mockFetchMyCouple()
+    const other = { ...data.couple!, id: 'cpl_other', mascotName: '새붕이' }
+    vi.spyOn(couplesApi, 'updateCoupleStartDate').mockRejectedValue(apiError(403, 'COUPLE_CONTEXT_CHANGED'))
+    vi.spyOn(couplesApi, 'fetchMyCouple').mockResolvedValue({
+      data: { couple: other, connectionStatus: 'CONNECTED' },
+      meta: { requestId: 'req', serverTime: '2026-11-13T00:00:00Z' },
+    })
+
+    await act(async () => {
+      await result.current.changeStartDate('2026-10-01')
+    })
+
+    expect(result.current.status).toBe('ready')
+    expect(result.current.couple?.id).toBe('cpl_other')
+  })
+
+  it('연결 해제 중 이미 연결이 끊겼으면(COUPLE_REQUIRED) 다시 불러와 unlinked로 바꾼다', async () => {
+    const { result } = await renderReady()
+    vi.spyOn(couplesApi, 'disconnectCouple').mockRejectedValue(apiError(403, 'COUPLE_REQUIRED'))
+    vi.spyOn(couplesApi, 'fetchMyCouple').mockResolvedValue(disconnected)
+
+    let error: string | null = null
+    await act(async () => {
+      error = await result.current.disconnect()
+    })
+
+    expect(error).toBe('커플 연결 상태가 바뀌었어요. 새로 불러온 정보를 확인해 주세요.')
+    expect(result.current.status).toBe('unlinked')
+  })
+
+  it('시작일이 미래면(422 INVALID_START_DATE) 날짜를 다시 고르라고 안내한다', async () => {
+    const { result } = await renderReady()
+    vi.spyOn(couplesApi, 'updateCoupleStartDate').mockRejectedValue(apiError(422, 'INVALID_START_DATE'))
+
+    let error: string | null = null
+    await act(async () => {
+      error = await result.current.changeStartDate('2999-01-01')
+    })
+
+    expect(error).toBe('오늘 이후 날짜는 고를 수 없어요.')
   })
 })
 

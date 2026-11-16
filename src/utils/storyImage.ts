@@ -1,6 +1,7 @@
 import markerDotIcon from '@/assets/icons/record-marker-dot.svg'
 import markerFrameIcon from '@/assets/icons/record-marker-frame.svg'
 import mapImageUrl from '@/assets/images/record-story-map.webp'
+import emptyPhotoUrl from '@/assets/images/card/photo-empty.webp'
 import { type ImageShareResult, shareImage } from './share'
 
 // 인스타그램 스토리용 드라이브 기록 카드 이미지 (Figma 284:15555).
@@ -27,15 +28,16 @@ const toMapImage = (latitude: number, longitude: number) => ({
 // 사진 마커 (RecordMarker와 같은 모양): 말풍선 54 × 61, 사진 46px, 좌표는 말풍선 아래 점(27, 66)
 const MARKER = { width: 54, anchorX: 27, anchorY: 66, photo: 46, photoInset: 4, photoRadius: 8, shadow: 20, dotTop: 61 }
 const BACKGROUND_BLUR = 1.5 * SCALE
+const EMPTY_BACKGROUND = '#faeeed' // color('divider')
 
 export interface StoryMarker {
   latitude: number
   longitude: number
-  photoUrl: string
+  photoUrl: string | null // 사진이 없는 기록은 null → 기본 일러스트
 }
 
 interface StoryContent {
-  photoUrl: string
+  photoUrl: string | null // 사진이 없는 기록은 null → 기본 일러스트 (D15)
   title: string
   date: string // 화면용 날짜 (예: 2026년 11월 3일)
   markers?: StoryMarker[] // 배경 지도에 놓을 기록 사진 마커
@@ -60,6 +62,34 @@ function drawCover(ctx: CanvasRenderingContext2D, image: HTMLImageElement, x: nu
   ctx.drawImage(image, (image.naturalWidth - sw) / 2, (image.naturalHeight - sh) / 2, sw, sh, x, y, width, height)
 }
 
+// 사진이 없거나 불러오지 못한 칸: 연한 배경에 기본 일러스트를 가운데 맞춰 그린다 (RecordPhoto와 같은 모양)
+function drawEmpty(ctx: CanvasRenderingContext2D, empty: HTMLImageElement | null, x: number, y: number, width: number, height: number) {
+  ctx.fillStyle = EMPTY_BACKGROUND
+  ctx.fillRect(x, y, width, height)
+  if (!empty) return
+  const padding = 0
+  const scale = Math.min((width - padding * 2) / empty.naturalWidth, (height - padding * 2) / empty.naturalHeight)
+  const w = empty.naturalWidth * scale
+  const h = empty.naturalHeight * scale
+  ctx.drawImage(empty, x + (width - w) / 2, y + (height - h) / 2, w, h)
+}
+
+function drawPhoto(
+  ctx: CanvasRenderingContext2D,
+  photo: HTMLImageElement | null,
+  empty: HTMLImageElement | null,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) {
+  if (photo) drawCover(ctx, photo, x, y, width, height)
+  else drawEmpty(ctx, empty, x, y, width, height)
+}
+
+// 사진 주소가 없으면 null. 불러오지 못해도(CORS · 만료) null로 두고 기본 일러스트를 그린다
+const loadPhoto = (url: string | null) => (url ? loadImage(url).catch(() => null) : Promise.resolve(null))
+
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
   ctx.beginPath()
   ctx.roundRect(x, y, width, height, radius)
@@ -73,13 +103,14 @@ function fitText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number) 
   return `${fitted}…`
 }
 
-// 배경 지도와 사진 마커. 지도를 불러오지 못하면 코랄 그라데이션으로, 사진을 못 불러온 마커는 건너뛴다
-async function drawBackground(ctx: CanvasRenderingContext2D, markers: StoryMarker[]) {
-  const [map, frame, dot, ...photos] = await Promise.all(
-    [mapImageUrl, markerFrameIcon, markerDotIcon, ...markers.map((marker) => marker.photoUrl)].map((url) =>
-      loadImage(url).catch(() => null),
-    ),
-  )
+// 배경 지도와 사진 마커. 지도를 불러오지 못하면 코랄 그라데이션으로, 사진이 없는 마커는 기본 일러스트로 그린다
+async function drawBackground(ctx: CanvasRenderingContext2D, markers: StoryMarker[], empty: HTMLImageElement | null) {
+  const [map, frame, dot, ...photos] = await Promise.all([
+    loadPhoto(mapImageUrl),
+    loadPhoto(markerFrameIcon),
+    loadPhoto(markerDotIcon),
+    ...markers.map((marker) => loadPhoto(marker.photoUrl)),
+  ])
 
   ctx.save()
   ctx.filter = `blur(${BACKGROUND_BLUR}px)`
@@ -95,7 +126,7 @@ async function drawBackground(ctx: CanvasRenderingContext2D, markers: StoryMarke
 
   markers.forEach((marker, index) => {
     const photo = photos[index]
-    if (!photo || !frame || !dot) return
+    if (!frame || !dot) return
     const point = toMapImage(marker.latitude, marker.longitude)
     const left = point.x * MAP_SCALE - MARKER.anchorX * SCALE
     const top = point.y * MAP_SCALE - MAP_OFFSET_Y - MARKER.anchorY * SCALE
@@ -106,7 +137,7 @@ async function drawBackground(ctx: CanvasRenderingContext2D, markers: StoryMarke
     ctx.save()
     roundRect(ctx, left + at(MARKER.photoInset), top + at(MARKER.photoInset), at(MARKER.photo), at(MARKER.photo), at(MARKER.photoRadius))
     ctx.clip()
-    drawCover(ctx, photo, left + at(MARKER.photoInset), top + at(MARKER.photoInset), at(MARKER.photo), at(MARKER.photo))
+    drawPhoto(ctx, photo, empty, left + at(MARKER.photoInset), top + at(MARKER.photoInset), at(MARKER.photo), at(MARKER.photo))
     ctx.restore()
     ctx.drawImage(dot, left + at(MARKER.anchorX - 5 - MARKER.shadow), top + at(MARKER.dotTop - MARKER.shadow), at(dot.naturalWidth), at(dot.naturalHeight))
   })
@@ -121,13 +152,14 @@ export async function createStoryImage({ photoUrl, title, date, markers = [] }: 
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('캔버스를 사용할 수 없어요.')
 
-  const [photo] = await Promise.all([
-    loadImage(photoUrl),
+  const [photo, empty] = await Promise.all([
+    loadPhoto(photoUrl),
+    loadPhoto(emptyPhotoUrl),
     // 앱 글꼴이 아직 안 불러와졌으면 기다린다
     document.fonts?.load(`600 ${20 * SCALE}px Pretendard`).catch(() => undefined),
   ])
 
-  await drawBackground(ctx, markers)
+  await drawBackground(ctx, markers, empty)
 
   // 카드 (그림자 0 0 10px 20%)
   const cardX = (WIDTH - CARD.width) / 2
@@ -146,7 +178,7 @@ export async function createStoryImage({ photoUrl, title, date, markers = [] }: 
   ctx.save()
   roundRect(ctx, photoX, photoY, PHOTO.width, PHOTO.height, PHOTO.radius)
   ctx.clip()
-  drawCover(ctx, photo, photoX, photoY, PHOTO.width, PHOTO.height)
+  drawPhoto(ctx, photo, empty, photoX, photoY, PHOTO.width, PHOTO.height)
   ctx.restore()
 
   // 제목 (20px SemiBold) · 날짜 (12px Medium, 코랄 stroke)

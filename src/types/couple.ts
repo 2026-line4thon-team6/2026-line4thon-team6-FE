@@ -26,10 +26,16 @@ export interface CoupleConnection {
   connectionStatus: 'UNLINKED' | 'CONNECTED' | 'DISCONNECTED'
 }
 
-// GET /couple-invites/me — 내 커플 코드. 연결 후에도 표시용으로 남는다
+// GET /couple-invites/me — 내 커플 코드. 연결하면 소진 · 폐기돼 조회되지 않는다(404 INVITE_NOT_FOUND)
 export interface CoupleInvite {
   inviteId: string
   code: string // 불투명 문자열. 길이 · 형식을 검증하지 않는다
   expiresAt: string
   status: 'ACTIVE' | 'CONSUMED' | 'REVOKED' | 'EXPIRED'
 }
+
+// 연인 코드로 연결한 결과
+export type CoupleJoinResult =
+  | { status: 'connected' }
+  | { status: 'restore' } // 예전에 연결했던 연인. 다시 연결할지 물은 뒤 복구(POST /couples/restore)한다
+  | { status: 'failed'; message: string }

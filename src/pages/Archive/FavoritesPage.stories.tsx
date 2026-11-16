@@ -1,22 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
 import { fn } from 'storybook/test'
-import { MOCK_SPOTS } from '@/mocks/home'
+import { MOCK_PLACES } from '@/mocks/places'
 import type { PlaceCategory, PlaceSummary } from '@/types/place'
 import FavoritesPage from './FavoritesPage'
 
 // Figma 시안의 바다 카테고리 찜 3곳
-const SEA_PLACES: PlaceSummary[] = MOCK_SPOTS.filter((spot) => spot.categoryId === 1).map((spot) => ({
-  id: String(spot.id),
-  name: spot.name,
-  region: spot.region,
-  address: spot.region,
-  coordinate: { latitude: 37.3456, longitude: 126.6878 },
-  thumbnailUrl: spot.imageUrl ?? null,
-  category: 'SEA',
-  hashtags: spot.tags,
-  estimatedDurationSeconds: { 1: 3600, 2: 10800, 3: 4200 }[spot.id] ?? 3600,
-  distanceMeters: null,
+const SEA_PLACES: PlaceSummary[] = MOCK_PLACES.filter((place) => place.category === 'SEA').map((place) => ({
+  ...place,
   isFavorite: true,
 }))
 

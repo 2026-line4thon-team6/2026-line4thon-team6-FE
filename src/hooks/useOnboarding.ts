@@ -73,7 +73,8 @@ function useOnboarding() {
         birthDate: toIsoDate(answers.birthDate, today),
         gender: answers.gender,
         coupleStartDate: toIsoDate(answers.coupleStartDate, today),
-        mascotName: answers.mascotName.trim(),
+        // 이름을 비우면 빈 문자열 대신 null을 보내 기본 이름(붕붕이)을 쓰게 한다
+        mascotName: answers.mascotName.trim() || null,
         consents: [
           { type: 'TERMS', version: terms.data.version, agreed: answers.agreed },
           { type: 'PRIVACY', version: privacy.data.version, agreed: answers.agreed },
