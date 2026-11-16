@@ -18,6 +18,8 @@ const listeners = new Set<{ onChange: (position: Position) => void; onDenied?: (
 const moveTo = (position: Position) => act(() => listeners.forEach(({ onChange }) => onChange(position)))
 const denyLocation = () => act(() => listeners.forEach(({ onDenied }) => onDenied?.()))
 const requestPosition = vi.fn<() => Promise<Position | null>>()
+// 홈에서 현재 위치를 물을 때 권한이 막혀 있는지
+let homeLocationDenied = false
 
 const at = (coordinate: Position['coordinate'], accuracyMeters: number, secondsLater = 0): Position => ({
   coordinate,
@@ -37,6 +39,11 @@ vi.mock('@/utils/location', async (importOriginal) => {
       return () => listeners.delete(listener)
     },
     requestPosition: () => requestPosition(),
+    getCurrentCoordinate: (onDenied?: () => void) => {
+      if (!homeLocationDenied) return actual.getCurrentCoordinate(onDenied)
+      onDenied?.()
+      return Promise.resolve(null)
+    },
   }
 })
 
@@ -44,6 +51,7 @@ const HANGANG = { latitude: 37.5103, longitude: 126.9955 }
 
 beforeEach(() => {
   listeners.clear()
+  homeLocationDenied = false
   requestPosition.mockResolvedValue(null)
   resetMockCouple()
   resetMockPlaces()
@@ -168,5 +176,32 @@ describe('주행 중 위치 권한', () => {
 
     expect(locationPopup()).not.toBeInTheDocument()
     expect(screen.queryByText('브라우저 설정에서 위치 권한을 허용해 주세요.')).not.toBeInTheDocument()
+  })
+})
+
+describe('홈 위치 권한 (기능명세서 1️⃣)', () => {
+  const notice = '브라우저 설정에서 위치 권한을 허용하면 주변 날씨와 교통 정보를 볼 수 있어요.'
+
+  it('위치 권한이 막혀 있으면 설정에서 허용하도록 한 번 안내한다', async () => {
+    homeLocationDenied = true
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText(notice)).toBeInTheDocument()
+  })
+
+  it('위치를 얻으면 안내하지 않는다', async () => {
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    await screen.findByRole('button', { name: '드라이브 시작하기' })
+    await act(() => new Promise((resolve) => setTimeout(resolve, 50)))
+    expect(screen.queryByText(notice)).not.toBeInTheDocument()
   })
 })

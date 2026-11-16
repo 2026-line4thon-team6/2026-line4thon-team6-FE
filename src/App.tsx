@@ -11,6 +11,7 @@ import useLegalDocument from '@/hooks/useLegalDocument'
 import useMyCouple from '@/hooks/useMyCouple'
 import CardPromptModal from '@/components/CardPromptModal/CardPromptModal'
 import DriveNameSheet from '@/components/DriveNameSheet/DriveNameSheet'
+import Toast from '@/components/Toast/Toast'
 import useCardDetail from '@/hooks/useCardDetail'
 import { arrangeGenres, arrangeMoods, arrangeWeathers } from '@/utils/playlistKeywords'
 import useDrive from '@/hooks/useDrive'
@@ -982,6 +983,9 @@ interface HomeRouteProps {
   // 미작성 카드 팝업은 앱을 켠 뒤 한 번만 띄운다. 이후에는 배너로만 알린다
   pendingPromptSeen: boolean
   onPendingPromptSeen: () => void
+  // 위치 권한이 막혀 날씨 · 교통을 못 채울 때 띄우는 설정 안내. 앱을 켠 뒤 한 번만 띄운다
+  locationNoticeOpen: boolean
+  onLocationNoticeDone: () => void
   onLikeToggle: (id: string, liked: boolean) => void
 }
 
@@ -997,6 +1001,8 @@ function HomeRoute({
   onCategoryChange,
   pendingPromptSeen,
   onPendingPromptSeen,
+  locationNoticeOpen,
+  onLocationNoticeDone,
   onLikeToggle,
 }: HomeRouteProps) {
   const navigate = useNavigate()
@@ -1047,6 +1053,14 @@ function HomeRoute({
           remainingSeconds={summary.remainingSeconds}
           onConfirm={() => goCard(summary.driveId)}
           onClose={onPendingPromptSeen}
+        />
+      )}
+      {/* 웹앱은 기기 설정 화면을 직접 열 수 없어 문구로 안내한다. 홈은 위치 없이도 쓸 수 있어 막지 않는 토스트로 띄운다 */}
+      {locationNoticeOpen && (
+        <Toast
+          message="브라우저 설정에서 위치 권한을 허용하면 주변 날씨와 교통 정보를 볼 수 있어요."
+          duration={4000}
+          onDone={onLocationNoticeDone}
         />
       )}
     </>
@@ -1111,6 +1125,7 @@ function App() {
   // 추천 장소는 홈을 떠났다 와도 다시 받지 않도록 App에 둔다. 상세 · 보관함의 찜 변경도 여기에 맞춘다
   const recommendations = useRecommendations(auth.status === 'signedIn' && auth.user !== null)
   const [pendingPromptSeen, setPendingPromptSeen] = useState(false)
+  const [locationNoticeSeen, setLocationNoticeSeen] = useState(false)
   // 로그인한 사용자(GET /me)를 먼저 쓰고, 없으면 홈 응답의 내 정보를 쓴다
   const me = { id: auth.user?.id ?? home.userId, nickname: auth.user?.nickname ?? home.nickname }
   const partnerNickname = home.couple?.partnerNickname ?? null
@@ -1157,6 +1172,8 @@ function App() {
                 onCategoryChange={recommendations.setCategory}
                 pendingPromptSeen={pendingPromptSeen}
                 onPendingPromptSeen={() => setPendingPromptSeen(true)}
+                locationNoticeOpen={homeData.locationDenied && !locationNoticeSeen}
+                onLocationNoticeDone={() => setLocationNoticeSeen(true)}
                 onLikeToggle={(placeId, liked) => void recommendations.toggleFavorite(placeId, liked)}
               />
             }

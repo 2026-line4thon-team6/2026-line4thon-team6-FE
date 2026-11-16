@@ -16,14 +16,18 @@ const mockPosition = (): Position => ({
   speedMetersPerSecond: null,
 })
 
-export function getCurrentCoordinate(): Promise<Coordinate | null> {
+// 위치를 못 얻으면 null. 그중 사용자가 권한을 막은 경우만 onDenied로 따로 알린다 (설정 안내용. 시간 초과 등은 조용히 넘긴다)
+export function getCurrentCoordinate(onDenied?: () => void): Promise<Coordinate | null> {
   if (USE_MOCK) return Promise.resolve(MOCK_CURRENT_COORDINATE)
   if (!navigator.geolocation) return Promise.resolve(null)
 
   return new Promise((resolve) => {
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => resolve({ latitude: coords.latitude, longitude: coords.longitude }),
-      () => resolve(null),
+      (error) => {
+        if (error.code === error.PERMISSION_DENIED) onDenied?.()
+        resolve(null)
+      },
       { timeout: 5000, maximumAge: 60_000 },
     )
   })
