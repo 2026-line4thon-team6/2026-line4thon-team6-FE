@@ -6,7 +6,7 @@ import driverImage from '@/assets/images/card/character-driver.webp'
 import passengerImage from '@/assets/images/card/character-passenger.webp'
 import Button from '@/components/Button/Button'
 import GlassIconButton from '@/components/GlassIconButton/GlassIconButton'
-import { MAX_REFLECTION_LENGTH, type DriveRole } from '@/hooks/useDriveCard'
+import { isCardEditable, MAX_REFLECTION_LENGTH, type DriveRole } from '@/hooks/useDriveCard'
 import type { Card } from '@/types/card'
 import { formatCardDate, formatDistance, formatDriveTime, formatPlaylistDuration } from '@/utils/cardFormat'
 import styles from './DriveCardPage.module.scss'
@@ -30,6 +30,8 @@ interface DriveCardPageProps {
   // 연인이 제출한 소감. 아직 없으면 null
   partnerText: string | null
   canSave: boolean
+  // 아직 서버에 남기지 못한 소감이 있는지 (저장을 마친 카드에서 나갈 때 물어볼지 정한다)
+  hasUnsavedChanges: boolean
   busy: boolean
   error: string | null
   onMyTextChange: (text: string) => void
@@ -52,6 +54,7 @@ function DriveCardPage({
   myText,
   partnerText,
   canSave,
+  hasUnsavedChanges,
   busy,
   error,
   onMyTextChange,
@@ -86,7 +89,11 @@ function DriveCardPage({
     )
   }
 
-  const handleBack = () => (card.status === 'COMPLETED' ? onLeave() : setLeaveOpen(true))
+  // 24시간이 지나 더 고칠 수 없으면 묻지 않고 나간다. 저장을 마친 카드는 고치고 저장하지 않은 내용이 있을 때만 묻는다
+  const handleBack = () => {
+    if (!isCardEditable(card) || (card.status === 'COMPLETED' && !hasUnsavedChanges)) return onLeave()
+    setLeaveOpen(true)
+  }
   const editable = card.canEdit && !busy
 
   return (

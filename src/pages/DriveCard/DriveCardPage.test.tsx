@@ -43,6 +43,7 @@ function renderPage(props: Partial<Props> = {}) {
       myText=""
       partnerText={null}
       canSave={false}
+      hasUnsavedChanges={false}
       busy={false}
       error={null}
       {...handlers}
@@ -251,8 +252,38 @@ describe('뒤로가기 · 작성 중단 팝업', () => {
     expect(onLeave).not.toHaveBeenCalled()
   })
 
-  it('이미 저장한 카드는 묻지 않고 나간다', async () => {
+  it('이미 저장한 카드는 고친 내용이 없으면 묻지 않고 나간다', async () => {
     const { user, onLeave } = renderPage({ card: { ...EMPTY_CARD, status: 'COMPLETED' } })
+
+    await user.click(screen.getByRole('button', { name: '뒤로가기' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(onLeave).toHaveBeenCalled()
+  })
+
+  it('이미 저장한 카드라도 고치고 저장하지 않은 내용이 있으면 묻는다', async () => {
+    const { user, onLeave } = renderPage({ card: { ...EMPTY_CARD, status: 'COMPLETED' }, hasUnsavedChanges: true })
+
+    await user.click(screen.getByRole('button', { name: '뒤로가기' }))
+    expect(screen.getByRole('dialog', { name: '작성을 마치시겠습니까?' })).toBeInTheDocument()
+    expect(onLeave).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: '나가기' }))
+    expect(onLeave).toHaveBeenCalled()
+  })
+
+  it('고칠 수 없는 카드는 묻지 않고 나간다', async () => {
+    const { user, onLeave } = renderPage({ card: { ...EMPTY_CARD, status: 'DRAFT', canEdit: false } })
+
+    await user.click(screen.getByRole('button', { name: '뒤로가기' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(onLeave).toHaveBeenCalled()
+  })
+
+  it('화면을 연 채 24시간이 지나면 더 이상 묻지 않고 나간다', async () => {
+    const expired = { ...EMPTY_CARD, status: 'DRAFT' as const, editableUntil: new Date(Date.now() - 1000).toISOString() }
+    const { user, onLeave } = renderPage({ card: expired, hasUnsavedChanges: true })
 
     await user.click(screen.getByRole('button', { name: '뒤로가기' }))
 

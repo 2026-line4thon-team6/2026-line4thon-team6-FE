@@ -1,6 +1,15 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { MOCK_CARD_DRIVE_ID, MOCK_ME_ID, mockFetchDriveCard, mockSaveCardDraft, resetMockCards } from '@/mocks/cards'
+import {
+  MOCK_CARD_DRIVE_ID,
+  MOCK_ME_ID,
+  mockCompleteCard,
+  mockFetchDriveCard,
+  mockSaveCardDraft,
+  mockSaveMyReflection,
+  mockUploadCardPhoto,
+  resetMockCards,
+} from '@/mocks/cards'
 import * as cardsApi from '@/api/cards'
 import useDriveCard from './useDriveCard'
 
@@ -258,6 +267,62 @@ describe('소감 자동 임시저장', () => {
     expect(saved).toBe(true)
     expect(result.current.error).toBeNull()
     expect(await savedMine()).toMatchObject({ text: '바로 저장', submitted: true })
+  })
+})
+
+// 저장을 마친 카드도 24시간 안에는 고칠 수 있다. 저장하기 없이 나가도 고친 내용을 잃지 않는다
+describe('저장한 카드를 고치고 나갈 때', () => {
+  const savedMine = async () => {
+    const { data } = await mockFetchDriveCard(MOCK_CARD_DRIVE_ID)
+    return data.reflections.find((reflection) => reflection.author.id === MOCK_ME_ID) ?? null
+  }
+
+  async function renderCompleted() {
+    const hook = await renderReady()
+    act(() => hook.result.current.setMyText('처음 소감'))
+    await act(async () => {
+      await hook.result.current.save()
+    })
+    expect(hook.result.current.card?.status).toBe('COMPLETED')
+    return hook
+  }
+
+  it('고친 소감이 있으면 나갈 때 연인에게 보이는 소감으로 다시 제출한다', async () => {
+    const { result } = await renderCompleted()
+    expect(result.current.hasUnsavedChanges).toBe(false)
+
+    act(() => result.current.setMyText('고친 소감'))
+    expect(result.current.hasUnsavedChanges).toBe(true)
+    await act(() => result.current.saveDraft())
+
+    expect(await savedMine()).toMatchObject({ text: '고친 소감', submitted: true })
+    expect(result.current.hasUnsavedChanges).toBe(false)
+  })
+
+  it('연인이 먼저 저장한 카드에 내가 쓰던 초안은 나갈 때 제출한다', async () => {
+    // 연인이 사진을 붙여 저장했고, 나는 초안만 남겨 둔 상황
+    const { data } = await mockFetchDriveCard(MOCK_CARD_DRIVE_ID)
+    const mediaId = await mockUploadCardPhoto(new File(['x'], 'a.jpg', { type: 'image/jpeg' }))
+    const { data: withPhoto } = await mockSaveCardDraft(data.id, { photoIds: [mediaId], expectedVersion: data.version })
+    await mockCompleteCard(data.id, { expectedVersion: withPhoto.version })
+    await mockSaveMyReflection(data.id, { text: '초안', submitted: false, expectedVersion: 0 })
+    const { result } = await renderReady()
+
+    expect(result.current.hasUnsavedChanges).toBe(true)
+    await act(() => result.current.saveDraft())
+
+    expect(await savedMine()).toMatchObject({ text: '초안', submitted: true })
+  })
+
+  it('제출한 소감을 모두 지우면 빈 소감은 제출할 수 없어 그대로 둔다', async () => {
+    const { result } = await renderCompleted()
+    const put = vi.spyOn(cardsApi, 'saveMyReflection')
+
+    act(() => result.current.setMyText(''))
+    await act(() => result.current.saveDraft())
+
+    expect(put).not.toHaveBeenCalled()
+    expect(await savedMine()).toMatchObject({ text: '처음 소감', submitted: true })
   })
 })
 

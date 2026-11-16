@@ -313,8 +313,22 @@ function useDriveCard(driveId: string, myUserId: string) {
     })
   }
 
-  // 화면을 나갈 때 쓰던 소감을 나만 보이는 초안으로 남긴다. 실패해도 나가는 것을 막지 않는다
-  const saveDraft = () => flushDraft()
+  // 화면을 나갈 때(작성 중단 팝업의 '나가기') 쓰던 소감을 남긴다. 실패해도 나가는 것을 막지 않는다.
+  // 아직 저장 전인 카드는 나만 보이는 초안으로, 저장을 마친 카드는 저장하기처럼 연인에게 보이는 소감으로 제출한다.
+  // (서버는 제출한 소감을 초안으로 되돌리지 못하게 하고, 초안으로 두면 완료된 카드에서는 연인에게 끝내 보이지 않는다)
+  const saveDraft = () => {
+    draftTask.current = draftTask.current.then(async () => {
+      const card = cardRef.current
+      const text = textRef.current.trim()
+      // 빈 소감은 제출할 수 없어 초안 규칙을 따른다 (이미 제출한 소감이면 그대로 둔다)
+      if (card?.status !== 'COMPLETED' || !text) return saveTextDraft()
+      if (submitting.current || !isCardEditable(card)) return
+      const mine = findMine(card, myUserId)
+      if (mine?.submitted && mine.text === text) return
+      await putMyReflection(card, true, text).catch(() => undefined)
+    })
+    return draftTask.current
+  }
 
   const card = state.card
   const partner = card?.reflections.find((reflection) => reflection.author.id !== myUserId && reflection.submitted)
@@ -324,6 +338,14 @@ function useDriveCard(driveId: string, myUserId: string) {
       ? 'DRIVER'
       : 'PASSENGER'
     : null
+  const mine = findMine(card, myUserId)
+  const trimmed = myText.trim()
+  // 아직 서버에 남기지 못한 소감이 있는지. 저장을 마친 카드는 연인에게 보이는 소감과 다르면 남지 않은 것으로 본다
+  const hasUnsavedChanges =
+    !!card &&
+    (card.status === 'COMPLETED'
+      ? trimmed.length > 0 && (!mine?.submitted || mine.text !== trimmed)
+      : trimmed !== (mine?.text ?? ''))
   const canSave =
     !!card && card.canEdit && ((card.photos.length ?? 0) > 0 || myText.trim().length > 0 || partnerText !== null)
 
@@ -334,6 +356,7 @@ function useDriveCard(driveId: string, myUserId: string) {
     partnerText,
     myRole,
     canSave,
+    hasUnsavedChanges,
     busy,
     error,
     retry,
