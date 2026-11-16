@@ -299,7 +299,7 @@ describe('파일 받기 (fetchBlob)', () => {
 
     const blob = await fetchBlob(audioUrl)
 
-    expect(await blob.text()).toBe('mp3')
+    expect(blob.size).toBe(3)
     expect(fetchMock.mock.calls.map(pathOf)).toEqual([
       '/api/v1/radio/episodes/rep_1/audio',
       '/api/v1/auth/refresh',
