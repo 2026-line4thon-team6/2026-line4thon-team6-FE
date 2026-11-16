@@ -1,7 +1,7 @@
-import mascotHello from '@/assets/images/onboarding/mascot-hello.webp'
 import Button from '@/components/Button/Button'
 import type { ConsentType } from '@/types/auth'
 import styles from './GreetingPage.module.scss'
+import WavingMascot from './WavingMascot'
 
 interface WelcomePageProps {
   agreed: boolean
@@ -15,7 +15,7 @@ interface WelcomePageProps {
 function WelcomePage({ agreed, onAgreeChange, onNext, onOpenDocument }: WelcomePageProps) {
   return (
     <main className={styles.page}>
-      <img className={styles.mascot} src={mascotHello} alt="" width={216} height={256} />
+      <WavingMascot />
       <h1 className={styles.message}>
         {'반가워요! '}
         <br />

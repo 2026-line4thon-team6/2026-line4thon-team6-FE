@@ -32,6 +32,12 @@ it('환영 문구를 보여 주고, 필수 약관에 동의해야 다음으로 �
   expect(onNext).toHaveBeenCalled()
 })
 
+it('붕붕이가 점프하고 손을 흔들며 인사한다', () => {
+  render(<Harness />)
+
+  expect(screen.getByTestId('waving-mascot')).toBeInTheDocument()
+})
+
 it('약관 문구를 누르면 문서를 연다', async () => {
   const onOpenDocument = vi.fn()
   render(<Harness onOpenDocument={onOpenDocument} />)
