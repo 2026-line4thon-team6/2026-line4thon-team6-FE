@@ -1,0 +1,8 @@
+@use '../../styles/abstracts' as *;
+
+// 쓰는 화면의 크기 · object-fit(cover)보다 우선하도록 img 태그를 붙여 구체성을 올린다
+// (% padding은 부모 너비 기준이라 칸마다 크기가 달라져 쓰지 않는다)
+img.photo[data-empty='true'] {
+  object-fit: contain;
+  background-color: color('divider');
+}

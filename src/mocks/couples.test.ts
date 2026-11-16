@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   MOCK_PARTNER_INVITE_CODE,
+  MOCK_RESTORE_INVITE_CODE,
   mockCompleteOnboarding,
   mockLogin,
   mockLogout,
@@ -12,6 +13,7 @@ import {
   mockFetchMyInvite,
   mockJoinCouple,
   mockRenameMascot,
+  mockRestoreCouple,
   mockUpdateMe,
   mockUpdateStartDate,
   resetMockCouple,
@@ -42,11 +44,12 @@ describe('커플 시작일 변경', () => {
     expect(data.version).toBe(couple.version + 1)
   })
 
-  it('미래 날짜는 422, 버전이 다르면 409', async () => {
+  it('미래 날짜는 422 INVALID_START_DATE, 버전이 다르면 409', async () => {
     const couple = await loadCouple()
 
     await expect(mockUpdateStartDate({ startDate: '2999-01-01', expectedVersion: couple.version })).rejects.toMatchObject({
       status: 422,
+      code: 'INVALID_START_DATE',
     })
     await expect(mockUpdateStartDate({ startDate: '2026-01-01', expectedVersion: 99 })).rejects.toMatchObject({
       status: 409,
@@ -96,10 +99,8 @@ describe('내 정보 수정', () => {
 })
 
 describe('커플 코드 · 연결 해제', () => {
-  it('내 커플 코드를 조회한다', async () => {
-    const { data } = await mockFetchMyInvite()
-
-    expect(data.code).toBe('jsd82nk9')
+  it('연결된 상태에서는 연결에 쓴 코드가 소진돼 내 코드 조회가 404 INVITE_NOT_FOUND', async () => {
+    await expect(mockFetchMyInvite()).rejects.toMatchObject({ status: 404, code: 'INVITE_NOT_FOUND' })
   })
 
   it('연결을 해제하면 커플 조회가 DISCONNECTED가 된다', async () => {
@@ -147,6 +148,43 @@ describe('연인 초대 코드 발급 · 코드로 연결', () => {
     const { data: connection } = await mockFetchMyCouple()
     expect(connection.connectionStatus).toBe('CONNECTED')
     expect(connection.couple?.members.map((member) => member.nickname)).toEqual(['민준', '민지'])
+  })
+
+  it('연결하면 내 코드도 쓸 수 없게 돼 내 코드 조회가 404', async () => {
+    await unlink()
+    await mockCreateInvite()
+
+    await mockJoinCouple({ code: MOCK_PARTNER_INVITE_CODE })
+
+    await expect(mockFetchMyInvite()).rejects.toMatchObject({ status: 404, code: 'INVITE_NOT_FOUND' })
+  })
+
+  it('예전에 연결했던 연인의 코드는 409 COUPLE_RESTORE_REQUIRED, 복구하면 예전 커플 정보로 다시 연결된다', async () => {
+    await unlink()
+
+    await expect(mockJoinCouple({ code: MOCK_RESTORE_INVITE_CODE })).rejects.toMatchObject({
+      status: 409,
+      code: 'COUPLE_RESTORE_REQUIRED',
+    })
+    const { data } = await mockRestoreCouple({ code: ` ${MOCK_RESTORE_INVITE_CODE.toUpperCase()} ` })
+
+    expect(data).toMatchObject({ id: 'cpl_01', status: 'CONNECTED', startDate: '2026-10-20', mascotName: '붕붕이' })
+    expect((await mockFetchMyCouple()).data.connectionStatus).toBe('CONNECTED')
+    await expect(mockFetchMyInvite()).rejects.toMatchObject({ status: 404 })
+  })
+
+  it('예전에 연결한 적 없는 연인과 복구하면 404 COUPLE_HISTORY_NOT_FOUND, 연결돼 있으면 409 ALREADY_COUPLED', async () => {
+    await expect(mockRestoreCouple({ code: MOCK_RESTORE_INVITE_CODE })).rejects.toMatchObject({
+      status: 409,
+      code: 'ALREADY_COUPLED',
+    })
+    await unlink()
+
+    await expect(mockRestoreCouple({ code: MOCK_PARTNER_INVITE_CODE })).rejects.toMatchObject({
+      status: 404,
+      code: 'COUPLE_HISTORY_NOT_FOUND',
+    })
+    await expect(mockRestoreCouple({ code: 'nope1234' })).rejects.toMatchObject({ status: 422, code: 'INVALID_INVITE' })
   })
 
   it('없는 코드는 422 INVALID_INVITE, 내 코드는 422 SELF_INVITE, 빈 코드는 422 VALIDATION_FAILED', async () => {

@@ -9,7 +9,7 @@ interface Seed {
   address: string
   latitude: number
   longitude: number
-  photo: string
+  photo: string | null // null: 사진 없이 저장한 기록 → 서버가 thumbnailUrl null, FE 기본 일러스트
   // 같은 목적지의 기록. 첫 번째가 가장 최근 기록이다
   drives: { title: string; driveDate: string }[]
 }
@@ -43,7 +43,7 @@ const SEEDS: Seed[] = [
   { name: '포천 산정호수', address: '경기 포천시 영북면', latitude: 38.0697, longitude: 127.3136, photo: 'sanjeong-lake', drives: [{ title: '산정호수 단풍길', driveDate: '2026-10-03' }] },
   { name: '군산 새만금', address: '전북 군산시 옥도면', latitude: 35.8228, longitude: 126.5288, photo: 'songdo', drives: [{ title: '새만금 방조제 달리기', driveDate: '2026-09-20' }] },
   { name: '여수 돌산', address: '전남 여수시 돌산읍', latitude: 34.7271, longitude: 127.7449, photo: 'banpo', drives: [{ title: '여수 밤바다', driveDate: '2026-09-06' }] },
-  { name: '남해 독일마을', address: '경남 남해군 삼동면', latitude: 34.7988, longitude: 128.0414, photo: 'eurwangni', drives: [{ title: '남해 노을 드라이브', driveDate: '2026-08-30' }] },
+  { name: '남해 독일마을', address: '경남 남해군 삼동면', latitude: 34.7988, longitude: 128.0414, photo: null, drives: [{ title: '남해 노을 드라이브', driveDate: '2026-08-30' }] },
   { name: '부산 광안리', address: '부산 수영구 광안동', latitude: 35.1532, longitude: 129.1186, photo: 'namsan', drives: [{ title: '광안대교 야경', driveDate: '2026-08-15' }] },
 ]
 
@@ -79,7 +79,7 @@ function createAllMockRecords(): RecordSummary[] {
         title: drive.title,
         driveDate: drive.driveDate,
         destination: { placeId, name: seed.name, address: seed.address, coordinate },
-        thumbnailUrl: `/mocks/spots/${seed.photo}.webp`,
+        thumbnailUrl: seed.photo ? `/mocks/spots/${seed.photo}.webp` : null,
         distanceMeters: 28_700 + seedIndex * 18_300 + driveIndex * 4_100,
         activeDurationSeconds: 2_400 + seedIndex * 840 + driveIndex * 600,
         completedAt: `${drive.driveDate}T09:00:00Z`,
@@ -91,13 +91,14 @@ function createAllMockRecords(): RecordSummary[] {
 // 목적지별로 묶은 지도 마커. 최신 기록이 대표가 된다
 export function createMockRecordMarkers(records: RecordSummary[] = createMockRecords()): RecordMapMarker[] {
   const groups = new Map<string, RecordSummary[]>()
-  for (const record of records) {
+  // 좌표가 없는 목적지는 지도에 나오지 않는다 (백엔드와 같음)
+  for (const record of records.filter((item) => item.destination?.coordinate)) {
     const key = `place:${record.destination?.placeId}`
     groups.set(key, [...(groups.get(key) ?? []), record])
   }
   return [...groups].map(([groupKey, cards]) => ({
     groupKey,
-    coordinate: cards[0].destination!.coordinate,
+    coordinate: cards[0].destination!.coordinate!,
     latestCard: cards[0],
     recordCount: cards.length,
   }))

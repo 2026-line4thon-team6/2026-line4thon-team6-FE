@@ -22,6 +22,9 @@ export interface AuthTokenResult {
   isNewUser: boolean
 }
 
+// POST /auth/refresh 응답. 리프레시 토큰도 매번 새로 발급된다 (회전)
+export type AuthRefreshResult = Omit<AuthTokenResult, 'user' | 'isNewUser'>
+
 export type ConsentType = 'TERMS' | 'PRIVACY'
 
 // PUT /me/onboarding 요청. 성별 · 커플 시작일 · 붕붕이 이름은 선택
@@ -31,5 +34,5 @@ export interface OnboardingRequest {
   consents: { type: ConsentType; version: string; agreed: boolean }[]
   gender?: 'MALE' | 'FEMALE' | null
   coupleStartDate?: string | null // 비우면 가입한 날부터 센다
-  mascotName?: string
+  mascotName?: string | null // 비우면 null. 빈 문자열은 보내지 않는다
 }

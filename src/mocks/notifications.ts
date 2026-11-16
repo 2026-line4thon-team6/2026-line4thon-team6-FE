@@ -27,7 +27,7 @@ export function createMockNotifications(now: number = Date.now()): Notification[
       title: '민지님이 드라이브 장소를 공유했어요. 💌',
       body: '이번 주말, 함께 떠나보는 건 어떨까요?',
       targetType: 'PLACE',
-      targetId: '1', // 목 장소(시흥 오이도)의 id
+      targetId: 'plc_oido', // 목 장소(시흥 오이도)의 id
       createdAt: at(17 * HOUR),
       expiresAt: expires(17 * HOUR),
       readAt: null,
@@ -60,6 +60,11 @@ export function createMockNotifications(now: number = Date.now()): Notification[
 }
 
 let store: Notification[] | null = null
+
+// 테스트에서 읽음 상태를 처음으로 되돌린다
+export function resetMockNotifications() {
+  store = null
+}
 let requestCount = 0
 
 const meta = (): ApiMeta => ({ requestId: `req_mock_${++requestCount}`, serverTime: new Date().toISOString() })

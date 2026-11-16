@@ -2,7 +2,6 @@ import { useState } from 'react'
 import chevronIcon from '@/assets/icons/chevron-gray.svg'
 import Button from '@/components/Button/Button'
 import GlassIconButton from '@/components/GlassIconButton/GlassIconButton'
-import Toast from '@/components/Toast/Toast'
 import type { Couple } from '@/types/couple'
 import type { Me, UpdateMeRequest } from '@/types/me'
 import { toDotDate, todayString } from '@/utils/coupleDate'
@@ -21,7 +20,6 @@ interface CouplePageProps {
   status: 'loading' | 'ready' | 'error' | 'unlinked'
   couple: Couple | null
   me: Me | null
-  inviteCode: string | null
   today?: string // 시작일로 고를 수 있는 마지막 날짜. 기본은 기기 날짜 기준 오늘
   onBack: () => void
   onRetry: () => void
@@ -29,7 +27,6 @@ interface CouplePageProps {
   onChangeStartDate: (startDate: string) => Promise<string | null>
   onRenameMascot: (name: string) => Promise<string | null>
   onUpdateProfile: (body: UpdateMeRequest) => Promise<string | null>
-  onCopyInviteCode: (code: string) => Promise<void>
   onDisconnect: () => Promise<string | null>
   // 연결 해제가 끝났을 때 (마이 화면으로 이동)
   onDisconnected: () => void
@@ -40,19 +37,16 @@ function CouplePage({
   status,
   couple,
   me,
-  inviteCode,
   today = todayString(),
   onBack,
   onRetry,
   onChangeStartDate,
   onRenameMascot,
   onUpdateProfile,
-  onCopyInviteCode,
   onDisconnect,
   onDisconnected,
 }: CouplePageProps) {
   const [overlay, setOverlay] = useState<Overlay>(null)
-  const [toast, setToast] = useState<string | null>(null)
   const close = () => setOverlay(null)
 
   const header = (
@@ -84,12 +78,6 @@ function CouplePage({
 
   // 내 정보를 먼저, 연인 정보를 다음에 보여 준다
   const members = [...couple.members].sort((a, b) => Number(b.id === me.id) - Number(a.id === me.id))
-
-  const handleCopy = async () => {
-    if (!inviteCode) return
-    await onCopyInviteCode(inviteCode)
-    setToast('커플 코드가 복사되었습니다.')
-  }
 
   // 저장 함수를 실행하고, 성공하면 열린 팝업 · 시트를 닫는다
   const submit = async (save: () => Promise<string | null>) => {
@@ -157,14 +145,8 @@ function CouplePage({
           <h2 id="couple-connection-title" className={styles.sectionTitle}>
             커플 연결
           </h2>
+          {/* 커플 코드는 연결할 때 소진돼(GET /couple-invites/me 404) 연결된 뒤에는 복사 행을 두지 않는다 */}
           <div className={[styles.card, styles.connectionCard].join(' ')}>
-            <button type="button" className={styles.row} disabled={!inviteCode} onClick={() => void handleCopy()}>
-              <span>커플 코드 복사하기</span>
-              <span className={styles.code}>
-                {inviteCode ?? '--'}
-                <img className={styles.chevron} src={chevronIcon} alt="" />
-              </span>
-            </button>
             <button type="button" className={styles.row} onClick={() => setOverlay('disconnect')}>
               <span>커플 연결 끊기 💔</span>
             </button>
@@ -208,7 +190,6 @@ function CouplePage({
           onClose={close}
         />
       )}
-      {toast && <Toast message={toast} onDone={() => setToast(null)} />}
     </div>
   )
 }
