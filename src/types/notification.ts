@@ -8,7 +8,7 @@ export type NotificationTargetType = 'PLACE' | 'CARD' | 'COUPLE'
 
 export interface NotificationSender {
   id: string
-  nickname: string | null // 탈퇴 등으로 보낸 사람 정보가 없으면 서버가 null을 준다 (LEFT JOIN)
+  nickname: string
   birthDate: string | null
   profileImageUrl: string | null
   provider: 'KAKAO'
