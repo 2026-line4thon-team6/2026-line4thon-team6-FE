@@ -30,10 +30,9 @@ $gutter: 25px;
   background-color: color('white');
 }
 
+// 본문 글씨 · 간격은 MarkdownText가 정한다. 여기서는 위 여백만 둔다
 .content {
-  @include typo('caption-small');
-  color: color('black');
-  overflow-wrap: anywhere;
+  padding-top: 4px;
 }
 
 // 불러오는 중 · 오류 안내 (시안에 없는 상태라 최소한으로 둔다)

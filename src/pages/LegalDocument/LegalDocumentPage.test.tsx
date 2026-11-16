@@ -17,12 +17,14 @@ function renderPage(props: Partial<Props> = {}) {
 }
 
 describe('LegalDocumentPage', () => {
-  it('문서 제목과, 줄마다 나눈 본문을 표시한다', () => {
+  it('문서 제목과, Markdown 본문을 조항 제목 · 목록으로 나눠 표시한다', () => {
     renderPage()
 
     expect(screen.getByRole('heading', { level: 1, name: '이용 약관' })).toBeInTheDocument()
-    expect(screen.getByText('제1조 목적')).toBeInTheDocument()
-    expect(screen.getByText('제12조 약관의 변경')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 3, name: '제1조 목적' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 3, name: '제12조 약관의 변경' })).toBeInTheDocument()
+    expect(screen.getAllByRole('list').length).toBeGreaterThan(0)
+    expect(screen.queryByText(/^## /)).not.toBeInTheDocument()
   })
 
   it.each([

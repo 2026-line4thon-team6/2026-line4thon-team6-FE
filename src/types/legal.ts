@@ -7,6 +7,6 @@ export interface LegalDocument {
   title: string
   required: boolean
   url: string
-  content: string // 줄바꿈(\n)으로 문단을 나눈 본문
+  content: string // Markdown 본문 (## 제목 · - 목록 · **굵게**)
   effectiveDate: string // YYYY-MM-DD
 }
