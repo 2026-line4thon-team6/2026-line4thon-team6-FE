@@ -73,7 +73,9 @@ describe('장소 정보', () => {
     for (const item of within(screen.getByRole('list', { name: '드라이브 정보' })).getAllByRole('listitem')) {
       expect(item).toHaveTextContent('--')
     }
-    expect(screen.getByText('강원 강릉시 · --')).toBeInTheDocument()
+    // 위치 · 시간 줄은 시간을 모르면 지역만 보여 준다 (홈 카드와 같은 규칙)
+    expect(screen.getByText('강원 강릉시')).toBeInTheDocument()
+    expect(screen.queryByText('강원 강릉시 · --')).not.toBeInTheDocument()
     // 서버가 경로를 주지 않는 이유는 위치 권한만이 아니라서 권한 탓을 하지 않는다
     expect(screen.getByText('경로 미리보기를 준비 중이에요.')).toBeInTheDocument()
     expect(screen.queryByText(/위치 권한/)).not.toBeInTheDocument()

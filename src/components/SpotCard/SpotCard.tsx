@@ -1,7 +1,7 @@
 import pinIcon from '@/assets/icons/pin.svg'
 import LikeButton from '@/components/LikeButton/LikeButton'
 import type { PlaceSummary } from '@/types/place'
-import { formatDuration } from '@/utils/formatDuration'
+import { formatRegionDuration } from '@/utils/formatDuration'
 import styles from './SpotCard.module.scss'
 
 interface SpotCardProps {
@@ -31,7 +31,7 @@ function SpotCard({ spot, onClick, onLikeToggle }: SpotCardProps) {
           <p className={styles.meta}>
             <img src={pinIcon} alt="" />
             {/* 소요 시간은 서버가 아직 주지 않아(null) 지역만 보여 준다 */}
-            {estimatedDurationSeconds === null ? region : `${region} · ${formatDuration(estimatedDurationSeconds)}`}
+            {formatRegionDuration(region, estimatedDurationSeconds)}
           </p>
         </div>
 

@@ -308,6 +308,29 @@ describe('파일 받기 (fetchBlob)', () => {
   })
 })
 
+describe('앱을 열 때 저장된 토큰', () => {
+  it('세션 복구(/me)를 기다리지 않고 바로 다음 요청에 저장된 토큰을 싣는다', async () => {
+    fetchMock.mockResolvedValue(json(200, { data: {}, meta: {} }))
+    const { loadStoredSession, apiFetch } = await loadWithBackend()
+
+    expect(loadStoredSession()).toBe(true)
+    await apiFetch('/drives/active')
+
+    expect(authOf(fetchMock.mock.calls[0])).toBe('Bearer old_access')
+  })
+
+  it('저장된 세션이 없으면 false이고 토큰을 싣지 않는다', async () => {
+    localStorage.clear()
+    fetchMock.mockResolvedValue(json(200, { data: {}, meta: {} }))
+    const { loadStoredSession, apiFetch } = await loadWithBackend()
+
+    expect(loadStoredSession()).toBe(false)
+    await apiFetch('/health')
+
+    expect(authOf(fetchMock.mock.calls[0])).toBeNull()
+  })
+})
+
 describe('목 모드에서 남은 세션', () => {
   it('실서버에서는 목 토큰(mock_)을 세션으로 보지 않고 지운다', async () => {
     localStorage.setItem('bbus.auth', JSON.stringify({ accessToken: 'mock_access_token', refreshToken: 'mock_refresh_token' }))

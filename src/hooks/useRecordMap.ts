@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ApiError } from '@/api/client'
 import { fetchRecordMap, type FetchRecordMapParams } from '@/api/records'
 import type { RecordMapMarker } from '@/types/record'
 import { THUMBNAIL_REFRESH_MS } from '@/utils/photoRefresh'
@@ -9,12 +10,16 @@ export interface RecordMapFilter {
 }
 
 interface State {
-  status: 'loading' | 'ready' | 'error'
+  status: 'loading' | 'ready' | 'error' | 'coupleRequired'
   markers: RecordMapMarker[]
   totalCount: number
 }
 
 const INITIAL: State = { status: 'loading', markers: [], totalCount: 0 }
+
+// 연인과 연결되지 않은 사용자는 서버가 기록 조회를 403 COUPLE_REQUIRED로 막는다 — 오류가 아니라 연결 안내를 보여 준다
+export const isCoupleRequired = (reason: unknown) =>
+  reason instanceof ApiError && reason.status === 403 && reason.code === 'COUPLE_REQUIRED'
 
 // 한 번에 최대한 많이 받아 요청 수를 줄인다 (명세 최대 100)
 const PAGE_SIZE = 100
@@ -49,8 +54,8 @@ function useRecordMap({ q, date }: RecordMapFilter = {}) {
       .then(({ markers, totalCount }) => {
         if (!ignore) setState({ status: 'ready', markers, totalCount })
       })
-      .catch(() => {
-        if (!ignore) setState({ ...INITIAL, status: 'error' })
+      .catch((reason: unknown) => {
+        if (!ignore) setState({ ...INITIAL, status: isCoupleRequired(reason) ? 'coupleRequired' : 'error' })
       })
 
     return () => {

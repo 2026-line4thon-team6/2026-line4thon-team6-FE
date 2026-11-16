@@ -717,6 +717,7 @@ function RecordMapRoute({ pendingCards, pendingReceivedAt, onEnter }: RecordMapR
         onViewChange={(nextView) => updateFilter({ view: nextView })}
         onLoadMore={() => void list.loadMore()}
         onRetry={retry}
+        onConnectRequired={() => navigate('/couple/invite')}
         onTabChange={goTab}
         onCalendarClick={() => setCalendarOpen(true)}
         onDateClear={() => updateFilter({ date: null })}

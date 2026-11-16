@@ -1,7 +1,7 @@
 import pinIcon from '@/assets/icons/pin.svg'
 import LikeButton from '@/components/LikeButton/LikeButton'
 import type { PlaceSummary } from '@/types/place'
-import { formatDuration } from '@/utils/formatDuration'
+import { formatRegionDuration } from '@/utils/formatDuration'
 import styles from './FavoriteCourseCard.module.scss'
 
 interface FavoriteCourseCardProps {
@@ -29,7 +29,7 @@ function FavoriteCourseCard({ place, onClick, onFavoriteToggle }: FavoriteCourse
           </h2>
           <p className={styles.meta}>
             <img src={pinIcon} alt="" />
-            {region} · {formatDuration(estimatedDurationSeconds)}
+            {formatRegionDuration(region, estimatedDurationSeconds)}
           </p>
         </div>
 

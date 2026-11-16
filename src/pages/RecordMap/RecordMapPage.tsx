@@ -15,7 +15,7 @@ import RecordPreview from './RecordPreview'
 import styles from './RecordMapPage.module.scss'
 
 export type RecordView = 'map' | 'list'
-type LoadStatus = 'loading' | 'ready' | 'error'
+type LoadStatus = 'loading' | 'ready' | 'error' | 'coupleRequired'
 
 interface RecordMapPageProps {
   view: RecordView
@@ -40,6 +40,8 @@ interface RecordMapPageProps {
   onCardClick: (card: RecordSummary) => void
   onShare: (card: RecordSummary) => void
   onRetry: () => void
+  // 연인과 연결되지 않아 기록을 볼 수 없을 때 '연인 초대하기'를 누르면
+  onConnectRequired?: () => void
   onTabChange?: (tab: NavTab) => void
   // 24시간 안에 저장하지 않은 드라이브 카드 (홈과 같은 GET /home 의 pendingCards). 없으면 null
   pendingCard?: PendingSummary | null
@@ -92,6 +94,7 @@ function RecordMapPage({
   onCardClick,
   onShare,
   onRetry,
+  onConnectRequired,
   onTabChange,
   pendingCard = null,
   onPendingCardClick,
@@ -193,6 +196,14 @@ function RecordMapPage({
         <p className={styles.notice} role="status">
           기록을 불러오는 중이에요
         </p>
+      )}
+      {status === 'coupleRequired' && (
+        <div className={styles.notice}>
+          연인과 연결하면 함께한 드라이브 기록을 볼 수 있어요
+          <button className={styles.retry} type="button" onClick={onConnectRequired}>
+            연인 초대하기
+          </button>
+        </div>
       )}
       {status === 'error' && (
         <div className={styles.notice} role="alert">
