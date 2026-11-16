@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router'
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 import { fetchCardShare } from '@/api/cards'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
 import useAuth, { type Auth } from '@/hooks/useAuth'
@@ -623,12 +623,14 @@ function RouteSettingRoute() {
 
 // 기록 지도. 검색어나 날짜가 바뀌면 지도 마커와 기록 목록을 그 조건으로 다시 불러온다.
 // 검색어와 날짜는 함께 쓰지 않는다. 상단의 '총 N번'은 조건과 관계없는 목록 API의 totalCount를 쓴다
+// 보기 방식 · 검색어 · 날짜는 주소(?view=list&q=...&date=...)에 둔다. 기록 상세에 갔다가 돌아와도 보던 조건이 그대로 남는다
 function RecordMapRoute() {
   const navigate = useNavigate()
   const goTab = useTabNavigate()
-  const [view, setView] = useState<RecordView>('map')
-  const [query, setQuery] = useState('')
-  const [date, setDate] = useState<string | null>(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const view: RecordView = searchParams.get('view') === 'list' ? 'list' : 'map'
+  const query = searchParams.get('q') ?? ''
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(searchParams.get('date') ?? '') ? searchParams.get('date') : null
   const [calendarOpen, setCalendarOpen] = useState(false)
   // 공유 중인 기록 카드와 그 카드의 커플 전용 링크
   const [sharing, setSharing] = useState<{ card: RecordSummary; link: ShareLink } | null>(null)
@@ -636,10 +638,17 @@ function RecordMapRoute() {
   const map = useRecordMap(filter)
   const list = useRecords(filter)
 
-  const handleSearch = (nextQuery: string) => {
-    setQuery(nextQuery)
-    setDate(null)
+  // 조건을 바꿀 때 방문 기록이 쌓이지 않게 주소를 바꿔 끼운다. 빈 값과 기본 보기(지도형)는 주소에서 뺀다
+  const updateFilter = (next: { view?: RecordView; q?: string; date?: string | null }) => {
+    const params = new URLSearchParams(searchParams)
+    for (const [key, value] of Object.entries(next)) {
+      if (value && !(key === 'view' && value === 'map')) params.set(key, value)
+      else params.delete(key)
+    }
+    setSearchParams(params, { replace: true })
   }
+
+  const handleSearch = (nextQuery: string) => updateFilter({ q: nextQuery, date: null })
 
   const handleShare = (card: RecordSummary) => {
     setSharing({ card, link: { status: 'loading' } })
@@ -667,10 +676,8 @@ function RecordMapRoute() {
 
   // 기능명세서 9️⃣: 같은 날짜에 기록이 여러 개면 목록형으로 나열한다. 하나면 보던 화면 그대로 둔다
   const handleDateSelect = (nextDate: string, count: number) => {
-    setDate(nextDate)
-    setQuery('')
+    updateFilter({ date: nextDate, q: '', ...(count > 1 && { view: 'list' as const }) })
     setCalendarOpen(false)
-    if (count > 1) setView('list')
   }
 
   const retry = () => {
@@ -684,18 +691,19 @@ function RecordMapRoute() {
         view={view}
         totalCount={list.totalCount}
         date={date}
+        query={query}
         mapStatus={map.status}
         markers={map.markers}
         listStatus={list.status}
         records={list.records}
         hasMoreRecords={list.hasMore}
         onSearch={handleSearch}
-        onViewChange={setView}
+        onViewChange={(nextView) => updateFilter({ view: nextView })}
         onLoadMore={() => void list.loadMore()}
         onRetry={retry}
         onTabChange={goTab}
         onCalendarClick={() => setCalendarOpen(true)}
-        onDateClear={() => setDate(null)}
+        onDateClear={() => updateFilter({ date: null })}
         onCardClick={(card) => navigate(`/cards/${encodeURIComponent(card.cardId)}`)}
         onShare={handleShare}
       />

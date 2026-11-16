@@ -652,6 +652,50 @@ describe('기록 지도 → 기록 상세', () => {
     expect(screen.queryByText('자라섬 캠핑 드라이브')).not.toBeInTheDocument()
   })
 
+  it('상세에서 돌아오면 보던 목록형 화면과 검색어가 그대로 남아 있다', async () => {
+    const user = renderApp('/map')
+    await screen.findByText('총 12번의 드라이브를 함께했어요')
+    await user.click(screen.getByRole('button', { name: '목록형' }))
+    await user.type(screen.getByRole('searchbox', { name: '기록 검색' }), '오이도{Enter}')
+    await waitFor(() =>
+      expect(within(screen.getByRole('list', { name: '드라이브 기록 목록' })).getAllByRole('listitem')).toHaveLength(2),
+    )
+
+    await user.click(screen.getByRole('button', { name: /오이도 노을 보러/ }))
+    await screen.findByRole('heading', { name: '2026년 11월 2일' })
+    await user.click(screen.getByRole('button', { name: '뒤로가기' }))
+
+    expect(await screen.findByRole('button', { name: '목록형' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('searchbox', { name: '기록 검색' })).toHaveValue('오이도')
+    await waitFor(() =>
+      expect(within(screen.getByRole('list', { name: '드라이브 기록 목록' })).getAllByRole('listitem')).toHaveLength(2),
+    )
+  })
+
+  it('상세에서 돌아오면 고른 날짜 검색이 그대로 남아 있다', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-11-13T03:00:00Z'))
+    const user = renderApp('/map')
+    await screen.findByText('총 12번의 드라이브를 함께했어요')
+    await user.click(screen.getByRole('button', { name: '목록형' }))
+    await user.click(screen.getByRole('button', { name: '날짜로 검색' }))
+    const calendar = screen.getByRole('dialog', { name: '날짜로 기록 검색' })
+    await user.click(within(calendar).getByRole('button', { name: '이전 달' }))
+    await user.click(await within(calendar).findByRole('button', { name: '2026년 10월 24일' }))
+
+    await user.click(await screen.findByRole('button', { name: /몽산포 해변 산책/ }))
+    await screen.findByRole('heading', { name: '2026년 10월 24일' })
+    await user.click(screen.getByRole('button', { name: '뒤로가기' }))
+
+    expect(await screen.findByRole('searchbox', { name: '기록 검색' })).toHaveValue('2026년 10월 24일')
+    await waitFor(() => {
+      const items = within(screen.getByRole('list', { name: '드라이브 기록 목록' })).getAllByRole('listitem')
+      expect(items).toHaveLength(1)
+      expect(items[0]).toHaveTextContent('몽산포 해변 산책')
+    })
+    vi.useRealTimers()
+  })
+
   // 기능명세서 🔟: 뒤로가기는 기록 지도로 간다. 공유 링크처럼 주소로 바로 열었을 때도 홈이 아니라 기록 지도로 간다
   it('기록 주소로 바로 들어와서 뒤로가기를 누르면 기록 지도로 간다', async () => {
     const user = renderApp('/cards/crd_01')

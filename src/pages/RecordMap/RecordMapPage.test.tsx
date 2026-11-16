@@ -110,6 +110,12 @@ describe('RecordMapPage', () => {
       expect(onSearch).toHaveBeenCalledWith('오이도')
     })
 
+    it('이미 검색 중인 검색어가 있으면 검색창에 채워 둔다 (상세에서 돌아왔을 때)', () => {
+      renderPage({ query: '오이도' })
+
+      expect(screen.getByRole('searchbox', { name: '기록 검색' })).toHaveValue('오이도')
+    })
+
     it('캘린더 버튼을 누르면 날짜 검색을 연다', async () => {
       const { user, onCalendarClick } = renderPage()
 

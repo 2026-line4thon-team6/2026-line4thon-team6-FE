@@ -21,6 +21,8 @@ interface RecordMapPageProps {
   totalCount: number | null
   // 날짜로 검색 중이면 그 날짜 (YYYY-MM-DD). 검색창에 날짜를 보여준다
   date: string | null
+  // 검색 중인 검색어. 상세에서 돌아와 화면이 새로 그려질 때 검색창에 다시 채운다
+  query?: string
   mapStatus: LoadStatus
   markers: RecordMapMarker[]
   listStatus: LoadStatus
@@ -70,6 +72,7 @@ function RecordMapPage({
   view,
   totalCount,
   date,
+  query: searchedQuery = '',
   mapStatus,
   markers,
   listStatus,
@@ -85,7 +88,7 @@ function RecordMapPage({
   onRetry,
   onTabChange,
 }: RecordMapPageProps) {
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useState(searchedQuery)
   // 사진 마커를 누르면 그 목적지의 최신 기록을 미리보기로 띄운다
   const [preview, setPreview] = useState<RecordSummary | null>(null)
   const status = view === 'map' ? mapStatus : listStatus
