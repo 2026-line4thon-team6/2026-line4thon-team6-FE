@@ -100,4 +100,17 @@ describe('useNotifications', () => {
 
     expect(result.current.notifications[0].readAt).toBeNull()
   })
+
+  it('보관 기간이 지나 서버에서 사라진 알림(404)은 목록에서 뺀다', async () => {
+    const { ApiError } = await vi.importActual<typeof import('@/api/client')>('@/api/client')
+    vi.mocked(fetchNotifications).mockResolvedValue(page([FIRST, SECOND]))
+    vi.mocked(markNotificationRead).mockRejectedValue(new ApiError(404, null))
+
+    const { result } = renderHook(() => useNotifications())
+    await waitFor(() => expect(result.current.status).toBe('ready'))
+
+    await act(() => result.current.markRead(FIRST.id))
+
+    expect(result.current.notifications.map(({ id }) => id)).toEqual([SECOND.id])
+  })
 })

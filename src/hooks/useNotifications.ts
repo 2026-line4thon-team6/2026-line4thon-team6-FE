@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ApiError } from '@/api/client'
 import { fetchNotifications, markNotificationRead } from '@/api/notifications'
 import type { Notification } from '@/types/notification'
 
@@ -81,7 +82,12 @@ function useNotifications() {
     try {
       const { data } = await markNotificationRead(id)
       setReadAt(id, data.readAt)
-    } catch {
+    } catch (error) {
+      // 보관 기간이 지나 서버에서 사라진 알림이면 목록에서 뺀다
+      if (error instanceof ApiError && error.status === 404) {
+        setState((prev) => ({ ...prev, notifications: prev.notifications.filter((item) => item.id !== id) }))
+        return
+      }
       setReadAt(id, null)
     }
   }
