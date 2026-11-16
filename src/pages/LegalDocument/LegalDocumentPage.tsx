@@ -3,6 +3,7 @@ import GlassIconButton from '@/components/GlassIconButton/GlassIconButton'
 import MarkdownText from '@/components/MarkdownText/MarkdownText'
 import type { LegalDocumentStatus } from '@/hooks/useLegalDocument'
 import type { LegalDocument, LegalDocumentType } from '@/types/legal'
+import { toLegalMarkdown } from '@/utils/legalMarkdown'
 import styles from './LegalDocumentPage.module.scss'
 
 // 불러오기 전에도 헤더에 보여 줄 문서 제목 (응답의 title과 같다)
@@ -31,7 +32,7 @@ function LegalDocumentPage({ type, status, document, onBack, onRetry }: LegalDoc
 
       <main className={styles.body}>
         {status === 'ready' && document ? (
-          <MarkdownText className={styles.content} text={document.content} />
+          <MarkdownText className={styles.content} text={toLegalMarkdown(document.content)} />
         ) : status === 'notFound' ? (
           // 서버에 아직 등록되지 않은 문서라 다시 시도해도 같으므로 버튼 없이 안내만 한다
           <p className={styles.message}>아직 준비 중인 문서예요.</p>
