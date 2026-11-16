@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import * as authApi from '@/api/auth'
 import { login, logout } from '@/api/auth'
 import { mockFetchMe, mockFetchMyCouple, mockJoinCouple, MOCK_PARTNER_INVITE_CODE, resetMockCouple } from '@/mocks/couples'
 import useOnboarding from './useOnboarding'
@@ -10,6 +11,10 @@ beforeEach(async () => {
   sessionStorage.clear()
   await logout('key')
   await login('KAKAO') // 새 가입자
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 describe('가입 답변 모으기', () => {
@@ -58,6 +63,20 @@ describe('가입 답변 모으기', () => {
     expect((await mockFetchMyCouple()).data.couple).toBeNull()
     const { data } = await mockJoinCouple({ code: MOCK_PARTNER_INVITE_CODE })
     expect(data.daysTogether).toBe(1)
+  })
+
+  it('붕붕이 이름을 비우면 빈 문자열 대신 null로 보낸다 (연결할 때 기본 이름 붕붕이)', async () => {
+    const complete = vi.spyOn(authApi, 'completeOnboarding')
+    const { result } = renderHook(() => useOnboarding())
+    act(() => result.current.update({ agreed: true, nickname: '현우', birthDate: '2002.03.04' }))
+
+    await act(async () => {
+      await result.current.submit('   ')
+    })
+
+    expect(complete).toHaveBeenCalledWith(expect.objectContaining({ mascotName: null }))
+    const { data } = await mockJoinCouple({ code: MOCK_PARTNER_INVITE_CODE })
+    expect(data.mascotName).toBe('붕붕이')
   })
 
   it('저장에 실패하면 안내 문구를 남기고 답은 그대로 둔다', async () => {

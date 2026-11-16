@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { logout } from '@/api/auth'
 import { prepareDrive } from '@/api/drives'
-import { MOCK_PARTNER_INVITE_CODE, mockEndSession, mockFetchMe, resetMockCouple } from '@/mocks/couples'
+import { MOCK_PARTNER_INVITE_CODE, MOCK_RESTORE_INVITE_CODE, mockEndSession, mockFetchMe, resetMockCouple } from '@/mocks/couples'
 import { resetMockPlaces } from '@/mocks/places'
 import { resetMockCards } from '@/mocks/cards'
 import { resetMockDjPlaylists } from '@/mocks/djPlaylists'
@@ -350,6 +350,23 @@ describe('연인 초대', () => {
     expect(await screen.findByRole('heading', { level: 1, name: /오늘은 어디로 떠나볼까요/ })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: '마이' }))
     expect(await screen.findByRole('button', { name: /누적 0km · D\+1/ })).toBeInTheDocument()
+  })
+
+  it('예전에 연결했던 연인의 코드를 입력하면 다시 연결할지 묻고, 다시 연결하면 예전 기록으로 홈에 간다', async () => {
+    const user = renderApp('/my/couple')
+    await user.click(await screen.findByRole('button', { name: /커플 연결 끊기/ }))
+    await user.click(screen.getByRole('button', { name: '연결 해제' }))
+    await user.click(await screen.findByRole('button', { name: /연인과 연결해 보세요/ }))
+    await waitFor(() => expect(screen.getByRole('button', { name: '내 코드 복사' })).toBeEnabled())
+
+    await user.type(screen.getByRole('textbox', { name: '연인의 코드를 알고 있다면?' }), MOCK_RESTORE_INVITE_CODE)
+    await user.click(screen.getByRole('button', { name: '완료' }))
+    const sheet = within(await screen.findByRole('dialog', { name: '예전에 연결했던 연인이에요' }))
+    await user.click(sheet.getByRole('button', { name: '다시 연결하기' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: /오늘은 어디로 떠나볼까요/ })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '마이' }))
+    expect(await screen.findByRole('button', { name: /누적 330km · D\+23/ })).toBeInTheDocument()
   })
 
   it('코드를 비워 두고 완료를 누르면 연결하지 않고 홈으로 간다', async () => {

@@ -42,23 +42,18 @@ export const MOCK_COUPLE: CoupleConnection = {
   },
 }
 
-// 연결할 때 쓴 내 코드. 연결 후에는 조회용으로만 남고 새 상대가 쓸 수 없다
-const MOCK_INVITE: CoupleInvite = {
-  inviteId: 'inv_01',
-  code: 'jsd82nk9',
-  expiresAt: '2026-11-14T00:00:00Z',
-  status: 'CONSUMED',
-}
-
 // 목 서버에서 연결에 성공하는 연인(민지)의 코드. 연결 화면을 직접 써 볼 때 입력한다
 export const MOCK_PARTNER_INVITE_CODE = 'minji2026'
+// 예전에 연결했다가 해제한 연인의 코드. 연결하면 409 COUPLE_RESTORE_REQUIRED가 나고, 복구하면 예전 커플(MOCK_COUPLE)로 돌아간다
+export const MOCK_RESTORE_INVITE_CODE = 'minji2025'
 
 const MOCK_PARTNER = MOCK_COUPLE.couple!.members[1]
 const INVITE_TTL_MS = 24 * 60 * 60 * 1000
 
 let connection: CoupleConnection = structuredClone(MOCK_COUPLE)
 let me: Me = structuredClone(MOCK_ME)
-let invite: CoupleInvite | null = structuredClone(MOCK_INVITE)
+// 연결할 때 연인 코드는 소진되고 내 코드도 폐기되므로, 연결된 상태에서는 내 코드가 없다(GET 404)
+let invite: CoupleInvite | null = null
 let inviteCount = 1
 // 로그인 세션 · 가입할 때 고른 커플 초기값(시작일 · 붕붕이 이름)
 let signedIn = true
@@ -68,7 +63,7 @@ let coupleDefaults: { startDate: string | null; mascotName: string | null } = { 
 export function resetMockCouple() {
   connection = structuredClone(MOCK_COUPLE)
   me = structuredClone(MOCK_ME)
-  invite = structuredClone(MOCK_INVITE)
+  invite = null
   signedIn = true
   coupleDefaults = { startDate: null, mascotName: null }
 }
@@ -148,14 +143,24 @@ export async function mockCreateInvite(): Promise<ApiResponse<CoupleInvite>> {
   return { data: { ...invite }, meta: meta() }
 }
 
+// 연결 · 복구 공통 코드 검사 (서버와 같은 순서)
+function checkJoinCode(code: string) {
+  if (connection.couple) throw fail(409, 'ALREADY_COUPLED', '이미 연인과 연결되어 있어요.')
+  if (!code.trim()) throw fail(422, 'VALIDATION_FAILED', '연인의 코드를 입력해 주세요.')
+  if (invite && sameCode(code, invite.code)) throw fail(422, 'SELF_INVITE', '내 코드는 입력할 수 없어요.')
+  const known = [MOCK_PARTNER_INVITE_CODE, MOCK_RESTORE_INVITE_CODE].some((partner) => sameCode(code, partner))
+  if (!known) throw fail(422, 'INVALID_INVITE', '코드를 다시 확인해 주세요.')
+}
+
 // 연인 코드로 연결. 초기값은 코드 발급자(목 연인은 값 없음) → 참가자(가입할 때 고른 값) → 기본값(연결한 날 · 붕붕이) 순서
 export async function mockJoinCouple(body: { code: string }): Promise<ApiResponse<Couple>> {
-  if (connection.couple) throw fail(409, 'ALREADY_COUPLED', '이미 연인과 연결되어 있어요.')
-  if (!body.code.trim()) throw fail(422, 'VALIDATION_FAILED', '연인의 코드를 입력해 주세요.')
-  if (invite && sameCode(body.code, invite.code)) throw fail(422, 'SELF_INVITE', '내 코드는 입력할 수 없어요.')
-  if (!sameCode(body.code, MOCK_PARTNER_INVITE_CODE)) throw fail(422, 'INVALID_INVITE', '코드를 다시 확인해 주세요.')
+  checkJoinCode(body.code)
+  if (sameCode(body.code, MOCK_RESTORE_INVITE_CODE)) {
+    throw fail(409, 'COUPLE_RESTORE_REQUIRED', '이전 커플 연결을 복구해 주세요.')
+  }
 
-  if (invite) invite = { ...invite, status: 'CONSUMED' }
+  // 연결하면 내 코드는 더 이상 쓸 수 없다
+  invite = null
   return saveCouple({
     id: 'cpl_02',
     status: 'CONNECTED',
@@ -172,10 +177,22 @@ export async function mockJoinCouple(body: { code: string }): Promise<ApiRespons
   })
 }
 
+// 예전에 연결했던 연인과 다시 연결. 예전 커플 정보(시작일 · 기록)를 그대로 되살린다
+export async function mockRestoreCouple(body: { code: string }): Promise<ApiResponse<Couple>> {
+  checkJoinCode(body.code)
+  if (!sameCode(body.code, MOCK_RESTORE_INVITE_CODE)) {
+    throw fail(404, 'COUPLE_HISTORY_NOT_FOUND', '복구할 커플 연결이 없어요.')
+  }
+
+  invite = null
+  const former = structuredClone(MOCK_COUPLE.couple!)
+  return saveCouple({ ...former, version: former.version + 1 })
+}
+
 export async function mockUpdateStartDate(body: { startDate: string; expectedVersion: number }): Promise<ApiResponse<Couple>> {
   const couple = getCouple()
   checkVersion(body.expectedVersion, couple.version)
-  if (!isValidPastDate(body.startDate)) throw fail(422, 'VALIDATION_FAILED', '오늘 이후 날짜는 고를 수 없어요.')
+  if (!isValidPastDate(body.startDate)) throw fail(422, 'INVALID_START_DATE', '오늘 이후 날짜는 고를 수 없어요.')
 
   return saveCouple({
     ...couple,
