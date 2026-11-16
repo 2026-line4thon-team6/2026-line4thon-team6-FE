@@ -5,6 +5,7 @@ import type { NavTab } from '@/components/BottomNav/BottomNav'
 import useAuth, { type Auth } from '@/hooks/useAuth'
 import useCoupleInvite from '@/hooks/useCoupleInvite'
 import useCouplePage from '@/hooks/useCouplePage'
+import useFaqs from '@/hooks/useFaqs'
 import useFavorites from '@/hooks/useFavorites'
 import useLegalDocument from '@/hooks/useLegalDocument'
 import useMyCouple from '@/hooks/useMyCouple'
@@ -62,6 +63,7 @@ import RestAreaDetailModal from '@/pages/Drive/RestAreaDetailModal'
 import StampsTab from '@/pages/Drive/StampsTab'
 import DriveCardPage from '@/pages/DriveCard/DriveCardPage'
 import HomePage from '@/pages/Home/HomePage'
+import FaqPage from '@/pages/Faq/FaqPage'
 import LegalDocumentPage from '@/pages/LegalDocument/LegalDocumentPage'
 import MyPage, { type MyMenu } from '@/pages/My/MyPage'
 import NotificationsPage from '@/pages/Notifications/NotificationsPage'
@@ -123,6 +125,7 @@ const ARCHIVE_PATHS: Partial<Record<MyMenu, string>> = {
   favorites: '/my/favorites',
   playlists: '/my/playlists',
   stories: '/my/stories',
+  faq: '/my/faq',
 }
 
 function useTabNavigate() {
@@ -778,7 +781,6 @@ function MyRoute({ auth }: { auth: Auth }) {
     const legal = LEGAL_MENUS[menu]
     const path = legal ? LEGAL_PATHS[legal] : ARCHIVE_PATHS[menu]
     if (path) navigate(path)
-    // TODO: FAQ 화면이 생기면 이동한다
   }
 
   // 로그아웃하면 로그인 화면(L1)으로 간다
@@ -908,6 +910,13 @@ function CoupleInviteRoute() {
       onSkip={goHome}
     />
   )
+}
+
+function FaqRoute() {
+  const goBack = useGoBack('/my')
+  const { retry, ...state } = useFaqs()
+
+  return <FaqPage {...state} onBack={goBack} onRetry={retry} />
 }
 
 function LegalDocumentRoute({ type }: { type: LegalDocumentType }) {
@@ -1147,6 +1156,7 @@ function App() {
           <Route path="/my/playlists" element={<PlaylistsRoute />} />
           <Route path="/my/stories" element={<RadioStoriesRoute />} />
           <Route path="/my/stories/:episodeId" element={<RadioStoryRouteByParam />} />
+          <Route path="/my/faq" element={<FaqRoute />} />
           <Route
             path="/drives/:driveId/card"
             element={<DriveCardRouteByParam userId={me.id} myNickname={me.nickname} partnerNickname={partnerNickname} />}

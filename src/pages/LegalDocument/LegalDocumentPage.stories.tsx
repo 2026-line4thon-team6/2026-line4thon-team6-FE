@@ -45,3 +45,8 @@ export const Loading: Story = {
 export const LoadError: Story = {
   args: { status: 'error', document: null },
 }
+
+// 서버에 아직 등록되지 않은 문서 (404 RESOURCE_NOT_FOUND)
+export const NotFound: Story = {
+  args: { type: 'OPEN_SOURCE', status: 'notFound', document: null },
+}
