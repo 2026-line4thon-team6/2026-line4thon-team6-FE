@@ -87,7 +87,7 @@ async function refreshTokens(expiredToken: string): Promise<string> {
   try {
     const { data } = await apiFetch<AuthRefreshResult>('/auth/refresh', {
       method: 'POST',
-      headers: { 'Idempotency-Key': createIdempotencyKey() },
+      headers: { 'Idempotency-Key': await refreshIdempotencyKey(tokens.refreshToken) },
       body: JSON.stringify({ refreshToken: tokens.refreshToken }),
     })
     saveTokens(data)
@@ -107,6 +107,14 @@ function getDeviceId() {
   const id = crypto.randomUUID()
   write(local, DEVICE_KEY, id)
   return id
+}
+
+// 같은 리프레시 토큰이면 언제나 같은 키를 만든다. 응답을 못 받고 다시 보내거나 다른 탭이 동시에 갱신해도
+// 서버가 30초 안의 같은 키 요청에는 앞선 결과를 돌려준다 (다른 키로 옛 토큰을 다시 쓰면 세션 전체가 끊긴다)
+async function refreshIdempotencyKey(refreshToken: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new Uint8Array(new TextEncoder().encode(refreshToken)))
+  const hex = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
+  return `refresh-${hex}`
 }
 
 // POST /auth/authorizations — 로그인 세션을 만들고 공급자 로그인 화면 주소를 돌려준다 (PKCE S256)

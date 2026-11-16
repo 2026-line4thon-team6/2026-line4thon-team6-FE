@@ -137,6 +137,41 @@ describe('액세스 토큰 자동 갱신', () => {
     expect(fetchMock.mock.calls.map(pathOf)).toEqual(['/api/v1/home', '/api/v1/auth/refresh', '/api/v1/home'])
   })
 
+  it('재인증 요청(/auth/reauth)이 만료 토큰으로 401을 받으면 갱신한다', async () => {
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.endsWith('/auth/refresh')) return Promise.resolve(refreshed('new_access', 'new_refresh'))
+      const token = new Headers(init?.headers).get('Authorization')
+      return Promise.resolve(token === 'Bearer new_access' ? json(200, { data: {}, meta: {} }) : expired())
+    })
+    const { apiFetch, setAccessToken } = await loadWithBackend()
+    setAccessToken('old_access')
+
+    await apiFetch('/auth/reauth/authorizations', { method: 'POST', body: '{}' })
+    expect(fetchMock.mock.calls.map(pathOf)).toEqual([
+      '/api/v1/auth/reauth/authorizations',
+      '/api/v1/auth/refresh',
+      '/api/v1/auth/reauth/authorizations',
+    ])
+  })
+
+  it('같은 리프레시 토큰으로 다시 갱신하면 같은 Idempotency-Key를 보내 서버가 앞선 결과를 돌려주게 한다', async () => {
+    fetchMock.mockImplementation((url: string) =>
+      Promise.resolve(url.endsWith('/auth/refresh') ? errorOf(503, 'SERVICE_UNAVAILABLE') : expired()),
+    )
+    const { apiFetch, setAccessToken } = await loadWithBackend()
+    setAccessToken('old_access')
+
+    await expect(apiFetch('/notifications')).rejects.toMatchObject({ status: 401 })
+    await expect(apiFetch('/notifications')).rejects.toMatchObject({ status: 401 })
+
+    const keys = fetchMock.mock.calls
+      .filter((call) => pathOf(call) === '/api/v1/auth/refresh')
+      .map((call) => new Headers((call[1] as RequestInit).headers).get('Idempotency-Key'))
+    expect(keys).toHaveLength(2)
+    expect(keys[0]).toBe(keys[1])
+    expect(keys[0]!.length).toBeLessThanOrEqual(128)
+  })
+
   it('재인증이 필요하다는 401(REAUTH_REQUIRED)은 갱신하지 않는다', async () => {
     fetchMock.mockImplementation(() => Promise.resolve(errorOf(401, 'REAUTH_REQUIRED')))
     const { apiFetch, setAccessToken } = await loadWithBackend()

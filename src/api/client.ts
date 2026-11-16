@@ -62,9 +62,13 @@ export function isAccessTokenExpired(error: ApiError) {
   return error.status === 401 && REFRESHABLE_CODES.includes(error.code)
 }
 
-// 갱신 요청 자체나 로그인 · 로그아웃 · 재인증 요청(/auth/*)의 401은 갱신하지 않는다 (갱신 무한 반복 방지)
+// 갱신 요청 자체와 로그인 · 로그아웃 요청의 401은 갱신하지 않는다 (갱신 무한 반복 방지).
+// 재인증(/auth/reauth*)은 액세스 토큰이 필요한 요청이라 만료되면 갱신한다
+const NON_REFRESHABLE_PATHS = ['/auth/refresh', '/auth/token', '/auth/authorizations', '/auth/logout']
+
 function canRefresh(path: string, status: number, body: Partial<ApiErrorResponse> | null) {
-  return status === 401 && !path.startsWith('/auth/') && REFRESHABLE_CODES.includes(body?.error?.code ?? '')
+  const route = path.split('?')[0]
+  return status === 401 && !NON_REFRESHABLE_PATHS.includes(route) && REFRESHABLE_CODES.includes(body?.error?.code ?? '')
 }
 
 // 오류 응답 { error, meta } 를 그대로 담는다. 화면에서는 retryable로 재시도 가능 여부를 판단한다
