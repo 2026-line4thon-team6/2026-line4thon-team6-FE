@@ -104,6 +104,15 @@ describe('createStoryImage', () => {
     expect(seoul!.y).toBeLessThan(busan!.y)
   })
 
+  it('사진이 없는 기록(null)은 연한 배경에 기본 일러스트를 그려 그대로 만든다', async () => {
+    const image = await createStoryImage({ photoUrl: null, title: '사진 없는 드라이브', date: '2026년 11월 3일' })
+
+    expect(image.type).toBe('image/png')
+    expect(context.calls.some((call) => call.name === 'fillRect')).toBe(true)
+    // 기본 일러스트는 잘라 그리지 않고(9개 인자) 비율대로 가운데에 그린다(5개 인자)
+    expect(context.calls.filter((call) => call.name === 'drawImage' && call.args.length === 9)).toHaveLength(0)
+  })
+
   it('제목이 카드보다 길면 말줄임표로 줄인다', async () => {
     await createStoryImage({ photoUrl: '/photo.webp', title: '아주아주 길고 긴 드라이브 제목입니다 정말로 길어요', date: '2026년 11월 3일' })
 

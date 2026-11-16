@@ -156,9 +156,11 @@ function NotificationsRoute({ onRead }: NotificationsRouteProps) {
       markRead(notification.id)
       onRead()
     }
-    // 공유받은 장소는 상세 화면으로 이동한다. 카드 · 커플 화면은 아직 없어 이동하지 않는다
+    // 공유받은 장소는 장소 상세, 소감 · 카드 완료 알림은 기록 상세로 이동한다. 커플 알림은 이동하지 않는다
     if (notification.targetType === 'PLACE') {
       navigate(`/places/${encodeURIComponent(notification.targetId)}`)
+    } else if (notification.targetType === 'CARD') {
+      navigate(`/cards/${encodeURIComponent(notification.targetId)}`)
     }
   }
 
@@ -814,7 +816,6 @@ function CoupleRoute() {
       onChangeStartDate={changeStartDate}
       onRenameMascot={renameMascot}
       onUpdateProfile={updateProfile}
-      onCopyInviteCode={(code) => copyText(code).catch(() => undefined)}
       onDisconnect={disconnect}
       onDisconnected={() => navigate('/my', { replace: true })}
     />
@@ -891,7 +892,7 @@ function RadioStoryRouteByParam() {
 function CoupleInviteRoute() {
   const navigate = useNavigate()
   const goBack = useGoBack('/')
-  const { retry, connect, ...state } = useCoupleInvite()
+  const { retry, connect, restore, ...state } = useCoupleInvite()
   const goHome = () => navigate('/', { replace: true })
 
   return (
@@ -902,6 +903,7 @@ function CoupleInviteRoute() {
       onCopy={(code) => copyText(code).catch(() => undefined)}
       onShare={shareInviteCode}
       onConnect={connect}
+      onRestore={restore}
       onConnected={goHome}
       onSkip={goHome}
     />

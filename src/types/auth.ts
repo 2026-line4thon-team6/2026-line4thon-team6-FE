@@ -34,5 +34,5 @@ export interface OnboardingRequest {
   consents: { type: ConsentType; version: string; agreed: boolean }[]
   gender?: 'MALE' | 'FEMALE' | null
   coupleStartDate?: string | null // 비우면 가입한 날부터 센다
-  mascotName?: string
+  mascotName?: string | null // 비우면 null. 빈 문자열은 보내지 않는다
 }

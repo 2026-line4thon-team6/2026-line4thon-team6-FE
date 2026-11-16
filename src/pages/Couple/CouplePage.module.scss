@@ -181,15 +181,6 @@ $gutter: 25px;
   color: color('black');
 }
 
-.code {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 18px;
-  @include typo('body-m-15');
-  color: color('gray-800');
-}
-
 // 불러오는 중 · 오류 안내 (시안에 없는 상태라 최소한으로 둔다)
 .message {
   display: flex;
