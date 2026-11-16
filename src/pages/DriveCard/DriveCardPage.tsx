@@ -122,26 +122,27 @@ function DriveCardPage({
           </li>
         </ul>
 
-        {card.playlist && (
-          <section className={styles.playlist} aria-labelledby="card-playlist-badge">
-            {card.playlist.thumbnailUrl ? (
-              <img className={styles.playlistCover} src={card.playlist.thumbnailUrl} alt="" />
-            ) : (
-              <span className={styles.playlistCover} aria-hidden />
-            )}
-            <div className={styles.playlistText}>
-              <h2 id="card-playlist-badge" className={styles.playlistBadge}>
-                함께 들었던 플레이리스트
-              </h2>
-              <p className={styles.playlistTitle}>{card.playlist.title}</p>
+        {/* 플레이리스트를 안 쓴 드라이브도 같은 자리에 카드를 두고 제목만 '- -'로 보여 준다 (기능명세 18) */}
+        <section className={styles.playlist} aria-labelledby="card-playlist-badge">
+          {card.playlist?.thumbnailUrl ? (
+            <img className={styles.playlistCover} src={card.playlist.thumbnailUrl} alt="" />
+          ) : (
+            <span className={styles.playlistCover} aria-hidden />
+          )}
+          <div className={styles.playlistText}>
+            <h2 id="card-playlist-badge" className={styles.playlistBadge}>
+              함께 들었던 플레이리스트
+            </h2>
+            <p className={styles.playlistTitle}>{card.playlist?.title ?? '- -'}</p>
+            {card.playlist && (
               <p className={styles.playlistMeta}>
                 총 {card.playlist.trackCount}곡 · {formatPlaylistDuration(card.playlist.durationSeconds)}
               </p>
-            </div>
-            {/* TODO: 플레이리스트 화면이 생기면 버튼으로 바꿔 이동한다 */}
-            <img className={styles.playlistIcon} src={playlistIcon} alt="" />
-          </section>
-        )}
+            )}
+          </div>
+          {/* TODO: 플레이리스트 화면이 생기면 버튼으로 바꿔 이동한다 */}
+          <img className={styles.playlistIcon} src={playlistIcon} alt="" />
+        </section>
 
         <PhotoSection
           photos={card.photos}

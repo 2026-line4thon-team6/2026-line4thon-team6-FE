@@ -71,7 +71,7 @@ describe('드라이브 정보', () => {
     expect(stamps).toHaveTextContent('휴게소 도장2개')
   })
 
-  it('함께 들었던 플레이리스트의 제목 · 곡 수 · 재생 시간을 표시하고, 없으면 영역을 숨긴다', () => {
+  it('함께 들었던 플레이리스트의 제목 · 곡 수 · 재생 시간을 표시한다', () => {
     renderPage()
 
     const playlist = screen.getByRole('region', { name: '함께 들었던 플레이리스트' })
@@ -79,10 +79,12 @@ describe('드라이브 정보', () => {
     expect(playlist).toHaveTextContent('총 13곡 · 약 54분')
   })
 
-  it('플레이리스트가 없으면 영역을 숨긴다', () => {
+  it("플레이리스트를 안 썼으면 같은 자리에 제목 '- -'만 보여 준다", () => {
     renderPage({ card: { ...EMPTY_CARD, playlist: null } })
 
-    expect(screen.queryByRole('region', { name: '함께 들었던 플레이리스트' })).not.toBeInTheDocument()
+    const playlist = screen.getByRole('region', { name: '함께 들었던 플레이리스트' })
+    expect(within(playlist).getByText('- -')).toBeInTheDocument()
+    expect(playlist).not.toHaveTextContent(/총 \d+곡/)
   })
 })
 
