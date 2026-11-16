@@ -3,6 +3,7 @@ import useOverlay from '@/hooks/useOverlay'
 import type { RecordMapCard } from '@/types/record'
 import { formatDate } from '@/utils/formatDate'
 import styles from './RecordPreview.module.scss'
+import RecordPhoto from '@/components/RecordPhoto/RecordPhoto'
 
 interface RecordPreviewProps {
   card: RecordMapCard
@@ -28,7 +29,7 @@ function RecordPreview({ card, onOpen, onShare, onClose }: RecordPreviewProps) {
           aria-label={`${card.title} 기록 자세히 보기`}
           onClick={() => onOpen(card)}
         >
-          <img className={styles.photo} src={card.thumbnailUrl} alt="" />
+          <RecordPhoto className={styles.photo} src={card.thumbnailUrl} />
           <span className={styles.text}>
             <span className={styles.title}>{card.title}</span>
             <span className={styles.date}>{formatDate(card.driveDate)}</span>

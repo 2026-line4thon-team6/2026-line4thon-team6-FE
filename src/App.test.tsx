@@ -151,6 +151,14 @@ describe('홈 · 알림 → 장소 상세 이동', () => {
     expect(await screen.findByRole('heading', { level: 1, name: '시흥 오이도' })).toBeInTheDocument()
   })
 
+  it('연인이 소감을 남긴 알림을 탭하면 그 카드의 기록 상세로 이동한다', async () => {
+    const user = renderApp('/notifications')
+
+    await user.click(await screen.findByRole('button', { name: /드라이브 소감을 남겼어요/ }))
+
+    expect(await screen.findByRole('button', { name: '카드 삭제' })).toBeInTheDocument()
+  })
+
   it('연인에게 보내기 → 보내기 → 전송 완료 안내까지 이어진다', async () => {
     const user = renderApp('/places/plc_oido')
     await screen.findByRole('heading', { level: 1, name: '시흥 오이도' })

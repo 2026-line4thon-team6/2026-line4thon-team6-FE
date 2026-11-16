@@ -15,6 +15,7 @@ const reflection = (nickname: string, text: string, submitted = true): Reflectio
   submittedAt: submitted ? '2026-11-03T09:00:00Z' : null,
   updatedAt: '2026-11-03T09:00:00Z',
   version: 1,
+  role: 'PASSENGER',
 })
 
 const CARD: Card = {
@@ -45,7 +46,7 @@ const CARD: Card = {
   canEdit: false,
   canDelete: true,
   version: 1,
-  driverUserId: null,
+  driverUserId: 'usr_민준', // 운전자 칸이 먼저 — 내가 운전자라 나 → 연인 순서
 }
 
 function renderPage(props: Partial<Props> = {}) {
