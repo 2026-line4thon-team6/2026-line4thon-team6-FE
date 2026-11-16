@@ -161,4 +161,22 @@ describe('사진 링크 만료', () => {
     expect(result.current.myText).toBe('쓰는 중')
     vi.useRealTimers()
   })
+
+  it('그사이 상대가 카드를 바꿔 버전이 달라도, 같은 사진의 링크는 새로 바꾼다 (버전은 그대로 둔다)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const { result } = await renderReady()
+    await act(() => result.current.addPhotos([jpg()]))
+    const before = result.current.card!
+    const [photo] = before.photos
+    vi.spyOn(cardsApi, 'fetchDriveCard').mockResolvedValueOnce({
+      data: { ...before, version: before.version + 1, photos: [{ ...photo, url: 'https://cdn.test/new.jpg' }] },
+      meta: { requestId: 'r', serverTime: '' },
+    })
+
+    await act(() => vi.advanceTimersByTimeAsync(60 * 60_000))
+
+    await waitFor(() => expect(result.current.card!.photos[0].url).toBe('https://cdn.test/new.jpg'))
+    expect(result.current.card!.version).toBe(before.version)
+    vi.useRealTimers()
+  })
 })
