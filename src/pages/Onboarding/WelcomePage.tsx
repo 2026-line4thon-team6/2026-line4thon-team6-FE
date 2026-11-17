@@ -16,13 +16,14 @@ function WelcomePage({ agreed, onAgreeChange, onNext, onOpenDocument }: WelcomeP
   return (
     <main className={styles.page}>
       <WavingMascot />
-      <h1 className={styles.message}>
+      {/* 붕붕이가 점프하는 동안 문구가, 손을 흔들 즈음 동의 · 버튼이 올라온다 */}
+      <h1 className={`${styles.message} ${styles.reveal}`}>
         {'반가워요! '}
         <br />
         저는 붕붕이라고 해요.
       </h1>
 
-      <div className={styles.consent}>
+      <div className={`${styles.consent} ${styles.reveal} ${styles.revealLate}`}>
         <label className={styles.check}>
           <input type="checkbox" checked={agreed} onChange={(event) => onAgreeChange(event.target.checked)} />
           <span>(필수) 이용약관 및 개인정보 처리방침에 동의해요</span>
@@ -37,7 +38,12 @@ function WelcomePage({ agreed, onAgreeChange, onNext, onOpenDocument }: WelcomeP
         </p>
       </div>
 
-      <Button className={styles.button} size="cta" disabled={!agreed} onClick={onNext}>
+      <Button
+        className={`${styles.button} ${styles.reveal} ${styles.revealLate}`}
+        size="cta"
+        disabled={!agreed}
+        onClick={onNext}
+      >
         만나서 반가워!
       </Button>
     </main>
