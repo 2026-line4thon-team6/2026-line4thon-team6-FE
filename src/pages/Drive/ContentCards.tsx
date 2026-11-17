@@ -19,16 +19,24 @@ const GAMES: { kind: ContentKind; title: string; description: string; image: str
 
 interface ContentCardsProps {
   onPlaylistClick?: () => void
+  // 이미 만든 플레이리스트 카드를 눌렀을 때
+  onPlaylistOpen?: (playlistId: string) => void
   onContentClick?: (kind: ContentKind) => void
   radioPlaying?: boolean
   playlist?: CardPlaylist | null
 }
 
-function ContentCards({ onPlaylistClick, onContentClick, radioPlaying = false, playlist = null }: ContentCardsProps) {
+function ContentCards({
+  onPlaylistClick,
+  onPlaylistOpen,
+  onContentClick,
+  radioPlaying = false,
+  playlist = null,
+}: ContentCardsProps) {
   return (
     <div className={styles.cards}>
       {playlist ? (
-        <PlaylistSummaryCard playlist={playlist} />
+        <PlaylistSummaryCard playlist={playlist} onClick={() => onPlaylistOpen?.(playlist.id)} />
       ) : (
         <button type="button" className={styles.playlist} onClick={onPlaylistClick}>
           <span className={styles.playlistLabel}>DJ 플레이리스트</span>
