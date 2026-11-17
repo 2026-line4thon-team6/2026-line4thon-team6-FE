@@ -65,14 +65,29 @@ describe('장소 정보', () => {
     expect(visit).toHaveTextContent('추천 방문 시간오후 5-8시(일몰 시간대)')
   })
 
-  it("정보가 없는 항목은 '--'로 표시하고, 경로를 모르면 경로 미리보기를 안내 문구로 대신한다", () => {
+  // 서버가 아직 채우지 않은 항목은 '--' 대신 칸째 숨긴다
+  it('정보가 없는 항목은 칸을 숨기고 남은 칸만 보여 준다', () => {
+    renderPage({ detail: { ...OIDO, mainRoads: [], recommendedVisitTime: null } })
+
+    const items = within(screen.getByRole('list', { name: '드라이브 정보' })).getAllByRole('listitem')
+    expect(items.map((item) => item.textContent)).toEqual(['예상 소요 시간약 1시간', '주차 정보공영주차장 이용 가능'])
+    expect(screen.queryByText('주요 경로')).not.toBeInTheDocument()
+    expect(screen.queryByText('추천 방문 시간')).not.toBeInTheDocument()
+    expect(screen.queryByText('--')).not.toBeInTheDocument()
+  })
+
+  it('남은 칸 수만큼 폭을 똑같이 나눈다 (4칸이 다 있으면 시안 비율 그대로)', () => {
+    renderPage({ detail: { ...OIDO, mainRoads: [], recommendedVisitTime: null } })
+    expect(screen.getByRole('list', { name: '드라이브 정보' })).toHaveStyle({ gridTemplateColumns: 'repeat(2, 1fr)' })
+  })
+
+  it('요약 정보가 하나도 없으면 요약 상자를 숨기고, 경로를 모르면 경로 미리보기를 안내 문구로 대신한다', () => {
     renderPage({
       detail: { ...HEONHWARO, place: { ...HEONHWARO.place, estimatedDurationSeconds: null } },
     })
 
-    for (const item of within(screen.getByRole('list', { name: '드라이브 정보' })).getAllByRole('listitem')) {
-      expect(item).toHaveTextContent('--')
-    }
+    expect(screen.queryByRole('list', { name: '드라이브 정보' })).not.toBeInTheDocument()
+    expect(screen.queryByText('--')).not.toBeInTheDocument()
     // 위치 · 시간 줄은 시간을 모르면 지역만 보여 준다 (홈 카드와 같은 규칙)
     expect(screen.getByText('강원 강릉시')).toBeInTheDocument()
     expect(screen.queryByText('강원 강릉시 · --')).not.toBeInTheDocument()

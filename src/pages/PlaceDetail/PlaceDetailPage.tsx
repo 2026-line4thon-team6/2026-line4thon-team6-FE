@@ -18,7 +18,6 @@ import SendToPartnerModal, { type SendStep } from './SendToPartnerModal'
 import ShareSheet, { type ShareLink } from './ShareSheet'
 
 // 값을 불러오지 못했을 때의 표시
-const EMPTY = '--'
 const ROUTE_FIT_PADDING: [number, number, number, number] = [36, 40, 12, 40]
 
 interface PlaceDetailPageProps {
@@ -91,8 +90,16 @@ function PlaceDetailPage({
   const { place, photos, introduction, parkingInfo, recommendedVisitTime, mainRoads } = detail
   const category = PLACE_CATEGORIES[place.category]
   const durationSeconds = route?.durationSeconds ?? place.estimatedDurationSeconds
-  const duration = formatDuration(durationSeconds)
-  const [visitTime, visitNote] = splitNote(recommendedVisitTime ?? EMPTY)
+  // 서버가 아직 채우지 않은 항목은 칸째 숨기고, 남은 칸이 폭을 똑같이 나눈다 (4칸이 다 있으면 시안 비율)
+  const [visitTime, visitNote] = recommendedVisitTime ? splitNote(recommendedVisitTime) : [null, null]
+  const summaryItems = [
+    { label: '예상 소요 시간', icon: durationIcon, value: durationSeconds === null ? null : formatDuration(durationSeconds) },
+    { label: '주요 경로', icon: roadIcon, value: mainRoads.length > 0 ? mainRoads.join(', ') : null },
+    { label: '주차 정보', icon: parkingIcon, value: parkingInfo || null },
+    { label: '추천 방문 시간', icon: visitIcon, value: visitTime, note: visitNote },
+  ].filter((item) => item.value)
+  const summaryColumns =
+    summaryItems.length < 4 ? { gridTemplateColumns: `repeat(${summaryItems.length}, 1fr)` } : undefined
   // 맨 위에는 대표 사진 1장만 보여 준다 (Figma 70:1744). 사진이 없으면 장소 썸네일
   const heroPhoto = photos[0] ?? place.thumbnailUrl
 
@@ -161,37 +168,20 @@ function PlaceDetailPage({
 
         {introduction && <p className={styles.introduction}>{introduction}</p>}
 
-        <ul className={styles.summary} aria-label="드라이브 정보">
-          <li>
-            <span className={styles.summaryIcon}>
-              <img src={durationIcon} alt="" />
-            </span>
-            <span className={styles.summaryLabel}>예상 소요 시간</span>
-            <span className={styles.summaryValue}>{duration}</span>
-          </li>
-          <li>
-            <span className={styles.summaryIcon}>
-              <img src={roadIcon} alt="" />
-            </span>
-            <span className={styles.summaryLabel}>주요 경로</span>
-            <span className={styles.summaryValue}>{mainRoads.length > 0 ? mainRoads.join(', ') : EMPTY}</span>
-          </li>
-          <li>
-            <span className={styles.summaryIcon}>
-              <img src={parkingIcon} alt="" />
-            </span>
-            <span className={styles.summaryLabel}>주차 정보</span>
-            <span className={styles.summaryValue}>{parkingInfo ?? EMPTY}</span>
-          </li>
-          <li>
-            <span className={styles.summaryIcon}>
-              <img src={visitIcon} alt="" />
-            </span>
-            <span className={styles.summaryLabel}>추천 방문 시간</span>
-            <span className={styles.summaryValue}>{visitTime}</span>
-            {visitNote && <span className={styles.summaryNote}>{visitNote}</span>}
-          </li>
-        </ul>
+        {summaryItems.length > 0 && (
+          <ul className={styles.summary} aria-label="드라이브 정보" style={summaryColumns}>
+            {summaryItems.map(({ label, icon, value, note }) => (
+              <li key={label}>
+                <span className={styles.summaryIcon}>
+                  <img src={icon} alt="" />
+                </span>
+                <span className={styles.summaryLabel}>{label}</span>
+                <span className={styles.summaryValue}>{value}</span>
+                {note && <span className={styles.summaryNote}>{note}</span>}
+              </li>
+            ))}
+          </ul>
+        )}
 
         <section className={styles.route} aria-labelledby="route-preview-title">
           <h2 id="route-preview-title" className={styles.routeTitle}>
