@@ -1,0 +1,61 @@
+// Figma 1046:10305 (340 x 267). 닫기 버튼 아래 본문 300px, 제목 · 설명 · 링크 간격 12px, 버튼까지 22px
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  // 닫기 버튼(위 20 + 28px) 아래에서 본문이 시작한다
+  padding: 48px 19px 27px 21px;
+  text-align: center;
+}
+
+.title {
+  @include typo('body-l-bold');
+  color: color('black');
+}
+
+.description {
+  margin-top: 12px;
+  @include typo('body-s');
+  color: color('gray-400');
+}
+
+.highlight {
+  @include typo('body-s-medium');
+  color: color('coral-pressed');
+}
+
+// 모달 본문 안의 가벼운 보조 행동 링크 (Route Edit / A 텍스트 링크)
+.routeLink {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 4px 0;
+  @include typo('body-s-medium');
+  color: color('coral-pressed');
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  margin-top: 22px;
+}
+
+// 보조 버튼은 168px 고정, 주 버튼이 남은 폭을 채운다
+.skip {
+  flex: 0 0 168px;
+}
+
+@media (max-width: 359px) {
+  .skip {
+    flex-basis: auto;
+  }
+}

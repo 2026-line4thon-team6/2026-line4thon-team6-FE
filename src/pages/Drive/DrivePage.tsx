@@ -14,6 +14,7 @@ import useSnapSheet from '@/hooks/useSnapSheet'
 import { getDriveStats } from '@/utils/driveStats'
 import styles from './DrivePage.module.scss'
 import DriveConfirmModal from './DriveConfirmModal'
+import DriveEndModal from './DriveEndModal'
 import RestAreaAlert from './RestAreaAlert'
 
 type PanelTab = 'contents' | 'stamps'
@@ -41,7 +42,8 @@ interface DrivePageProps {
   onLocate?: () => void
   onPause?: () => void
   onResume?: () => void
-  onEnd?: () => Promise<boolean>
+  // 드라이브를 마친다. record: 카드 작성 화면으로 · skip: 카드를 남기지 않고 나간다 (Figma 1046:10305)
+  onEnd?: (next: 'record' | 'skip') => Promise<boolean>
   // 출발 전 드라이브 그만하기 (POST /drives/{driveId}/cancel)
   onCancel?: () => Promise<boolean>
   locationDenied?: boolean
@@ -142,10 +144,10 @@ function DrivePage({
     if (await onRename(title)) setRenaming(false)
   }
 
-  const handleEnd = async () => {
+  const handleEnd = async (next: 'record' | 'skip') => {
     if (!onEnd) return
     setEnding(true)
-    const ended = await onEnd()
+    const ended = await onEnd(next)
     setEnding(false)
     if (ended) setConfirmingEnd(false)
   }
@@ -293,15 +295,11 @@ function DrivePage({
       )}
 
       {confirmingEnd && (
-        <DriveConfirmModal
-          title="드라이브를 마치시겠어요?"
-          description="조금 더 달리고 싶다면 경로를 수정해 보세요."
-          cancelLabel="경로 수정"
-          confirmLabel="드라이브 종료"
-          cancelWidth={117}
-          confirmDisabled={ending}
-          onCancel={editRoute}
-          onConfirm={() => void handleEnd()}
+        <DriveEndModal
+          busy={ending}
+          onRecord={() => void handleEnd('record')}
+          onSkip={() => void handleEnd('skip')}
+          onEditRoute={editRoute}
           onClose={() => setConfirmingEnd(false)}
         />
       )}

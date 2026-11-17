@@ -267,6 +267,9 @@ function DriveRoute({ myUserId }: { myUserId: string }) {
   const { alert: restAreaAlert, dismiss: dismissRestAreaAlert } = useRestAreaAlert(restAreas, map.current, driving)
   const restAreaDetail = useRestAreaDetail()
   const [arrivedDriveId, setArrivedDriveId] = useState<string | null>(null)
+  const goCard = useGoCard()
+  // 기록하지 않고 나가면 방금 생긴 빈 카드를 폐기한다 (실패해도 24시간 뒤 서버가 정리하므로 나가기는 막지 않는다)
+  const discardEndedCard = usePendingCardDiscard(() => {})
 
   useArrival({
     active: drive?.status === 'ACTIVE',
@@ -281,10 +284,18 @@ function DriveRoute({ myUserId }: { myUserId: string }) {
   if (status === 'empty') return <Navigate to="/" replace />
 
   // TODO: 실패 토스트
-  const handleEnd = async () => {
+  // 마치기 팝업(Figma 1046:10305): 기록하러 가기 → 그 드라이브의 카드 작성 화면(아래에서 올라오는 전환),
+  // 기록하지 않고 나가기 → 드라이브가 끝나며 생긴 빈 카드를 폐기하고 홈으로 (미작성 카드 배너에 남지 않게)
+  const handleEnd = async (next: 'record' | 'skip') => {
     const ended = await end('USER_ENDED', await gps.flush())
-    if (ended) navigate('/', { replace: true })
-    return ended !== null
+    if (!ended) return false
+    if (next === 'record') {
+      goCard(ended.id, ended.title, { replace: true })
+    } else {
+      await discardEndedCard(ended.id)
+      navigate('/', { replace: true })
+    }
+    return true
   }
 
   return (

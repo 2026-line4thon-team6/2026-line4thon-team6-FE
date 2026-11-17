@@ -119,7 +119,7 @@ describe('목적지 도착', () => {
     moveTo(at({ latitude: 37.5, longitude: 127.0 }, 300, 3))
 
     await user.click(screen.getByRole('button', { name: '드라이브 마치기' }))
-    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: '드라이브 종료' }))
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: '기록하지 않고 나가기' }))
     expect(await screen.findByRole('button', { name: '드라이브 시작하기' })).toBeInTheDocument()
 
     const recorded = mockRecordedGps('drv_mock_1')
