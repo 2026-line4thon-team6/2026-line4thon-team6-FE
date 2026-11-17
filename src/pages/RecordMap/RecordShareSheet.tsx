@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import copyIcon from '@/assets/icons/copy.svg'
+import downloadIcon from '@/assets/icons/download.svg'
 import BottomSheet from '@/components/BottomSheet/BottomSheet'
 import ShareChannelList from '@/components/ShareChannelList/ShareChannelList'
 import Toast from '@/components/Toast/Toast'
 import type { RecordSummary } from '@/types/record'
 import { formatDate } from '@/utils/formatDate'
-import type { ShareChannel, ShareLink } from '@/utils/share'
+import type { ImageSaveResult, ShareChannel, ShareLink } from '@/utils/share'
 import styles from './RecordShareSheet.module.scss'
 import RecordPhoto from '@/components/RecordPhoto/RecordPhoto'
 
@@ -13,23 +14,43 @@ interface RecordShareSheetProps {
   card: RecordSummary
   link: ShareLink
   onClose: () => void
-  // 복사하지 못하면 거절한다. 결과는 시트가 토스트로 알린다
-  onCopyLink: (url: string) => Promise<void>
+  // 공유 이미지를 복사한다. image: 이미지를 복사함 · link: 이미지 복사를 지원하지 않아 링크를 복사함. 못 하면 거절한다
+  onCopyImage: () => Promise<'image' | 'link'>
+  // 공유 이미지를 저장한다 (휴대폰 공유 시트 또는 파일 내려받기). 못 하면 거절한다
+  onSaveImage: () => Promise<ImageSaveResult>
   onShareChannel: (channel: ShareChannel, url: string) => void
 }
 
+const COPY_MESSAGES = { image: '이미지를 복사했어요.', link: '이미지를 복사할 수 없어 링크를 복사했어요.' }
+
 // 기록 지도 미리보기 카드의 공유 바텀시트 (Figma 284:15197). 채널을 고르면 '지도 + 카드' 이미지를 기기 공유 창으로 넘긴다 (지원하지 않으면 링크)
-function RecordShareSheet({ card, link, onClose, onCopyLink, onShareChannel }: RecordShareSheetProps) {
+function RecordShareSheet({ card, link, onClose, onCopyImage, onSaveImage, onShareChannel }: RecordShareSheetProps) {
   const url = link.status === 'ready' ? link.url : null
   const [toast, setToast] = useState<string | null>(null)
+  // 이미지를 만드는 동안(잠깐 걸린다) 두 번 누르지 않게 막는다
+  const [busy, setBusy] = useState(false)
 
-  // 기능명세서 1️⃣1️⃣: 복사 아이콘만으로는 복사됐는지 알 수 없어 결과를 토스트로 알린다
-  const handleCopy = async (target: string) => {
+  // 기능명세서 1️⃣1️⃣: 복사됐는지 알 수 있게 결과를 토스트로 알린다
+  const handleCopy = async () => {
+    setBusy(true)
     try {
-      await onCopyLink(target)
-      setToast('링크를 복사했어요.')
+      setToast(COPY_MESSAGES[await onCopyImage()])
     } catch {
-      setToast('링크를 복사하지 못했어요. 다시 시도해 주세요.')
+      setToast('이미지를 복사하지 못했어요. 다시 시도해 주세요.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // 휴대폰 공유 시트로 넘긴 경우는 저장 여부를 알 수 없어 알리지 않는다
+  const handleSave = async () => {
+    setBusy(true)
+    try {
+      if ((await onSaveImage()) === 'downloaded') setToast('이미지를 저장했어요.')
+    } catch {
+      setToast('이미지를 저장하지 못했어요. 다시 시도해 주세요.')
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -50,20 +71,15 @@ function RecordShareSheet({ card, link, onClose, onCopyLink, onShareChannel }: R
             <div className={styles.text}>
               <h2 className={styles.heading}>드라이브 기록 카드</h2>
               <p className={styles.description}>우리가 함께 달린 길을 공유해보세요.</p>
-              <div className={styles.link}>
-                <p className={styles.url}>
-                  {link.status === 'ready' && link.url}
-                  {link.status === 'loading' && '링크를 불러오고 있어요.'}
-                  {link.status === 'error' && '링크를 불러오지 못했어요.'}
-                </p>
-                <button
-                  type="button"
-                  className={styles.copy}
-                  aria-label="링크 복사"
-                  disabled={!url}
-                  onClick={() => url && void handleCopy(url)}
-                >
+              {/* 커플 전용 링크 대신 '지도 + 카드' 공유 이미지를 복사 · 저장한다 */}
+              <div className={styles.imageActions}>
+                <button type="button" className={styles.imageAction} disabled={busy} onClick={() => void handleCopy()}>
                   <img src={copyIcon} alt="" />
+                  이미지 복사
+                </button>
+                <button type="button" className={styles.imageAction} disabled={busy} onClick={() => void handleSave()}>
+                  <img src={downloadIcon} alt="" />
+                  이미지 저장
                 </button>
               </div>
             </div>

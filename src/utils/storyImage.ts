@@ -39,7 +39,7 @@ export interface StoryMarker {
   photoUrl: string | null // 사진이 없는 기록은 null → 기본 일러스트
 }
 
-interface StoryContent {
+export interface StoryContent {
   photoUrl: string | null // 사진이 없는 기록은 null → 기본 일러스트 (D15)
   title: string
   date: string // 화면용 날짜 (예: 2026년 11월 3일)
