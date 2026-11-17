@@ -44,6 +44,7 @@ const meta = {
     onRemovePhoto: fn(),
     onSwapPhotos: fn(),
     onSave: fn(),
+    onDelete: fn(async () => 'deleted' as const),
   },
 } satisfies Meta<typeof DriveCardPage>
 
@@ -59,6 +60,16 @@ export const Filled: Story = {
     card: FILLED_CARD,
     myText: '운전하느라 조금 힘들었지만 노을은 진짜 예뻤다 ㅎㅎ',
     partnerText: '운전하느라 조금 힘들었지만 노을은 진짜 예뻤다 ㅎㅎ',
+    canSave: true,
+  },
+}
+
+// 저장을 마친 카드를 24시간 안에 다시 연 경우 (오른쪽 위 휴지통으로 지울 수 있다)
+export const Completed: Story = {
+  args: {
+    card: { ...FILLED_CARD, status: 'COMPLETED', canDelete: true },
+    myText: '운전하느라 조금 힘들었지만 노을은 진짜 예뻤다 ㅎㅎ',
+    partnerText: '노을은 진짜 예뻤다 ㅎㅎ',
     canSave: true,
   },
 }

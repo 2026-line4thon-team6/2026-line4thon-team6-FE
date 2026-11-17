@@ -13,6 +13,8 @@ import type { Me } from '@/types/me'
 import { reflectionCharacters, type CharacterGender } from '@/utils/character'
 import { formatCardDate, formatDistance, formatDriveTime, formatPlaylistDuration } from '@/utils/cardFormat'
 import styles from './DriveCardPage.module.scss'
+import DeleteCardModal from '@/pages/RecordDetail/DeleteCardModal'
+import { DELETE_CARD_ERRORS, type DeleteOutcome } from '@/hooks/useCardDetail'
 import LeaveCardModal from './LeaveCardModal'
 import PhotoSection from './PhotoSection'
 
@@ -42,6 +44,8 @@ interface DriveCardPageProps {
   onRemovePhoto: (mediaId: string) => void
   onSwapPhotos: () => void
   onSave: () => void
+  // 저장을 마친 카드를 지운다. 결과에 따라 화면을 나가거나 팝업에 안내를 띄운다
+  onDelete: () => Promise<DeleteOutcome>
 }
 
 // 드라이브 카드 작성 화면 (드라이브 도착 팝업 · 홈 미작성 배너에서 들어온다)
@@ -64,8 +68,12 @@ function DriveCardPage({
   onRemovePhoto,
   onSwapPhotos,
   onSave,
+  onDelete,
 }: DriveCardPageProps) {
   const [leaveOpen, setLeaveOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   if (status !== 'ready' || !card) {
     return (
@@ -96,6 +104,19 @@ function DriveCardPage({
   }
   const editable = card.canEdit && !busy
 
+  const closeDelete = () => {
+    setDeleteOpen(false)
+    setDeleteError(null)
+  }
+
+  const handleDelete = async () => {
+    setDeleting(true)
+    setDeleteError(null)
+    const outcome = await onDelete()
+    setDeleting(false)
+    if (outcome !== 'deleted') setDeleteError(DELETE_CARD_ERRORS[outcome])
+  }
+
   const characters = reflectionCharacters(myGender)
   const slots = [
     { mine: true, name: myNickname || '나', character: characters.mine },
@@ -107,6 +128,15 @@ function DriveCardPage({
       <header className={styles.topBar}>
         <GlassIconButton icon="back" aria-label="뒤로가기" onClick={handleBack} />
         <h1 className={styles.date}>{formatCardDate(card.driveDate)}</h1>
+        {/* 저장을 마친 카드만 지울 수 있다 (기록 상세와 같은 휴지통 · 확인 팝업) */}
+        {card.canDelete && (
+          <GlassIconButton
+            className={styles.delete}
+            icon="delete"
+            aria-label="카드 삭제"
+            onClick={() => setDeleteOpen(true)}
+          />
+        )}
       </header>
 
       <main className={styles.content}>
@@ -206,6 +236,10 @@ function DriveCardPage({
           {busy ? '저장 중…' : '저장하기'}
         </Button>
       </main>
+
+      {deleteOpen && (
+        <DeleteCardModal deleting={deleting} error={deleteError} onConfirm={() => void handleDelete()} onClose={closeDelete} />
+      )}
 
       {leaveOpen && (
         <LeaveCardModal

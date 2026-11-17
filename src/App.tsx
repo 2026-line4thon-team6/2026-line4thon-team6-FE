@@ -1146,7 +1146,9 @@ interface DriveCardRouteProps {
 function DriveCardRoute({ driveId, userId, myNickname, partnerNickname, myGender }: DriveCardRouteProps) {
   const navigate = useNavigate()
   const goBack = useGoBack()
-  const { setMyText, save, saveDraft, retry, addPhotos, removePhoto, swapPhotos, ...card } = useDriveCard(
+  // 카드를 지우면 들어온 화면(기록 지도 · 홈)으로 돌아간다. 주소로 바로 열었으면 기록 지도로 간다
+  const goBackAfterDelete = useGoBack('/map')
+  const { setMyText, save, saveDraft, retry, addPhotos, removePhoto, swapPhotos, remove, ...card } = useDriveCard(
     driveId,
     userId,
   )
@@ -1163,6 +1165,12 @@ function DriveCardRoute({ driveId, userId, myNickname, partnerNickname, myGender
     goBack()
   }
 
+  const handleDelete = async () => {
+    const outcome = await remove()
+    if (outcome === 'deleted') goBackAfterDelete()
+    return outcome
+  }
+
   return (
     <DriveCardPage
       {...card}
@@ -1176,6 +1184,7 @@ function DriveCardRoute({ driveId, userId, myNickname, partnerNickname, myGender
       onRemovePhoto={(mediaId) => void removePhoto(mediaId)}
       onSwapPhotos={() => void swapPhotos()}
       onSave={() => void handleSave()}
+      onDelete={handleDelete}
     />
   )
 }

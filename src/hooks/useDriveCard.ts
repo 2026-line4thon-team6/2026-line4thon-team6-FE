@@ -1,6 +1,7 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import {
   completeCard,
+  deleteCard,
   discardUploadedPhoto,
   fetchDriveCard,
   saveCardDraft,
@@ -8,6 +9,7 @@ import {
   uploadCardPhoto,
 } from '@/api/cards'
 import { ApiError } from '@/api/client'
+import type { DeleteOutcome } from '@/hooks/useCardDetail'
 import type { Card, Reflection } from '@/types/card'
 import { photoRefreshDelay } from '@/utils/photoRefresh'
 import { createIdempotencyKey } from '@/utils/share'
@@ -342,6 +344,27 @@ function useDriveCard(driveId: string, myUserId: string) {
   const canSave =
     !!card && card.canEdit && ((card.photos.length ?? 0) > 0 || myText.trim().length > 0 || partnerText !== null)
 
+  // 저장을 마친 카드를 지운다 (서버는 완료한 카드만 삭제를 허용한다).
+  // 이미 지워진 카드(404)는 삭제된 것으로 보고, 그사이 카드가 바뀌었으면(409) 최신 카드를 다시 불러온다.
+  // 지운 뒤에는 화면을 나가며 초안을 저장하지 않게 카드를 비워 둔다
+  const remove = async (): Promise<DeleteOutcome> => {
+    await draftTask.current
+    const card = cardRef.current
+    if (!card) return 'failed'
+    try {
+      await deleteCard(card)
+    } catch (reason) {
+      if (reason instanceof ApiError && reason.status === 409) {
+        const { data } = await fetchDriveCard(driveId).catch(() => ({ data: card }))
+        setCard(data)
+        return 'conflict'
+      }
+      if (!(reason instanceof ApiError && reason.status === 404)) return 'failed'
+    }
+    cardRef.current = null
+    return 'deleted'
+  }
+
   return {
     ...state,
     myText,
@@ -357,6 +380,7 @@ function useDriveCard(driveId: string, myUserId: string) {
     swapPhotos,
     save,
     saveDraft,
+    remove,
   }
 }
 

@@ -28,6 +28,11 @@ $gutter: 25px;
   white-space: nowrap;
 }
 
+// 오른쪽 칸 (저장을 마친 카드의 휴지통)
+.delete {
+  grid-column: 3;
+}
+
 .content {
   display: flex;
   flex-direction: column;
