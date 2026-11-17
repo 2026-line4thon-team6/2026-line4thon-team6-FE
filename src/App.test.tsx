@@ -1090,9 +1090,12 @@ describe('드라이브 주행 · 마치기', () => {
 
     expect(await screen.findByRole('button', { name: '드라이브 마치기' })).toBeInTheDocument()
     expect((await mockGetPlaylist('ply_mock_1')).data.savedByMe).toBe(true)
-    const card = await screen.findByRole('region', { name: '함께 들었던 플레이리스트' })
-    expect(within(card).getByText('노을처럼 따뜻한 우리')).toBeInTheDocument()
+    const card = await screen.findByRole('button', { name: /함께 들었던 플레이리스트 노을처럼 따뜻한 우리/ })
     expect(screen.queryByRole('button', { name: /DJ 플레이리스트/ })).not.toBeInTheDocument()
+
+    await user.click(card)
+    expect(await screen.findByRole('heading', { name: '노을처럼 따뜻한 우리' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '저장하기' })).toBeInTheDocument()
   })
 
   async function openPreparedDrive() {

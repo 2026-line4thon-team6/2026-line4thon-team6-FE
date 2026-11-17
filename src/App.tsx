@@ -323,6 +323,7 @@ function DriveRoute({ myUserId }: { myUserId: string }) {
         contents={
           <ContentCards
             onPlaylistClick={() => navigate('/drive/playlist')}
+            onPlaylistOpen={(playlistId) => navigate('/drive/playlist', { state: { playlistId } })}
             onContentClick={(kind) => {
               navigate(kind === 'radio' ? '/drive/radio' : `/drive/game/${kind}`)
             }}
@@ -346,9 +347,13 @@ function DriveRoute({ myUserId }: { myUserId: string }) {
 
 function DjPlaylistRoute() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { drive } = useDrive()
-  const generation = usePlaylistGeneration(drive?.id ?? null)
+  const { playlistId = null } = (location.state ?? {}) as { playlistId?: string }
+  const generation = usePlaylistGeneration(drive?.id ?? null, playlistId)
   const { config } = generation
+
+  if (generation.step === 'loading') return null
 
   if (generation.step === 'generating') {
     return <PlaylistGeneratingPage onCancel={() => void generation.cancel()} onBack={() => void generation.cancel()} />

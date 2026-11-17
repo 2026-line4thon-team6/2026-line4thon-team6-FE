@@ -5,27 +5,45 @@ import styles from './PlaylistSummaryCard.module.scss'
 
 interface PlaylistSummaryCardProps {
   playlist: CardPlaylist | null
+  // 넘기면 카드 전체를 누를 수 있다
+  onClick?: () => void
   className?: string
 }
 
-function PlaylistSummaryCard({ playlist, className }: PlaylistSummaryCardProps) {
-  return (
-    <section className={[styles.card, className].filter(Boolean).join(' ')} aria-label="함께 들었던 플레이리스트">
+function PlaylistSummaryCard({ playlist, onClick, className }: PlaylistSummaryCardProps) {
+  const body = (
+    <>
       {playlist?.thumbnailUrl ? (
         <img className={styles.cover} src={playlist.thumbnailUrl} alt="" />
       ) : (
         <span className={styles.cover} aria-hidden />
       )}
-      <div className={styles.text}>
+      <span className={styles.text}>
         <span className={styles.badge}>함께 들었던 플레이리스트</span>
-        <p className={styles.title}>{playlist?.title ?? '- -'}</p>
+        <span className={styles.title}>{playlist?.title ?? '- -'}</span>
         {playlist && (
-          <p className={styles.meta}>
+          <span className={styles.meta}>
             총 {playlist.trackCount}곡 · {formatPlaylistDuration(playlist.durationSeconds)}
-          </p>
+          </span>
         )}
-      </div>
+      </span>
       <img className={styles.icon} src={playlistIcon} alt="" />
+    </>
+  )
+  const classes = [styles.card, onClick && styles.button, className].filter(Boolean).join(' ')
+
+  return onClick ? (
+    <button
+      type="button"
+      className={classes}
+      onClick={onClick}
+      aria-label={`함께 들었던 플레이리스트 ${playlist?.title ?? ''} 보기`}
+    >
+      {body}
+    </button>
+  ) : (
+    <section className={classes} aria-label="함께 들었던 플레이리스트">
+      {body}
     </section>
   )
 }
