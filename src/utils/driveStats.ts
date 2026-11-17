@@ -30,9 +30,18 @@ export function formatArrival(iso: string) {
   return `${date.getHours()}시 ${date.getMinutes()}분`
 }
 
-export function getDriveStats(drive: Drive | null, extraSeconds = 0): DriveStat[] {
+// TODO: 백엔드 드라이브 응답의 estimatedArrivalAt이 항상 null이라 경로 소요 시간으로 대신 계산한다. 채워지면 제거
+function fallbackArrival(drive: Drive, routeDurationSeconds: number | null) {
+  if (!drive.startedAt || routeDurationSeconds === null) return null
+  const seconds = routeDurationSeconds + drive.metrics.pausedDurationSeconds
+  return new Date(new Date(drive.startedAt).getTime() + seconds * 1000).toISOString()
+}
+
+export function getDriveStats(drive: Drive | null, extraSeconds = 0, routeDurationSeconds: number | null = null): DriveStat[] {
   const started = drive !== null && drive.status !== 'PREPARING'
-  const arrival = drive?.metrics.estimatedArrivalAt ?? null
+  const arrival = drive
+    ? (drive.metrics.estimatedArrivalAt ?? (started ? fallbackArrival(drive, routeDurationSeconds) : null))
+    : null
 
   return [
     {

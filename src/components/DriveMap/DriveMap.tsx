@@ -14,6 +14,7 @@ const APP_KEY: string = import.meta.env.VITE_KAKAO_MAP_KEY ?? ''
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 }
 const DEFAULT_LEVEL = 4
+const FOLLOW_LEVEL = 4
 
 const PIN_Y_ANCHOR = 47.5 / 74
 
@@ -42,6 +43,8 @@ interface DriveMapProps {
   onRestAreaClick?: (restAreaId: string) => void
   fitPadding?: [number, number, number, number]
   locateKey?: number
+  // 주행 중: 경로 전체 대신 내 위치(붕붕이)를 확대해 따라간다
+  follow?: boolean
   // 장소 상세처럼 작은 미리보기: 움직일 수 없고, 표시를 작게 하고 출발지 · 도착지 말풍선을 단다
   compact?: boolean
 }
@@ -57,6 +60,7 @@ function KakaoDriveMap({
   fitPadding = [40, 40, 40, 40],
   locateKey = 0,
   compact = false,
+  follow = false,
 }: DriveMapProps) {
   const [loading, error] = useKakaoLoader({ appkey: APP_KEY })
   const [map, setMap] = useState<kakao.maps.Map | null>(null)
@@ -65,19 +69,23 @@ function KakaoDriveMap({
   const [top, right, bottom, left] = fitPadding
 
   useEffect(() => {
-    if (!map || !hasPath) return
+    if (!map || !hasPath || follow) return
     const bounds = new kakao.maps.LatLngBounds()
     for (const point of path) bounds.extend(new kakao.maps.LatLng(point.latitude, point.longitude))
     map.setBounds(bounds, top, right, bottom, left)
-  }, [map, path, hasPath, top, right, bottom, left])
+  }, [map, path, hasPath, top, right, bottom, left, follow])
+
+  useEffect(() => {
+    if (map && follow) map.setLevel(FOLLOW_LEVEL)
+  }, [map, follow])
 
   const lat = current?.latitude
   const lng = current?.longitude
   useEffect(() => {
     if (!map || lat === undefined || lng === undefined) return
-    if (hasPath && locateKey === 0) return
+    if (hasPath && locateKey === 0 && !follow) return
     map.panTo(new kakao.maps.LatLng(lat, lng))
-  }, [map, lat, lng, hasPath, locateKey])
+  }, [map, lat, lng, hasPath, locateKey, follow])
 
   if (error) return <div className={styles.fallback}>지도를 불러오지 못했어요.</div>
   if (loading) return <div className={styles.map} aria-busy="true" />

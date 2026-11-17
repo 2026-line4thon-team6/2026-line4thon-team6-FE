@@ -66,6 +66,7 @@ function useDriveMap(routeId: string | null) {
     path,
     origin: loaded?.origin.coordinate ?? null,
     destination: loaded?.destination.coordinate ?? null,
+    routeDurationSeconds: loaded?.durationSeconds ?? null,
     locationDenied,
     locate,
     retryLocation,
