@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import * as cardsApi from '@/api/cards'
 import type { PendingCards } from './usePendingCards'
 import usePendingCardPicker from './usePendingCardPicker'
 
@@ -50,5 +51,28 @@ describe('usePendingCardPicker', () => {
     rerender({ value: null })
 
     expect(result.current.sheetOpen).toBe(false)
+  })
+
+  it('목록에서 지워 1개만 남아도 시트는 열어 둔다 (0개가 되면 닫는다)', () => {
+    const { result, rerender } = renderHook(({ value }) => usePendingCardPicker(value, vi.fn()), {
+      initialProps: { value: summary(2) as PendingCards | null },
+    })
+
+    act(() => result.current.open())
+    rerender({ value: summary(1) })
+    expect(result.current.sheetOpen).toBe(true)
+
+    rerender({ value: null })
+    expect(result.current.sheetOpen).toBe(false)
+  })
+
+  it('목록을 열면 목록의 카드를 미리 받아 둔다 (작성 화면이 바로 내용과 함께 올라오게)', () => {
+    const prefetch = vi.spyOn(cardsApi, 'prefetchDriveCard').mockResolvedValue()
+    const { result } = renderHook(() => usePendingCardPicker(summary(3), vi.fn()))
+
+    act(() => result.current.open())
+
+    expect(prefetch.mock.calls.map(([driveId]) => driveId)).toEqual(['drv_soon', 'drv_1', 'drv_2'])
+    prefetch.mockRestore()
   })
 })

@@ -263,3 +263,28 @@ textarea.field {
 .retry {
   width: 140px;
 }
+
+// 불러오는 동안: 제목만 먼저 그리고 안내 문구는 화면에서 숨긴다 (읽어 주기 프로그램에는 들린다)
+.loadingHint {
+  @include visually-hidden;
+}
+
+// 불러온 내용은 제목 아래로 부드럽게 나타난다 (불러오는 중 화면에서 바로 바뀌어 끊겨 보이지 않게)
+.content > :not(.titleBar),
+.date {
+  animation: card-content-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes card-content-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .content > :not(.titleBar),
+  .date {
+    animation: none;
+  }
+}

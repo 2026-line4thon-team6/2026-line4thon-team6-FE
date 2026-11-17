@@ -92,3 +92,37 @@
   flex-shrink: 0;
   transform: scaleX(-1);
 }
+
+// 휴지통은 줄 버튼 위에 겹쳐 둔다 (줄 버튼 안의 같은 크기 빈칸 자리, 화살표 왼쪽)
+.item {
+  position: relative;
+}
+
+.trashSpace {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+}
+
+.trash {
+  position: absolute;
+  top: 50%;
+  // 줄 오른쪽 여백(18) + 화살표(8) + 간격(12)
+  right: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  transform: translateY(-50%);
+
+  &:active {
+    background-color: color('coral-3');
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}

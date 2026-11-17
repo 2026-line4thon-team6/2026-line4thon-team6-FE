@@ -35,6 +35,7 @@ const meta = {
     ],
     onSelect: fn(),
     onClose: fn(),
+    onDiscard: fn(async () => 'deleted' as const),
   },
 } satisfies Meta<typeof PendingCardSheet>
 
