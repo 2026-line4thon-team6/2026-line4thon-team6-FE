@@ -6,9 +6,8 @@ import GlassIconButton from '@/components/GlassIconButton/GlassIconButton'
 import RecentSearchItem from '@/components/RecentSearchItem/RecentSearchItem'
 import RouteSearchBox from '@/components/RouteSearchBox/RouteSearchBox'
 import SearchResultItem from '@/components/SearchResultItem/SearchResultItem'
-import type { PlaceSummary } from '@/types/place'
 import type { Coordinate, Route } from '@/types/route'
-import type { SearchHistoryItem } from '@/types/search'
+import type { SearchHistoryItem, SearchPlace } from '@/types/search'
 import { formatArrival, formatDistance, formatEstimatedDuration } from '@/utils/driveStats'
 import { decodePolyline } from '@/utils/polyline'
 import styles from './RouteSettingPage.module.scss'
@@ -18,7 +17,7 @@ interface RouteSettingPageProps {
   locationUnavailable?: boolean
   query: string
   history: SearchHistoryItem[]
-  results: PlaceSummary[] | null
+  results: SearchPlace[] | null
   route: Route | null
   routeStatus: 'idle' | 'loading' | 'error'
   restAreas?: { id: string; name: string; coordinate: Coordinate }[]
@@ -27,7 +26,7 @@ interface RouteSettingPageProps {
   onSearch: (keyword: string) => void
   onRecentSelect: (item: SearchHistoryItem) => void
   onRecentDelete: (historyId: string) => void
-  onResultSelect: (place: PlaceSummary) => void
+  onResultSelect: (place: SearchPlace) => void
   onConfirm: () => void
   onClose: () => void
 }
