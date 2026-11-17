@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
-import { MOCK_CARD_DRIVE_ID, MOCK_ME_ID, mockFetchDriveCard, resetMockCards } from '@/mocks/cards'
+import { MOCK_CARD_DRIVE_ID, mockFetchDriveCard, resetMockCards } from '@/mocks/cards'
 import type { Card } from '@/types/card'
 import DriveCardPage from './DriveCardPage'
 
@@ -28,7 +28,7 @@ const meta = {
   args: {
     status: 'ready',
     card: EMPTY_CARD,
-    myRole: 'PASSENGER',
+    myGender: 'MALE',
     myNickname: '민준',
     partnerNickname: '민지',
     myText: '',
@@ -86,11 +86,10 @@ export const LoadError: Story = {
   args: { status: 'error', card: null },
 }
 
-// 내가 운전자인 경우 (MOCK_ME_ID가 운전자)
-export const AsDriver: Story = {
+// 내가 여자 캐릭터를 고른 경우 (내 칸 여자 · 연인 칸 남자 캐릭터), 연인이 소감을 쓴 상태
+export const FemaleMe: Story = {
   args: {
-    card: { ...EMPTY_CARD, driverUserId: MOCK_ME_ID },
-    myRole: 'DRIVER',
+    myGender: 'FEMALE',
     partnerText: '노을은 진짜 예뻤다 ㅎㅎ',
     canSave: true,
   },
