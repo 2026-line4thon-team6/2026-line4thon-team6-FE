@@ -746,19 +746,18 @@ describe('기록 지도 → 기록 상세', () => {
 })
 
 describe('기록 지도 → 기록 공유', () => {
-  it('미리보기 카드의 공유 버튼을 누르면 커플 전용 링크가 담긴 공유 시트가 뜨고, 링크를 복사할 수 있다', async () => {
+  it('미리보기 카드의 공유 버튼을 누르면 공유 시트가 뜨고, 이미지를 복사할 수 없는 브라우저에서는 커플 전용 링크를 복사한다', async () => {
     const user = renderApp('/map')
 
     await user.click(await screen.findByRole('button', { name: '자라섬 캠핑 드라이브 기록 보기' }))
     await user.click(screen.getByRole('button', { name: '공유하기' }))
 
     const sheet = screen.getByRole('dialog', { name: '드라이브 기록 카드 공유하기' })
-    expect(await within(sheet).findByText('https://bunbungus.app/cards/crd_01')).toBeInTheDocument()
-
-    await user.click(within(sheet).getByRole('button', { name: '링크 복사' }))
-    // userEvent가 클립보드를 대신하므로 복사된 내용을 읽어 확인한다
+    // jsdom에는 이미지 클립보드(ClipboardItem)가 없어 링크 복사로 바뀐다
+    await waitFor(() => expect(within(sheet).getByRole('button', { name: '인스타그램' })).toBeEnabled())
+    await user.click(within(sheet).getByRole('button', { name: '이미지 복사' }))
     expect(await navigator.clipboard.readText()).toBe('https://bunbungus.app/cards/crd_01')
-    expect(await screen.findByText('링크를 복사했어요.')).toBeInTheDocument()
+    expect(await screen.findByText('이미지를 복사할 수 없어 링크를 복사했어요.')).toBeInTheDocument()
   })
 })
 

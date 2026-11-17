@@ -195,6 +195,9 @@ $bottom-bar-height: 19px + 50px;
   word-break: keep-all;
 }
 
+// 경로 미리보기 지도 높이 (경로가 없을 때 안내도 같은 높이라 화면이 들썩이지 않는다)
+$route-preview-height: 190px;
+
 .route {
   display: flex;
   flex-direction: column;
@@ -209,7 +212,8 @@ $bottom-bar-height: 19px + 50px;
 
 .map {
   position: relative;
-  height: 84px;
+  // 84px에서는 말풍선 여백을 빼면 경로가 들어갈 높이가 36px뿐이라 경로가 잘렸다. 경로가 약 110px 높이에 들어가게 키운다
+  height: $route-preview-height;
   overflow: hidden;
   border-radius: 10px;
   background-color: color('gray-100');
@@ -219,7 +223,7 @@ $bottom-bar-height: 19px + 50px;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 84px;
+  height: $route-preview-height;
   padding: 0 16px;
   border-radius: 10px;
   @include typo('body-s');
