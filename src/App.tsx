@@ -302,7 +302,7 @@ function DriveRoute({ myUserId }: { myUserId: string }) {
     const ended = await end('USER_ENDED', await gps.flush())
     if (!ended) return false
     if (next === 'record') {
-      goCard(ended.id, ended.title, { replace: true })
+      goCard(ended.id, ended.title, { replace: true, fromDriveEnd: true })
     } else {
       await discardEndedCard(ended.id)
       navigate('/', { replace: true })
@@ -359,7 +359,7 @@ function DriveRoute({ myUserId }: { myUserId: string }) {
       {arrivedDriveId && (
         <CardPromptModal
           variant="arrived"
-          onConfirm={() => navigate(cardPath(arrivedDriveId), { replace: true })}
+          onConfirm={() => navigate(cardPath(arrivedDriveId), { replace: true, state: { fromDriveEnd: true } })}
           onClose={() => navigate('/', { replace: true })}
         />
       )}
@@ -367,8 +367,17 @@ function DriveRoute({ myUserId }: { myUserId: string }) {
   )
 }
 
+// 드라이브 화면에서 연 화면(DJ 플리 · 라디오)에서 드라이브로 돌아간다. 앞으로 '/drive'를 새로 쌓지 않고 기록을 되돌린다
+// (새로 쌓으면 드라이브를 마치고 카드에서 나갈 때 이미 끝난 플리 · 라디오 화면이 다시 열린다). 주소로 바로 열었으면 드라이브로 바꾼다
+function useBackToDrive() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  return () => (location.key === 'default' ? navigate('/drive', { replace: true }) : navigate(-1))
+}
+
 function DjPlaylistRoute() {
   const navigate = useNavigate()
+  const backToDrive = useBackToDrive()
   const { drive } = useDrive()
   const generation = usePlaylistGeneration(drive?.id ?? null)
   const { config } = generation
@@ -386,9 +395,9 @@ function DjPlaylistRoute() {
         onDelete={(trackId) => void generation.removeTrack(trackId)}
         onRestart={generation.restart}
         onSave={async () => {
-          if (await generation.save()) navigate('/drive')
+          if (await generation.save()) backToDrive()
         }}
-        onBack={() => navigate('/drive')}
+        onBack={backToDrive}
       />
     )
   }
@@ -546,7 +555,7 @@ function MemoryGameRoute({ myUserId, myNickname, partnerNickname }: BalanceGameR
 }
 
 function DriveRadioRoute() {
-  const navigate = useNavigate()
+  const backToDrive = useBackToDrive()
   const { drive } = useDrive()
   const player = useRadioPlayer()
   const [composing, setComposing] = useState(!player.episode)
@@ -590,7 +599,7 @@ function DriveRadioRoute() {
           setComposing(true)
         }}
         onMenu={() => setDrawerOpen(true)}
-        onBack={() => navigate('/drive')}
+        onBack={backToDrive}
       />
       {drawerOpen && <RadioStoriesDrawerRoute onSelect={play} onClose={() => setDrawerOpen(false)} />}
     </>
@@ -1234,7 +1243,10 @@ function DriveCardRoute({ driveId, userId, myNickname, partnerNickname, myGender
   // 카드를 지우면 들어온 화면(기록 지도 · 홈)으로 돌아간다. 주소로 바로 열었으면 기록 지도로 간다
   const goBackAfterDelete = useGoBack('/map')
   // 미작성 카드 목록 · 배너에서 들어오면 카드 이름을 알고 있어, 불러오는 동안에도 제목을 먼저 그린다
-  const pendingTitle = (useLocation().state as CardNavigationState | null)?.cardTitle ?? null
+  const cardState = useLocation().state as CardNavigationState | null
+  const pendingTitle = cardState?.cardTitle ?? null
+  // 드라이브를 마치고 바로 들어왔으면 나갈 때 홈으로 간다. 뒤에 쌓인 화면은 이미 끝난 드라이브 화면(플리 · 라디오 등)이다
+  const leaveCard = () => (cardState?.fromDriveEnd ? navigate('/', { replace: true }) : goBack())
   const { setMyText, save, saveDraft, retry, addPhotos, removePhoto, swapPhotos, remove, ...card } = useDriveCard(
     driveId,
     userId,
@@ -1249,12 +1261,15 @@ function DriveCardRoute({ driveId, userId, myNickname, partnerNickname, myGender
   // 나갈 때 쓰던 소감은 초안으로 남겨 둔다 (24시간 안에 배너로 다시 들어올 수 있다)
   const handleLeave = async () => {
     await saveDraft()
-    goBack()
+    leaveCard()
   }
 
   const handleDelete = async () => {
     const outcome = await remove()
-    if (outcome === 'deleted') goBackAfterDelete()
+    if (outcome === 'deleted') {
+      if (cardState?.fromDriveEnd) navigate('/', { replace: true })
+      else goBackAfterDelete()
+    }
     return outcome
   }
 
