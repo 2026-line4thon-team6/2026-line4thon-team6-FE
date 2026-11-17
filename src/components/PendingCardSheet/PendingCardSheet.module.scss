@@ -1,0 +1,94 @@
+// 미작성 카드 목록 시트 (Figma 시안 없음 — 미작성 카드 배너 · 바텀시트 스타일을 따른다)
+
+.title {
+  padding-right: 40px; // 닫기 버튼 자리
+  @include typo('body-l-bold');
+  color: color('black');
+}
+
+.description {
+  margin-top: 4px;
+  @include typo('body-s');
+  color: color('gray-400');
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 11px 18px 11px 17px;
+  border: 1px solid color('divider');
+  border-radius: 20px;
+  text-align: left;
+  background-color: color('white');
+
+  &:active {
+    background-color: color('coral-3');
+  }
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}
+
+.text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.nameText {
+  overflow: hidden;
+  @include typo('body-m-bold');
+  color: color('black');
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.badge {
+  flex-shrink: 0;
+  padding: 0 7px;
+  border-radius: 100px;
+  @include typo('caption-bold');
+  color: color('coral-pressed');
+  background-color: color('coral-3');
+}
+
+.meta {
+  @include typo('caption');
+  color: color('gray-600');
+}
+
+.separator {
+  margin: 0 4px;
+  color: color('gray-200');
+}
+
+.urgent {
+  color: color('coral-pressed');
+  font-weight: 600;
+}
+
+// 아이콘은 왼쪽 화살표라 뒤집어 쓴다
+.chevron {
+  flex-shrink: 0;
+  transform: scaleX(-1);
+}

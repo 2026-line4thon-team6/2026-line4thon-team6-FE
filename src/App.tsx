@@ -10,6 +10,7 @@ import useFavorites from '@/hooks/useFavorites'
 import useLegalDocument from '@/hooks/useLegalDocument'
 import useMyCouple from '@/hooks/useMyCouple'
 import CardPromptModal from '@/components/CardPromptModal/CardPromptModal'
+import PendingCardSheet from '@/components/PendingCardSheet/PendingCardSheet'
 import DriveNameSheet from '@/components/DriveNameSheet/DriveNameSheet'
 import Toast from '@/components/Toast/Toast'
 import useCardDetail from '@/hooks/useCardDetail'
@@ -26,6 +27,7 @@ import useGpsRecorder from '@/hooks/useGpsRecorder'
 import useDriveCard from '@/hooks/useDriveCard'
 import useNotifications from '@/hooks/useNotifications'
 import useHome from '@/hooks/useHome'
+import usePendingCardPicker from '@/hooks/usePendingCardPicker'
 import usePendingCards from '@/hooks/usePendingCards'
 import useRecommendations from '@/hooks/useRecommendations'
 import usePlaceDetail from '@/hooks/usePlaceDetail'
@@ -666,6 +668,7 @@ function RecordMapRoute({ pendingCards, pendingReceivedAt, onEnter }: RecordMapR
   const navigate = useNavigate()
   const goTab = useTabNavigate()
   const pendingCard = usePendingCards(pendingCards, pendingReceivedAt)
+  const pendingPicker = usePendingCardPicker(pendingCard, (driveId) => navigate(cardPath(driveId)))
 
   // 처음 마운트 때만 부른다 (onEnter는 렌더마다 새 함수라 의존성에 넣지 않는다)
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -751,7 +754,7 @@ function RecordMapRoute({ pendingCards, pendingReceivedAt, onEnter }: RecordMapR
         onCardClick={(card) => navigate(`/cards/${encodeURIComponent(card.cardId)}`)}
         onShare={handleShare}
         pendingCard={pendingCard}
-        onPendingCardClick={(driveId) => navigate(cardPath(driveId))}
+        onPendingCardClick={pendingPicker.open}
       />
       {sharing && (
         <RecordShareSheet
@@ -769,6 +772,9 @@ function RecordMapRoute({ pendingCards, pendingReceivedAt, onEnter }: RecordMapR
           onSelect={handleDateSelect}
           onClose={() => setCalendarOpen(false)}
         />
+      )}
+      {pendingPicker.sheetOpen && pendingCard && (
+        <PendingCardSheet cards={pendingCard.cards} onSelect={pendingPicker.select} onClose={pendingPicker.close} />
       )}
     </>
   )
@@ -1081,6 +1087,8 @@ function HomeRoute({
     onPendingPromptSeen()
     navigate(cardPath(driveId))
   }
+  // 미작성 카드가 2개 이상이면 배너를 눌렀을 때 목록에서 고르게 한다
+  const pendingPicker = usePendingCardPicker(summary, goCard)
 
   return (
     <>
@@ -1100,7 +1108,7 @@ function HomeRoute({
         onLikeToggle={onLikeToggle}
         onStartDrive={() => void drive.start()}
         onTabChange={goTab}
-        onPendingCardClick={goCard}
+        onPendingCardClick={pendingPicker.open}
       />
       <DriveNameSheet
         open={drive.sheetOpen}
@@ -1109,6 +1117,9 @@ function HomeRoute({
         onSubmit={(name) => void drive.submit(name)}
         onClose={drive.closeSheet}
       />
+      {pendingPicker.sheetOpen && summary && (
+        <PendingCardSheet cards={summary.cards} onSelect={pendingPicker.select} onClose={pendingPicker.close} />
+      )}
       {summary && !pendingPromptSeen && (
         <CardPromptModal
           variant="pending"
