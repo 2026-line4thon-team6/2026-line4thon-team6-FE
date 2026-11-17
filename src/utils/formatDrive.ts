@@ -5,8 +5,9 @@ export function formatDistance(meters: number) {
   return `${Number(km.toFixed(1))}km`
 }
 
-// 주행 시간(초)을 '1시간 20분', '40분', '1시간'으로 바꾼다 (기록 목록 · 상세)
+// 주행 시간(초)을 '1시간 20분', '40분', '1시간'으로 바꾼다 (기록 목록 · 상세). 1분이 안 되면 '1분 미만'
 export function formatDriveTime(seconds: number) {
+  if (seconds < 60) return '1분 미만'
   const totalMinutes = Math.max(1, Math.round(seconds / 60))
   const hours = Math.floor(totalMinutes / 60)
   const minutes = totalMinutes % 60
