@@ -8,15 +8,16 @@ import type { PlaylistPreference } from '@/pages/DjPlaylist/PlaylistPreferencePa
 import { rememberDrivePlaylist } from './useDrivePlaylist'
 import { createIdempotencyKey } from '@/utils/share'
 
-export type GenerationStep = 'select' | 'generating' | 'done'
+export type GenerationStep = 'loading' | 'select' | 'generating' | 'done'
 
 const EMPTY: PlaylistPreference = { moods: [], weather: null, genres: [] }
 
 // 취향 선택 → 생성(작업 상태 확인) → 생성 완료
-function usePlaylistGeneration(driveId: string | null) {
+// playlistId를 넘기면 이미 만든 플레이리스트를 불러와 생성 완료 화면부터 보여 준다
+function usePlaylistGeneration(driveId: string | null, playlistId: string | null = null) {
   const [config, setConfig] = useState<AppConfig | null>(null)
   const [preference, setPreference] = useState<PlaylistPreference>(EMPTY)
-  const [step, setStep] = useState<GenerationStep>('select')
+  const [step, setStep] = useState<GenerationStep>(playlistId ? 'loading' : 'select')
   const [jobId, setJobId] = useState<string | null>(null)
   const [playlist, setPlaylist] = useState<Playlist | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -28,6 +29,21 @@ function usePlaylistGeneration(driveId: string | null) {
       .then(({ data }) => setConfig(data))
       .catch(() => setError('취향 목록을 불러오지 못했어요.'))
   }, [])
+
+  useEffect(() => {
+    if (!playlistId) return
+    let ignore = false
+    getPlaylist(playlistId)
+      .then(({ data }) => {
+        if (ignore) return
+        setPlaylist(data)
+        setStep('done')
+      })
+      .catch(() => !ignore && setStep('select'))
+    return () => {
+      ignore = true
+    }
+  }, [playlistId])
 
   useEffect(() => {
     if (step !== 'generating' || !jobId) return
