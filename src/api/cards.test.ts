@@ -79,6 +79,23 @@ describe('deleteCard', () => {
   })
 })
 
+describe('discardCard', () => {
+  it('커플 id · 요청 키를 헤더에, 카드 버전을 본문에 담아 POST /cards/{cardId}/discard 를 요청한다', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 204 }))
+    const { discardCard } = await loadWithBackend()
+
+    await discardCard({ id: 'crd_01', coupleId: 'cpl_01', version: 2 }, 'key_discard_0000001')
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(new URL(url).pathname).toBe('/api/v1/cards/crd_01/discard')
+    expect(init.method).toBe('POST')
+    const headers = new Headers(init.headers)
+    expect(headers.get('X-Couple-Id')).toBe('cpl_01')
+    expect(headers.get('Idempotency-Key')).toBe('key_discard_0000001')
+    expect(JSON.parse(String(init.body))).toEqual({ expectedVersion: 2 })
+  })
+})
+
 describe('fetchCardShare', () => {
   it('GET /cards/{cardId}/share 를 요청한다', async () => {
     const { fetchCardShare } = await loadWithBackend()

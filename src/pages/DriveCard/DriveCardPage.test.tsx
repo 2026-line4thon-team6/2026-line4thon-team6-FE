@@ -369,9 +369,30 @@ describe('카드 삭제', () => {
     )
   })
 
-  it('아직 저장하지 않은 카드(삭제할 수 없는 카드)는 휴지통을 숨긴다', () => {
-    renderPage({ card: { ...EMPTY_CARD, canDelete: false } })
+  // 아무도 쓰지 않은 카드는 서버의 폐기 API로 지울 수 있다. 누군가 쓰기 시작한(DRAFT) 카드는 지울 수 없다
+  it('아무도 쓰지 않은 카드는 저장 전이어도 휴지통을 보여 준다', () => {
+    renderPage({ card: { ...EMPTY_CARD, status: 'UNWRITTEN', canDelete: false } })
+
+    expect(screen.getByRole('button', { name: '카드 삭제' })).toBeInTheDocument()
+  })
+
+  it('누군가 쓰기 시작한 카드(DRAFT)는 휴지통을 숨긴다', () => {
+    renderPage({ card: { ...EMPTY_CARD, status: 'DRAFT', canDelete: false } })
 
     expect(screen.queryByRole('button', { name: '카드 삭제' })).not.toBeInTheDocument()
+  })
+
+  it('그사이 연인이 쓰기 시작해 지우지 못하면 팝업에 알려 준다', async () => {
+    const { user } = renderPage({
+      card: { ...EMPTY_CARD, status: 'UNWRITTEN', canDelete: false },
+      onDelete: vi.fn().mockResolvedValue('started'),
+    })
+
+    await user.click(screen.getByRole('button', { name: '카드 삭제' }))
+    await user.click(screen.getByRole('button', { name: '삭제하기' }))
+
+    expect(await within(screen.getByRole('dialog')).findByRole('alert')).toHaveTextContent(
+      '연인이 카드를 쓰기 시작해서 지울 수 없어요.',
+    )
   })
 })

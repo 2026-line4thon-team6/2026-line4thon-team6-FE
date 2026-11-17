@@ -1,6 +1,7 @@
 import {
   mockCompleteCard,
   mockDeleteCard,
+  mockDiscardCard,
   mockFetchCard,
   mockFetchCardShare,
   mockFetchDriveCard,
@@ -40,6 +41,18 @@ export async function deleteCard(card: Pick<Card, 'id' | 'coupleId' | 'version'>
   await apiFetch(cardPath(card.id), {
     method: 'DELETE',
     headers: { 'X-Couple-Id': card.coupleId, 'X-Expected-Version': String(card.version) },
+  })
+}
+
+// POST /cards/{cardId}/discard — 둘 다 아무것도 쓰지 않은(UNWRITTEN) 카드를 기한 안에 폐기한다.
+// 누군가 쓰기 시작했으면 409 CARD_DRAFT_STARTED, 저장한 카드는 422 CARD_ALREADY_COMPLETED(기록 삭제로 지운다)
+export async function discardCard(card: Pick<Card, 'id' | 'coupleId' | 'version'>, idempotencyKey: string): Promise<void> {
+  if (USE_MOCK) return mockDiscardCard(card.id, { expectedVersion: card.version })
+
+  await apiFetch(`${cardPath(card.id)}/discard`, {
+    method: 'POST',
+    headers: { 'X-Couple-Id': card.coupleId, 'Idempotency-Key': idempotencyKey },
+    body: JSON.stringify({ expectedVersion: card.version }),
   })
 }
 

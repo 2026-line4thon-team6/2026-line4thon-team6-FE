@@ -2,6 +2,7 @@ import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import {
   completeCard,
   deleteCard,
+  discardCard,
   discardUploadedPhoto,
   fetchDriveCard,
   saveCardDraft,
@@ -344,22 +345,23 @@ function useDriveCard(driveId: string, myUserId: string) {
   const canSave =
     !!card && card.canEdit && ((card.photos.length ?? 0) > 0 || myText.trim().length > 0 || partnerText !== null)
 
-  // 저장을 마친 카드를 지운다 (서버는 완료한 카드만 삭제를 허용한다).
-  // 이미 지워진 카드(404)는 삭제된 것으로 보고, 그사이 카드가 바뀌었으면(409) 최신 카드를 다시 불러온다.
-  // 지운 뒤에는 화면을 나가며 초안을 저장하지 않게 카드를 비워 둔다
+  // 카드를 지운다. 저장을 마친 카드는 기록 삭제(DELETE), 아무도 쓰지 않은 카드는 폐기(POST discard)로 지운다.
+  // 이미 사라진 카드(404 · 기한이 지난 410)는 지워진 것으로 본다. 그사이 연인이 쓰기 시작했거나(started)
+  // 카드가 바뀌었으면(conflict) 최신 카드를 다시 불러온다. 지운 뒤에는 화면을 나가며 초안을 저장하지 않게 카드를 비워 둔다
   const remove = async (): Promise<DeleteOutcome> => {
     await draftTask.current
     const card = cardRef.current
     if (!card) return 'failed'
     try {
-      await deleteCard(card)
+      if (card.status === 'COMPLETED') await deleteCard(card)
+      else await discardCard(card, createIdempotencyKey())
     } catch (reason) {
       if (reason instanceof ApiError && reason.status === 409) {
         const { data } = await fetchDriveCard(driveId).catch(() => ({ data: card }))
         setCard(data)
-        return 'conflict'
+        return reason.code === 'CARD_DRAFT_STARTED' ? 'started' : 'conflict'
       }
-      if (!(reason instanceof ApiError && reason.status === 404)) return 'failed'
+      if (!(reason instanceof ApiError && (reason.status === 404 || reason.status === 410))) return 'failed'
     }
     cardRef.current = null
     return 'deleted'

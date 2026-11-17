@@ -423,3 +423,57 @@ describe('삭제', () => {
     expect(remove).toHaveBeenCalledTimes(2)
   })
 })
+
+// 아무도 쓰지 않은 카드는 백엔드 폐기 API(POST /cards/{cardId}/discard)로 지운다
+describe('미작성 카드 폐기', () => {
+  it('미작성 카드는 커플 id · 버전 · 요청 키로 폐기하고 deleted를 돌려준다. 그 뒤 나가도 초안을 저장하지 않는다', async () => {
+    const discard = vi.spyOn(cardsApi, 'discardCard').mockResolvedValue()
+    const remove = vi.spyOn(cardsApi, 'deleteCard')
+    const put = vi.spyOn(cardsApi, 'saveMyReflection')
+    const { result, unmount } = await renderReady()
+    const card = result.current.card!
+    expect(card.status).toBe('UNWRITTEN')
+
+    act(() => result.current.setMyText('쓰다 만 글'))
+    let outcome
+    await act(async () => {
+      outcome = await result.current.remove()
+    })
+    unmount()
+
+    expect(outcome).toBe('deleted')
+    expect(discard).toHaveBeenCalledWith(
+      expect.objectContaining({ id: card.id, coupleId: card.coupleId, version: card.version }),
+      expect.any(String),
+    )
+    expect(remove).not.toHaveBeenCalled()
+    expect(put).not.toHaveBeenCalled()
+  })
+
+  it('그사이 연인이 쓰기 시작했으면(409 CARD_DRAFT_STARTED) 최신 카드를 다시 불러오고 started를 돌려준다', async () => {
+    vi.spyOn(cardsApi, 'discardCard').mockRejectedValue(new ApiError(409, { error: { code: 'CARD_DRAFT_STARTED', message: '' } } as never))
+    const { result } = await renderReady()
+    const draft = { ...result.current.card!, status: 'DRAFT' as const }
+    vi.spyOn(cardsApi, 'fetchDriveCard').mockResolvedValue({ data: draft, meta: { requestId: 'r', serverTime: '' } })
+
+    let outcome
+    await act(async () => {
+      outcome = await result.current.remove()
+    })
+
+    expect(outcome).toBe('started')
+    await waitFor(() => expect(result.current.card?.status).toBe('DRAFT'))
+  })
+
+  it('이미 사라진 카드(404 · 410)는 지워진 것으로 본다', async () => {
+    vi.spyOn(cardsApi, 'discardCard').mockRejectedValue(new ApiError(410, { error: { code: 'CARD_EDIT_WINDOW_CLOSED', message: '' } } as never))
+    const { result } = await renderReady()
+
+    let outcome
+    await act(async () => {
+      outcome = await result.current.remove()
+    })
+
+    expect(outcome).toBe('deleted')
+  })
+})

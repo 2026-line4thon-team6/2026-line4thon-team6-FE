@@ -117,6 +117,7 @@ function DriveCardPage({
     if (outcome !== 'deleted') setDeleteError(DELETE_CARD_ERRORS[outcome])
   }
 
+  const deletable = card.canDelete || (card.status === 'UNWRITTEN' && isCardEditable(card))
   const characters = reflectionCharacters(myGender)
   const slots = [
     { mine: true, name: myNickname || '나', character: characters.mine },
@@ -128,8 +129,8 @@ function DriveCardPage({
       <header className={styles.topBar}>
         <GlassIconButton icon="back" aria-label="뒤로가기" onClick={handleBack} />
         <h1 className={styles.date}>{formatCardDate(card.driveDate)}</h1>
-        {/* 저장을 마친 카드만 지울 수 있다 (기록 상세와 같은 휴지통 · 확인 팝업) */}
-        {card.canDelete && (
+        {/* 저장을 마친 카드(기록 삭제)와 아무도 쓰지 않은 카드(폐기)는 지울 수 있다. 쓰기 시작한 카드는 지울 수 없다 */}
+        {deletable && (
           <GlassIconButton
             className={styles.delete}
             icon="delete"
