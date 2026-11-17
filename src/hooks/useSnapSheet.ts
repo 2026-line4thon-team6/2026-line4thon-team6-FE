@@ -4,6 +4,7 @@ export type SheetSnap = 'collapsed' | 'default' | 'full'
 
 const SNAPS: SheetSnap[] = ['collapsed', 'default', 'full']
 const TAP_SLOP = 5
+const AREA_SLOP = 10
 const FLICK_MS = 200
 
 interface Drag {
@@ -13,6 +14,7 @@ interface Drag {
   lastTime: number
   velocity: number
   moved: boolean
+  area: boolean
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
@@ -27,8 +29,8 @@ function useSnapSheet(heights: Record<SheetSnap, number>) {
 
   const toggle = () => setSnap((value) => (value === 'full' ? 'default' : value === 'collapsed' ? 'default' : 'full'))
 
-  const onPointerDown = (event: PointerEvent<HTMLElement>) => {
-    event.currentTarget.setPointerCapture?.(event.pointerId)
+  const start = (event: PointerEvent<HTMLElement>, area: boolean) => {
+    if (!area) event.currentTarget.setPointerCapture?.(event.pointerId)
     drag.current = {
       startY: event.clientY,
       startHeight: height,
@@ -36,8 +38,11 @@ function useSnapSheet(heights: Record<SheetSnap, number>) {
       lastTime: event.timeStamp,
       velocity: 0,
       moved: false,
+      area,
     }
   }
+
+  const onPointerDown = (event: PointerEvent<HTMLElement>) => start(event, false)
 
   const onPointerMove = (event: PointerEvent<HTMLElement>) => {
     const d = drag.current
@@ -46,7 +51,10 @@ function useSnapSheet(heights: Record<SheetSnap, number>) {
     if (dt > 0) d.velocity = (event.clientY - d.lastY) / dt
     d.lastY = event.clientY
     d.lastTime = event.timeStamp
-    if (Math.abs(d.lastY - d.startY) > TAP_SLOP) d.moved = true
+    if (!d.moved && Math.abs(d.lastY - d.startY) > (d.area ? AREA_SLOP : TAP_SLOP)) {
+      d.moved = true
+      if (d.area) event.currentTarget.setPointerCapture?.(event.pointerId)
+    }
     if (d.moved) setDragHeight(heightAt(d))
   }
 
@@ -55,7 +63,7 @@ function useSnapSheet(heights: Record<SheetSnap, number>) {
     drag.current = null
     if (!d) return
     if (!d.moved) {
-      toggle()
+      if (!d.area) toggle()
       return
     }
     const projected = heightAt(d) - d.velocity * FLICK_MS
@@ -72,6 +80,14 @@ function useSnapSheet(heights: Record<SheetSnap, number>) {
     dragging: dragHeight !== null,
     toggle,
     handleProps: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel: onPointerUp },
+    areaProps: {
+      onPointerDown: (event: PointerEvent<HTMLElement>) => {
+        if (!drag.current) start(event, true)
+      },
+      onPointerMove,
+      onPointerUp,
+      onPointerCancel: onPointerUp,
+    },
   }
 }
 

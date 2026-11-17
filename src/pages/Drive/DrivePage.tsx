@@ -252,21 +252,22 @@ function DrivePage({
           <DriveStats items={getDriveStats(drive, runningSeconds, routeDurationSeconds)} />
         </div>
 
-        <div className={styles.grabZone} style={{ bottom: sheet.height }} aria-hidden {...sheet.handleProps} />
         <section
           className={[styles.panel, !sheet.dragging && styles.settling].filter(Boolean).join(' ')}
           style={{ height: sheet.height }}
           aria-label="드라이브 콘텐츠"
         >
-          <button
-            type="button"
-            className={styles.handle}
-            aria-label={sheet.snap === 'full' ? '패널 접기' : '패널 펼치기'}
-            aria-expanded={sheet.snap === 'full'}
-            {...sheet.handleProps}
-            onClick={(event) => event.detail === 0 && sheet.toggle()}
-          />
-          <SegmentedControl aria-label="콘텐츠 종류" options={TABS} value={tab} onChange={setTab} />
+          <div className={styles.sheetHeader} {...sheet.areaProps}>
+            <button
+              type="button"
+              className={styles.handle}
+              aria-label={sheet.snap === 'full' ? '패널 접기' : '패널 펼치기'}
+              aria-expanded={sheet.snap === 'full'}
+              {...sheet.handleProps}
+              onClick={(event) => event.detail === 0 && sheet.toggle()}
+            />
+            <SegmentedControl aria-label="콘텐츠 종류" options={TABS} value={tab} onChange={setTab} />
+          </div>
 
           {tab === 'contents' ? (
             <div role="tabpanel" aria-label="콘텐츠" className={styles.tabPanel}>
