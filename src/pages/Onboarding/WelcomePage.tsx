@@ -16,7 +16,8 @@ interface WelcomePageProps {
 function WelcomePage({ agreed, onAgreeChange, onNext, onOpenDocument }: WelcomePageProps) {
   return (
     <main className={styles.page}>
-      <ViewTransition name="onboarding-mascot" share="onboarding-mascot">
+      {/* L3 붕붕이로 이어질 때만 움직인다. 로그인에서 들어올 때(enter)는 전환 없이 바로 그린다 */}
+      <ViewTransition name="onboarding-mascot" share="onboarding-mascot" default="none">
         <WavingMascot />
       </ViewTransition>
       {/* 붕붕이가 점프하는 동안 문구가, 손을 흔들 즈음 동의 · 버튼이 올라온다 */}

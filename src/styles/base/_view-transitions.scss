@@ -2,6 +2,25 @@
 // CSS Modules가 이름을 바꾸지 않도록 전역에 둔다
 
 $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+// DeviceFrame 화면 모서리 (데스크톱 프레임에서만 의미가 있다)
+$screen-radius: 54px;
+
+// 바뀌지 않는 바깥(데스크톱 아이폰 프레임 · 배경)은 그대로 둔다. 기본 페이드가 걸리면 프레임이 잠깐 사라진다
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+// 스냅샷은 최상위 층에 그려져 폰 화면의 overflow · 둥근 모서리를 무시한다 → 화면 모양대로 자른다
+::view-transition-group(.onboarding-page) {
+  overflow: clip;
+}
+
+@media (min-width: 768px) and (hover: hover) and (pointer: fine) {
+  ::view-transition-group(.onboarding-page) {
+    border-radius: calc(#{$screen-radius} * var(--device-scale, 1));
+  }
+}
 
 // 온보딩 단계 넘김: 새 화면이 오른쪽에서 살짝 밀려 들어오고 이전 화면은 왼쪽으로 빠진다
 ::view-transition-old(.onboarding-page) {

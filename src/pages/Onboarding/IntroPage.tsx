@@ -12,7 +12,7 @@ interface IntroPageProps {
 function IntroPage({ onNext }: IntroPageProps) {
   return (
     <main className={styles.page}>
-      <ViewTransition name="onboarding-mascot" share="onboarding-mascot">
+      <ViewTransition name="onboarding-mascot" share="onboarding-mascot" default="none">
         <img
           className={`${styles.mascot} ${styles.mascotWide} ${styles.tilt}`}
           src={mascotAsk}
