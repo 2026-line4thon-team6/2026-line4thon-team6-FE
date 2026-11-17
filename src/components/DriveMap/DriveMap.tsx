@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { CustomOverlayMap, Map, Polyline, useKakaoLoader } from 'react-kakao-maps-sdk'
 import currentLocationIcon from '@/assets/icons/current-location.svg'
+import mapLabelIcon from '@/assets/icons/map-label.svg'
 import mapPinIcon from '@/assets/icons/map-pin.svg'
 import originDotIcon from '@/assets/icons/origin-dot.svg'
 import carImage from '@/assets/images/drive/map-car.webp'
@@ -22,6 +23,13 @@ const ROUTE_LINES = [
   { strokeWeight: 7, strokeColor: '#FF7F6A', strokeOpacity: 1 },
 ]
 
+const COMPACT_ROUTE_LINES = [
+  { strokeWeight: 8, strokeColor: '#FFFBFB', strokeOpacity: 1 },
+  { strokeWeight: 4, strokeColor: '#FF7F6A', strokeOpacity: 1 },
+]
+
+const LABEL_Y_ANCHOR = 1.4
+
 const toLatLng = ({ latitude, longitude }: Coordinate) => ({ lat: latitude, lng: longitude })
 
 interface DriveMapProps {
@@ -34,6 +42,8 @@ interface DriveMapProps {
   onRestAreaClick?: (restAreaId: string) => void
   fitPadding?: [number, number, number, number]
   locateKey?: number
+  // 장소 상세처럼 작은 미리보기: 움직일 수 없고, 표시를 작게 하고 출발지 · 도착지 말풍선을 단다
+  compact?: boolean
 }
 
 function KakaoDriveMap({
@@ -46,6 +56,7 @@ function KakaoDriveMap({
   onRestAreaClick,
   fitPadding = [40, 40, 40, 40],
   locateKey = 0,
+  compact = false,
 }: DriveMapProps) {
   const [loading, error] = useKakaoLoader({ appkey: APP_KEY })
   const [map, setMap] = useState<kakao.maps.Map | null>(null)
@@ -72,8 +83,19 @@ function KakaoDriveMap({
   if (loading) return <div className={styles.map} aria-busy="true" />
 
   return (
-    <Map className={styles.map} center={initialCenter} level={DEFAULT_LEVEL} onCreate={setMap}>
-      {hasPath && ROUTE_LINES.map((line) => <Polyline key={line.strokeWeight} path={path.map(toLatLng)} {...line} />)}
+    <Map
+      className={[styles.map, compact && styles.compact].filter(Boolean).join(' ')}
+      center={initialCenter}
+      level={DEFAULT_LEVEL}
+      draggable={!compact}
+      zoomable={!compact}
+      disableDoubleClickZoom={compact}
+      onCreate={setMap}
+    >
+      {hasPath &&
+        (compact ? COMPACT_ROUTE_LINES : ROUTE_LINES).map((line) => (
+          <Polyline key={line.strokeWeight} path={path.map(toLatLng)} {...line} />
+        ))}
       {origin && (
         <CustomOverlayMap position={toLatLng(origin)}>
           <img className={styles.origin} src={originDotIcon} alt="" />
@@ -96,6 +118,21 @@ function KakaoDriveMap({
           <img className={styles.pin} src={mapPinIcon} alt="" />
         </CustomOverlayMap>
       )}
+      {compact &&
+        [
+          { point: origin, text: '출발지' },
+          { point: destination, text: '도착지' },
+        ].map(
+          ({ point, text }) =>
+            point && (
+              <CustomOverlayMap key={text} position={toLatLng(point)} yAnchor={LABEL_Y_ANCHOR}>
+                <span className={styles.label}>
+                  <img src={mapLabelIcon} alt="" />
+                  <span>{text}</span>
+                </span>
+              </CustomOverlayMap>
+            ),
+        )}
       {current && (
         <CustomOverlayMap position={toLatLng(current)}>
           {currentMarker === 'car' ? (

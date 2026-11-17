@@ -82,11 +82,17 @@ describe('장소 정보', () => {
     expect(screen.queryByText('출발지')).not.toBeInTheDocument()
   })
 
-  it('경로가 있으면 출발지와 도착지를 표시한다', () => {
-    renderPage()
+  it('내 위치에서 만든 경로가 있으면 경로 지도와 그 경로의 예상 소요 시간을 보여 준다', () => {
+    const origin = { latitude: 37.5665, longitude: 126.978 }
+    const destination = { latitude: 37.3456, longitude: 126.6889 }
+    renderPage({ route: { path: [origin, destination], origin, destination, durationSeconds: 25 * 60 } })
 
-    expect(screen.getByText('출발지')).toBeInTheDocument()
-    expect(screen.getByText('도착지')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: '내 위치에서 시흥 오이도까지 경로' })).toBeInTheDocument()
+    expect(screen.queryByText('경로 미리보기를 준비 중이에요.')).not.toBeInTheDocument()
+    expect(screen.getByText('경기 시흥시 · 약 25분')).toBeInTheDocument()
+    expect(within(screen.getByRole('list', { name: '드라이브 정보' })).getAllByRole('listitem')[0]).toHaveTextContent(
+      '예상 소요 시간약 25분',
+    )
   })
 
   it('맨 위에는 대표 사진 1장만 보여 주고, 넘기기 · 장수 표시 · 본문 썸네일은 없다', () => {

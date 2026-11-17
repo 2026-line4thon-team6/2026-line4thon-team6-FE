@@ -1,14 +1,15 @@
 import { useState } from 'react'
-import mapLabel from '@/assets/icons/map-label.svg'
 import pinIcon from '@/assets/icons/pin-lg.svg'
 import durationIcon from '@/assets/images/info/info-car.svg'
 import parkingIcon from '@/assets/images/info/info-parking.svg'
 import roadIcon from '@/assets/images/info/info-road.svg'
 import visitIcon from '@/assets/images/info/info-sun.svg'
 import Button from '@/components/Button/Button'
+import DriveMap from '@/components/DriveMap/DriveMap'
 import GlassIconButton from '@/components/GlassIconButton/GlassIconButton'
 import LikeButton from '@/components/LikeButton/LikeButton'
 import { PLACE_CATEGORIES } from '@/constants/placeCategories'
+import type { PlaceRoute } from '@/hooks/usePlaceRoute'
 import type { PlaceDetail } from '@/types/place'
 import { formatDuration, formatRegionDuration } from '@/utils/formatDuration'
 import type { ShareChannel } from '@/utils/share'
@@ -18,12 +19,13 @@ import ShareSheet, { type ShareLink } from './ShareSheet'
 
 // 값을 불러오지 못했을 때의 표시
 const EMPTY = '--'
-// 경로 미리보기 지도. 지도 SDK 연동 전까지 쓰는 고정 이미지
-const ROUTE_PREVIEW_IMAGE = '/mocks/places/route-preview.webp'
+const ROUTE_FIT_PADDING: [number, number, number, number] = [36, 40, 12, 40]
 
 interface PlaceDetailPageProps {
   status: 'loading' | 'ready' | 'error'
   detail: PlaceDetail | null
+  // 현재 위치에서 이 장소까지의 경로. 위치를 모르거나 아직 못 받았으면 null
+  route?: PlaceRoute | null
   // 연결된 연인의 이름. 연결 전이면 null
   partnerNickname: string | null
   onBack: () => void
@@ -49,6 +51,7 @@ function splitNote(text: string) {
 function PlaceDetailPage({
   status,
   detail,
+  route = null,
   partnerNickname,
   onBack,
   onRetry,
@@ -85,9 +88,10 @@ function PlaceDetailPage({
     )
   }
 
-  const { place, photos, introduction, parkingInfo, recommendedVisitTime, mainRoads, previewRouteId } = detail
+  const { place, photos, introduction, parkingInfo, recommendedVisitTime, mainRoads } = detail
   const category = PLACE_CATEGORIES[place.category]
-  const duration = formatDuration(place.estimatedDurationSeconds)
+  const durationSeconds = route?.durationSeconds ?? place.estimatedDurationSeconds
+  const duration = formatDuration(durationSeconds)
   const [visitTime, visitNote] = splitNote(recommendedVisitTime ?? EMPTY)
   // 맨 위에는 대표 사진 1장만 보여 준다 (Figma 70:1744). 사진이 없으면 장소 썸네일
   const heroPhoto = photos[0] ?? place.thumbnailUrl
@@ -134,7 +138,7 @@ function PlaceDetailPage({
             <h1 className={styles.name}>{place.name}</h1>
             <p className={styles.meta}>
               <img src={pinIcon} alt="" />
-              {formatRegionDuration(place.region, place.estimatedDurationSeconds)}
+              {formatRegionDuration(place.region, durationSeconds)}
             </p>
             {/* 명세는 주소를 요구하지만 Figma 위치 줄은 '지역 · 시간'이라, 위치 줄은 그대로 두고 전체 주소를 한 줄 더 보여 준다 */}
             {place.address && place.address !== place.region && <p className={styles.address}>{place.address}</p>}
@@ -193,20 +197,18 @@ function PlaceDetailPage({
           <h2 id="route-preview-title" className={styles.routeTitle}>
             경로 미리보기
           </h2>
-          {previewRouteId ? (
-            <div className={styles.map}>
-              <img className={styles.mapImage} src={ROUTE_PREVIEW_IMAGE} alt="" loading="lazy" />
-              <span className={[styles.mapLabel, styles.origin].join(' ')}>
-                <img src={mapLabel} alt="" />
-                <span>출발지</span>
-              </span>
-              <span className={[styles.mapLabel, styles.destination].join(' ')}>
-                <img src={mapLabel} alt="" />
-                <span>도착지</span>
-              </span>
+          {route ? (
+            <div className={styles.map} aria-label={`내 위치에서 ${place.name}까지 경로`} role="img">
+              <DriveMap
+                compact
+                path={route.path}
+                origin={route.origin}
+                destination={route.destination}
+                fitPadding={ROUTE_FIT_PADDING}
+              />
             </div>
           ) : (
-            // 경로가 없는 이유가 위치 권한만은 아니다 (지금 서버는 늘 null을 준다). 권한 탓을 하지 않는 중립 문구로 둔다
+            // 경로가 없는 이유가 위치 권한만은 아니다. 권한 탓을 하지 않는 중립 문구로 둔다
             <p className={styles.mapEmpty}>경로 미리보기를 준비 중이에요.</p>
           )}
         </section>
