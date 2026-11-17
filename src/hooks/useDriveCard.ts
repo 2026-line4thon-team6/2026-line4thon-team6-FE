@@ -29,8 +29,6 @@ const MESSAGES = {
   unknown: '저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
 }
 
-export type DriveRole = 'DRIVER' | 'PASSENGER'
-
 interface State {
   // unavailable: 카드를 만들 수 없는 드라이브(404) · 작성 기간이 지난 카드(410)
   status: 'loading' | 'ready' | 'error' | 'unavailable'
@@ -333,11 +331,6 @@ function useDriveCard(driveId: string, myUserId: string) {
   const card = state.card
   const partner = card?.reflections.find((reflection) => reflection.author.id !== myUserId && reflection.submitted)
   const partnerText = partner?.text ?? null
-  const myRole: DriveRole | null = card?.driverUserId
-    ? card.driverUserId === myUserId
-      ? 'DRIVER'
-      : 'PASSENGER'
-    : null
   const mine = findMine(card, myUserId)
   const trimmed = myText.trim()
   // 아직 서버에 남기지 못한 소감이 있는지. 저장을 마친 카드는 연인에게 보이는 소감과 다르면 남지 않은 것으로 본다
@@ -354,7 +347,6 @@ function useDriveCard(driveId: string, myUserId: string) {
     myText,
     setMyText,
     partnerText,
-    myRole,
     canSave,
     hasUnsavedChanges,
     busy,

@@ -102,6 +102,7 @@ import type { PlaceCategory, PlaceSummary } from '@/types/place'
 import type { LegalDocumentType } from '@/types/legal'
 import type { Notification } from '@/types/notification'
 import type { RecordSummary } from '@/types/record'
+import type { Me } from '@/types/me'
 import { todayInSeoul } from '@/utils/calendar'
 import { formatDate } from '@/utils/formatDate'
 import { distanceMeters } from '@/utils/location'
@@ -762,9 +763,11 @@ interface RecordDetailRouteProps {
   myUserId: string
   myNickname: string
   partnerNickname: string | null
+  // 소감 칸 캐릭터는 가입 때 고른 내 성별을 따른다
+  myGender: Me['gender']
 }
 
-function RecordDetailRoute({ cardId, myUserId, myNickname, partnerNickname }: RecordDetailRouteProps) {
+function RecordDetailRoute({ cardId, myUserId, myNickname, partnerNickname, myGender }: RecordDetailRouteProps) {
   const navigate = useNavigate()
   const location = useLocation()
   // 기능명세서 🔟: 뒤로가기는 기록 지도로 간다. 공유 링크로 바로 열었을 때도 홈이 아니라 기록 지도로 보낸다
@@ -794,6 +797,7 @@ function RecordDetailRoute({ cardId, myUserId, myNickname, partnerNickname }: Re
       myUserId={myUserId}
       myNickname={myNickname}
       partnerNickname={partnerNickname}
+      myGender={myGender}
       // TODO: 플레이리스트 화면이 생기면 연결한다
     />
   )
@@ -1115,12 +1119,13 @@ function HomeRoute({
 interface DriveCardRouteProps {
   driveId: string
   userId: string
-  // 소감 칸에 운전자 · 동승자 대신 보여 줄 닉네임
+  // 소감 칸(내 칸 · 연인 칸)에 보여 줄 닉네임과, 캐릭터를 고를 내 성별
   myNickname: string
   partnerNickname: string | null
+  myGender: Me['gender']
 }
 
-function DriveCardRoute({ driveId, userId, myNickname, partnerNickname }: DriveCardRouteProps) {
+function DriveCardRoute({ driveId, userId, myNickname, partnerNickname, myGender }: DriveCardRouteProps) {
   const navigate = useNavigate()
   const goBack = useGoBack()
   const { setMyText, save, saveDraft, retry, addPhotos, removePhoto, swapPhotos, ...card } = useDriveCard(
@@ -1145,6 +1150,7 @@ function DriveCardRoute({ driveId, userId, myNickname, partnerNickname }: DriveC
       {...card}
       myNickname={myNickname}
       partnerNickname={partnerNickname}
+      myGender={myGender}
       onMyTextChange={setMyText}
       onLeave={() => void handleLeave()}
       onRetry={retry}
@@ -1172,7 +1178,7 @@ function App() {
   const [pendingPromptSeen, setPendingPromptSeen] = useState(false)
   const [locationNoticeSeen, setLocationNoticeSeen] = useState(false)
   // 로그인한 사용자(GET /me)를 먼저 쓰고, 없으면 홈 응답의 내 정보를 쓴다
-  const me = { id: auth.user?.id ?? home.userId, nickname: auth.user?.nickname ?? home.nickname }
+  const me = { id: auth.user?.id ?? home.userId, nickname: auth.user?.nickname ?? home.nickname, gender: auth.user?.gender ?? null }
   const partnerNickname = home.couple?.partnerNickname ?? null
 
   // 알림을 읽으면 홈을 다시 불러와 새 알림 표시를 맞춘다
@@ -1236,7 +1242,12 @@ function App() {
           <Route
             path="/cards/:cardId"
             element={
-              <RecordDetailRouteByParam myUserId={me.id} myNickname={me.nickname} partnerNickname={partnerNickname} />
+              <RecordDetailRouteByParam
+                myUserId={me.id}
+                myNickname={me.nickname}
+                partnerNickname={partnerNickname}
+                myGender={me.gender}
+              />
             }
           />
           <Route path="/notifications" element={<NotificationsRoute onRead={handleNotificationRead} />} />
@@ -1269,7 +1280,14 @@ function App() {
           <Route path="/my/faq" element={<FaqRoute />} />
           <Route
             path="/drives/:driveId/card"
-            element={<DriveCardRouteByParam userId={me.id} myNickname={me.nickname} partnerNickname={partnerNickname} />}
+            element={
+              <DriveCardRouteByParam
+                userId={me.id}
+                myNickname={me.nickname}
+                partnerNickname={partnerNickname}
+                myGender={me.gender}
+              />
+            }
           />
         </Route>
 

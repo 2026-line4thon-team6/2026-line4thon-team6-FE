@@ -2,14 +2,17 @@ import { useState } from 'react'
 import carIcon from '@/assets/icons/record-detail-car.svg'
 import pinIcon from '@/assets/icons/record-detail-pin.svg'
 import playlistButtonIcon from '@/assets/icons/playlist-button.svg'
-import driverImage from '@/assets/images/record-driver.webp'
-import passengerImage from '@/assets/images/record-passenger.webp'
+// 기록 캐릭터 그림: driver = 남자, passenger = 여자 캐릭터
+import maleImage from '@/assets/images/record-driver.webp'
+import femaleImage from '@/assets/images/record-passenger.webp'
 import GlassIconButton from '@/components/GlassIconButton/GlassIconButton'
 import type { DeleteOutcome } from '@/hooks/useCardDetail'
 import type { Card, CardPlaylist } from '@/types/card'
 import { formatDate } from '@/utils/formatDate'
 import { formatDistance, formatDriveTime } from '@/utils/formatDrive'
 import DeleteCardModal from './DeleteCardModal'
+import type { Me } from '@/types/me'
+import { reflectionCharacters, type CharacterGender } from '@/utils/character'
 import styles from './RecordDetailPage.module.scss'
 
 interface RecordDetailPageProps {
@@ -24,6 +27,8 @@ interface RecordDetailPageProps {
   myUserId: string
   myNickname: string
   partnerNickname: string | null
+  // 소감 칸 캐릭터는 가입 때 고른 내 성별을 따른다
+  myGender: Me['gender']
 }
 
 // 수정 기간이 끝났는데 비어 있는 소감 칸의 안내
@@ -38,7 +43,7 @@ const DELETE_ERRORS: Record<Exclude<DeleteOutcome, 'deleted'>, string> = {
 }
 
 // 소감 작성자 캐릭터. 카드 응답에 운전자 · 동승자 구분이 없어 순서대로 쓴다
-const AUTHOR_IMAGES = [driverImage, passengerImage]
+const CHARACTER_IMAGES: Record<CharacterGender, string> = { MALE: maleImage, FEMALE: femaleImage }
 
 // 기록 지도 - 카드 상세 (Figma 284:15397)
 function RecordDetailPage({
@@ -51,6 +56,7 @@ function RecordDetailPage({
   myUserId,
   myNickname,
   partnerNickname,
+  myGender,
 }: RecordDetailPageProps) {
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -70,17 +76,21 @@ function RecordDetailPage({
   }
 
   const photos = card ? [...card.photos].sort((a, b) => a.order - b.order) : []
-  // 소감은 나 · 상대방 두 칸을 항상 보여 준다. 제출하지 않은 초안은 쓰지 않은 것으로 본다.
-  // 운전자를 알면 운전자 칸이 먼저(Figma 284:15397), 모르면 나 → 상대방 순서
+  // 소감은 내 칸 → 연인 칸 두 칸을 항상 보여 준다 (운전자 · 동승자 구분 없음). 제출하지 않은 초안은 쓰지 않은 것으로 본다
   const submitted = card ? card.reflections.filter((reflection) => reflection.submitted) : []
   const mine = submitted.find((reflection) => reflection.author.id === myUserId) ?? null
   const partner = submitted.find((reflection) => reflection.author.id !== myUserId) ?? null
-  const partnerIsDriver = !!card?.driverUserId && card.driverUserId !== myUserId
+  const characters = reflectionCharacters(myGender)
   const reflectionSlots = [
-    { key: 'mine', reflection: mine, nickname: myNickname, empty: EMPTY_REFLECTION.mine },
-    { key: 'partner', reflection: partner, nickname: partnerNickname ?? '연인', empty: EMPTY_REFLECTION.partner },
+    { key: 'mine', reflection: mine, nickname: myNickname, empty: EMPTY_REFLECTION.mine, character: characters.mine },
+    {
+      key: 'partner',
+      reflection: partner,
+      nickname: partnerNickname ?? '연인',
+      empty: EMPTY_REFLECTION.partner,
+      character: characters.partner,
+    },
   ]
-  if (partnerIsDriver) reflectionSlots.reverse()
 
   return (
     <div className={styles.page}>
@@ -178,15 +188,16 @@ function RecordDetailPage({
           )}
 
           <ul className={styles.reflections} aria-label="소감">
-            {reflectionSlots.map(({ key, reflection, nickname, empty }, index) => (
+            {reflectionSlots.map(({ key, reflection, nickname, empty, character }) => (
               <li key={key} className={styles.reflection}>
                 <div className={styles.author}>
                   <img
                     className={styles.avatar}
-                    src={reflection?.author.profileImageUrl ?? AUTHOR_IMAGES[index % AUTHOR_IMAGES.length]}
+                    src={reflection?.author.profileImageUrl ?? CHARACTER_IMAGES[character]}
                     alt=""
                     width={51}
                     height={51}
+                    data-character={reflection?.author.profileImageUrl ? undefined : character}
                   />
                   <span className={styles.nickname}>{reflection?.author.nickname ?? nickname}</span>
                 </div>
