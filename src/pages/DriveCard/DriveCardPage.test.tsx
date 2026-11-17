@@ -37,7 +37,7 @@ function renderPage(props: Partial<Props> = {}) {
     <DriveCardPage
       status="ready"
       card={EMPTY_CARD}
-      myRole="PASSENGER"
+      myGender="MALE"
       myNickname="민준"
       partnerNickname="민지"
       myText=""
@@ -154,40 +154,59 @@ describe('사진', () => {
   })
 })
 
-// 소감 칸 이름은 운전자 · 동승자 대신 각자의 닉네임으로 표시한다 (역할은 캐릭터 그림으로 구분)
+// 소감은 내 칸 · 연인 칸으로 나눈다. 이름은 닉네임, 캐릭터는 가입 때 고른 성별 (운전자 · 동승자 구분 없음)
 describe('한 줄 소감', () => {
-  it('내가 동승자면 동승자 칸(내 닉네임)에 입력하고, 운전자 칸(연인 닉네임)에는 아직 안 썼다고 안내한다', async () => {
-    const { user, onMyTextChange } = renderPage({ myRole: 'PASSENGER' })
+  const characterOf = (name: string) => within(screen.getByRole('group', { name })).getByRole('presentation', { hidden: true })
+
+  it('내 칸(내 닉네임)에 입력하고, 연인 칸(연인 닉네임)에는 아직 안 썼다고 안내한다', async () => {
+    const { user, onMyTextChange } = renderPage()
 
     expect(screen.queryByText('동승자')).not.toBeInTheDocument()
     expect(screen.queryByText('운전자')).not.toBeInTheDocument()
-    const passenger = within(screen.getByRole('group', { name: '민준' }))
-    const input = passenger.getByRole('textbox', { name: '내 한 줄 소감' })
+    const mine = within(screen.getByRole('group', { name: '민준' }))
+    const input = mine.getByRole('textbox', { name: '내 한 줄 소감' })
     expect(input).toHaveAttribute('placeholder', '드라이브의 한줄 소감을 작성해주세요 :)')
     expect(input).toHaveAttribute('maxLength', '70')
 
     await user.type(input, '좋')
     expect(onMyTextChange).toHaveBeenCalledWith('좋')
 
-    const driver = within(screen.getByRole('group', { name: '민지' }))
-    expect(driver.queryByRole('textbox')).not.toBeInTheDocument()
-    expect(driver.getByText('상대방이 아직 소감을 입력하지 않았어요 :)')).toBeInTheDocument()
+    const partner = within(screen.getByRole('group', { name: '민지' }))
+    expect(partner.queryByRole('textbox')).not.toBeInTheDocument()
+    expect(partner.getByText('상대방이 아직 소감을 입력하지 않았어요 :)')).toBeInTheDocument()
   })
 
-  it('내가 운전자면 운전자 칸(내 닉네임)에 입력하고, 연인이 쓴 소감은 동승자 칸(연인 닉네임)에 보여 준다', () => {
-    renderPage({ myRole: 'DRIVER', myText: '운전하느라 힘들었지만', partnerText: '노을은 진짜 예뻤다 ㅎㅎ' })
+  it('연인이 쓴 소감은 연인 칸에 보여 준다', () => {
+    renderPage({ myText: '운전하느라 힘들었지만', partnerText: '노을은 진짜 예뻤다 ㅎㅎ' })
 
-    const driver = within(screen.getByRole('group', { name: '민준' }))
-    expect(driver.getByRole('textbox', { name: '내 한 줄 소감' })).toHaveValue('운전하느라 힘들었지만')
-
-    const passenger = within(screen.getByRole('group', { name: '민지' }))
-    expect(passenger.getByText('노을은 진짜 예뻤다 ㅎㅎ')).toBeInTheDocument()
+    expect(within(screen.getByRole('group', { name: '민준' })).getByRole('textbox')).toHaveValue('운전하느라 힘들었지만')
+    expect(within(screen.getByRole('group', { name: '민지' })).getByText('노을은 진짜 예뻤다 ㅎㅎ')).toBeInTheDocument()
   })
 
-  it('동승자 · 운전자 순서로 표시한다', () => {
-    renderPage({ myRole: 'DRIVER' })
+  it('내 칸 · 연인 칸 순서로 표시한다', () => {
+    renderPage()
 
-    expect(screen.getAllByRole('group').map((group) => group.getAttribute('aria-label'))).toEqual(['민지', '민준'])
+    expect(screen.getAllByRole('group').map((group) => group.getAttribute('aria-label'))).toEqual(['민준', '민지'])
+  })
+
+  it('내가 남자면 내 칸은 남자, 연인 칸은 여자 캐릭터를 보여 준다', () => {
+    renderPage({ myGender: 'MALE' })
+
+    expect(characterOf('민준')).toHaveAttribute('data-character', 'MALE')
+    expect(characterOf('민지')).toHaveAttribute('data-character', 'FEMALE')
+  })
+
+  it('내가 여자면 내 칸은 여자, 연인 칸은 남자 캐릭터를 보여 준다', () => {
+    renderPage({ myGender: 'FEMALE' })
+
+    expect(characterOf('민준')).toHaveAttribute('data-character', 'FEMALE')
+    expect(characterOf('민지')).toHaveAttribute('data-character', 'MALE')
+  })
+
+  it('닉네임을 아직 모르면 나 · 연인으로 표시한다', () => {
+    renderPage({ myNickname: null, partnerNickname: null })
+
+    expect(screen.getAllByRole('group').map((group) => group.getAttribute('aria-label'))).toEqual(['나', '연인'])
   })
 })
 

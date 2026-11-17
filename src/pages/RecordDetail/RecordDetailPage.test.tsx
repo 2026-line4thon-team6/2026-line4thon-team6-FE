@@ -63,6 +63,7 @@ function renderPage(props: Partial<Props> = {}) {
       myUserId="usr_민준"
       myNickname="민준"
       partnerNickname="민지"
+      myGender="MALE"
       {...handlers}
       {...props}
     />,
@@ -158,10 +159,33 @@ describe('RecordDetailPage', () => {
     expect(reflectionRows()).toEqual(['민준기록을 작성하지 않았어요 :)', '민지상대방이 기록을 남기지 않았어요 :)'])
   })
 
-  it('운전자를 알면 운전자 칸을 먼저 보여 준다 (Figma 284:15397)', () => {
+  // 운전자 · 동승자 구분 없이 내 칸 → 연인 칸 순서. 캐릭터는 가입 때 고른 성별
+  it('연인이 운전했어도 내 칸을 먼저 보여 준다', () => {
     renderPage({ card: { ...CARD, driverUserId: 'usr_민지' } })
 
-    expect(reflectionRows()).toEqual(['민지다음에 또 가자!', '민준노을은 진짜 예뻤다 ㅎㅎ'])
+    expect(reflectionRows()).toEqual(['민준노을은 진짜 예뻤다 ㅎㅎ', '민지다음에 또 가자!'])
+  })
+
+  it.each([
+    ['MALE', 'MALE', 'FEMALE'],
+    ['FEMALE', 'FEMALE', 'MALE'],
+  ] as const)('내가 %s면 내 칸은 %s, 연인 칸은 %s 캐릭터', (myGender, mine, partner) => {
+    renderPage({ myGender })
+
+    const avatars = within(screen.getByRole('list', { name: '소감' }))
+      .getAllByRole('listitem')
+      .map((item) => item.querySelector('img')?.getAttribute('data-character'))
+    expect(avatars).toEqual([mine, partner])
+  })
+
+  it('프로필 사진이 있으면 캐릭터 대신 프로필 사진을 보여 준다', () => {
+    const withPhoto = reflection('민지', '다음에 또 가자!')
+    withPhoto.author.profileImageUrl = 'https://example.com/minji.jpg'
+    renderPage({ card: { ...CARD, reflections: [reflection('민준', '노을은 진짜 예뻤다 ㅎㅎ'), withPhoto] } })
+
+    const images = within(screen.getByRole('list', { name: '소감' })).getAllByRole('listitem').map((item) => item.querySelector('img'))
+    expect(images[1]).toHaveAttribute('src', 'https://example.com/minji.jpg')
+    expect(images[1]).not.toHaveAttribute('data-character')
   })
 
   it('뒤로가기 버튼을 누르면 이전 화면으로 돌아간다', async () => {
@@ -214,7 +238,7 @@ describe('RecordDetailPage', () => {
   })
 
   describe('불러오기 상태', () => {
-    const ME = { myUserId: 'usr_민준', myNickname: '민준', partnerNickname: '민지' }
+    const ME = { myUserId: 'usr_민준', myNickname: '민준', partnerNickname: '민지', myGender: 'MALE' as const }
 
     it('불러오는 중 · 없는 카드 · 오류를 안내한다', async () => {
       const { unmount } = render(<RecordDetailPage status="loading" card={null} onBack={vi.fn()} onRetry={vi.fn()} onDelete={vi.fn()} {...ME} />)

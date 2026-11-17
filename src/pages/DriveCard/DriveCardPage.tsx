@@ -2,28 +2,28 @@ import { useState } from 'react'
 import carIcon from '@/assets/icons/car-coral.svg'
 import pinIcon from '@/assets/icons/pin-coral-sm.svg'
 import playlistIcon from '@/assets/icons/playlist.svg'
-import driverImage from '@/assets/images/card/character-driver.webp'
-import passengerImage from '@/assets/images/card/character-passenger.webp'
+// 카드 캐릭터 그림: driver = 남자, passenger = 여자 캐릭터
+import maleImage from '@/assets/images/card/character-driver.webp'
+import femaleImage from '@/assets/images/card/character-passenger.webp'
 import Button from '@/components/Button/Button'
 import GlassIconButton from '@/components/GlassIconButton/GlassIconButton'
-import { isCardEditable, MAX_REFLECTION_LENGTH, type DriveRole } from '@/hooks/useDriveCard'
+import { isCardEditable, MAX_REFLECTION_LENGTH } from '@/hooks/useDriveCard'
 import type { Card } from '@/types/card'
+import type { Me } from '@/types/me'
+import { reflectionCharacters, type CharacterGender } from '@/utils/character'
 import { formatCardDate, formatDistance, formatDriveTime, formatPlaylistDuration } from '@/utils/cardFormat'
 import styles from './DriveCardPage.module.scss'
 import LeaveCardModal from './LeaveCardModal'
 import PhotoSection from './PhotoSection'
 
-const ROLES: { role: DriveRole; label: string; image: string }[] = [
-  { role: 'PASSENGER', label: '동승자', image: passengerImage },
-  { role: 'DRIVER', label: '운전자', image: driverImage },
-]
+const CHARACTER_IMAGES: Record<CharacterGender, string> = { MALE: maleImage, FEMALE: femaleImage }
 
 interface DriveCardPageProps {
   status: 'loading' | 'ready' | 'error' | 'unavailable'
   card: Card | null
-  // 이 드라이브에서 나의 역할. 내 역할 칸에 소감을 쓰고, 다른 칸에는 연인의 소감을 보여 준다
-  myRole: DriveRole | null
-  // 소감 칸 이름. 운전자 · 동승자 대신 각자의 닉네임을 보여 준다 (없으면 역할 이름)
+  // 소감은 내 칸 · 연인 칸. 캐릭터는 가입 때 고른 내 성별을 따른다 (운전자 · 동승자 구분 없음)
+  myGender: Me['gender']
+  // 소감 칸 이름은 각자의 닉네임 (모르면 나 · 연인)
   myNickname: string | null
   partnerNickname: string | null
   myText: string
@@ -48,7 +48,7 @@ interface DriveCardPageProps {
 function DriveCardPage({
   status,
   card,
-  myRole,
+  myGender,
   myNickname,
   partnerNickname,
   myText,
@@ -95,6 +95,12 @@ function DriveCardPage({
     setLeaveOpen(true)
   }
   const editable = card.canEdit && !busy
+
+  const characters = reflectionCharacters(myGender)
+  const slots = [
+    { mine: true, name: myNickname || '나', character: characters.mine },
+    { mine: false, name: partnerNickname || '연인', character: characters.partner },
+  ]
 
   return (
     <div className={styles.page}>
@@ -166,14 +172,12 @@ function DriveCardPage({
         )}
 
         <div className={styles.reflections}>
-          {ROLES.map(({ role, label, image }) => {
-            const mine = role === myRole
-            const name = (myRole && (mine ? myNickname : partnerNickname)) || label
+          {slots.map(({ mine, name, character }) => {
             return (
-              <div key={role} className={styles.reflection} role="group" aria-label={name}>
+              <div key={mine ? 'mine' : 'partner'} className={styles.reflection} role="group" aria-label={name}>
                 <p className={styles.roleLabel} aria-hidden>
                   <span className={styles.roleImage}>
-                    <img src={image} alt="" />
+                    <img src={CHARACTER_IMAGES[character]} alt="" data-character={character} />
                   </span>
                   {name}
                 </p>

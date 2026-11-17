@@ -31,13 +31,12 @@ afterEach(() => {
 })
 
 describe('불러오기', () => {
-  it('카드를 불러오고, 내 소감 · 연인 소감 · 내 역할을 나눈다', async () => {
+  it('카드를 불러오고, 내 소감 · 연인 소감을 나눈다', async () => {
     const { result } = await renderReady()
 
     expect(result.current.status).toBe('ready')
     expect(result.current.card?.title).toBe('우리의 첫 바다 드라이브')
     expect(result.current.myText).toBe('')
-    expect(result.current.myRole).toBe('PASSENGER')
     expect(result.current.partnerText).toBeNull()
   })
 

@@ -1,7 +1,8 @@
-import mascotHello from '@/assets/images/onboarding/mascot-hello.webp'
+import { ViewTransition } from 'react'
 import Button from '@/components/Button/Button'
 import type { ConsentType } from '@/types/auth'
 import styles from './GreetingPage.module.scss'
+import WavingMascot from './WavingMascot'
 
 interface WelcomePageProps {
   agreed: boolean
@@ -15,14 +16,18 @@ interface WelcomePageProps {
 function WelcomePage({ agreed, onAgreeChange, onNext, onOpenDocument }: WelcomePageProps) {
   return (
     <main className={styles.page}>
-      <img className={styles.mascot} src={mascotHello} alt="" width={216} height={256} />
-      <h1 className={styles.message}>
+      {/* L3 붕붕이로 이어질 때만 움직인다. 로그인에서 들어올 때(enter)는 전환 없이 바로 그린다 */}
+      <ViewTransition name="onboarding-mascot" share="onboarding-mascot" default="none">
+        <WavingMascot />
+      </ViewTransition>
+      {/* 붕붕이가 점프하는 동안 문구가, 손을 흔들 즈음 동의 · 버튼이 올라온다 */}
+      <h1 className={`${styles.message} ${styles.reveal}`}>
         {'반가워요! '}
         <br />
         저는 붕붕이라고 해요.
       </h1>
 
-      <div className={styles.consent}>
+      <div className={`${styles.consent} ${styles.reveal} ${styles.revealLate}`}>
         <label className={styles.check}>
           <input type="checkbox" checked={agreed} onChange={(event) => onAgreeChange(event.target.checked)} />
           <span>(필수) 이용약관 및 개인정보 처리방침에 동의해요</span>
@@ -37,7 +42,12 @@ function WelcomePage({ agreed, onAgreeChange, onNext, onOpenDocument }: WelcomeP
         </p>
       </div>
 
-      <Button className={styles.button} size="cta" disabled={!agreed} onClick={onNext}>
+      <Button
+        className={`${styles.button} ${styles.reveal} ${styles.revealLate}`}
+        size="cta"
+        disabled={!agreed}
+        onClick={onNext}
+      >
         만나서 반가워!
       </Button>
     </main>

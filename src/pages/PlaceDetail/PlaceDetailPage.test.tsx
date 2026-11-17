@@ -54,25 +54,40 @@ describe('장소 정보', () => {
     expect(screen.getAllByText(/경기 시흥시/)).toHaveLength(1)
   })
 
-  it('드라이브 정보 요약 4가지를 표시한다', () => {
+  // 주요 경로 · 추천 방문 시간은 서버 데이터가 없어 빼고, 두 칸을 넓게 쓴다
+  it('드라이브 정보는 예상 소요 시간 · 주차 정보 두 가지만 보여 준다', () => {
     renderPage()
 
-    const summary = within(screen.getByRole('list', { name: '드라이브 정보' }))
-    const [duration, roads, parking, visit] = summary.getAllByRole('listitem')
-    expect(duration).toHaveTextContent('예상 소요 시간약 1시간')
-    expect(roads).toHaveTextContent('주요 경로서해안 고속도로')
-    expect(parking).toHaveTextContent('주차 정보공영주차장 이용 가능')
-    expect(visit).toHaveTextContent('추천 방문 시간오후 5-8시(일몰 시간대)')
+    const items = within(screen.getByRole('list', { name: '드라이브 정보' })).getAllByRole('listitem')
+    expect(items.map((item) => item.textContent)).toEqual(['예상 소요 시간약 1시간', '주차 정보공영주차장 이용 가능'])
+    expect(screen.queryByText('주요 경로')).not.toBeInTheDocument()
+    expect(screen.queryByText('추천 방문 시간')).not.toBeInTheDocument()
   })
 
-  it("정보가 없는 항목은 '--'로 표시하고, 경로를 모르면 경로 미리보기를 안내 문구로 대신한다", () => {
+  it("주차 정보가 '·'로 이어져 길면 앞부분은 값, 뒷부분은 보조 줄로 나눠 보여 준다", () => {
+    renderPage({ detail: { ...OIDO, parkingInfo: '카카오T 을왕주차장 · 목적지에서 296m' } })
+
+    const parking = within(screen.getByRole('list', { name: '드라이브 정보' })).getAllByRole('listitem')[1]
+    expect(within(parking).getByText('카카오T 을왕주차장')).toBeInTheDocument()
+    expect(within(parking).getByText('목적지에서 296m')).toBeInTheDocument()
+  })
+
+  // 서버가 아직 채우지 않은 항목은 '--' 대신 칸째 숨긴다
+  it('정보가 없는 항목은 칸을 숨기고 남은 칸만 보여 준다', () => {
+    renderPage({ detail: { ...OIDO, parkingInfo: null } })
+
+    const items = within(screen.getByRole('list', { name: '드라이브 정보' })).getAllByRole('listitem')
+    expect(items.map((item) => item.textContent)).toEqual(['예상 소요 시간약 1시간'])
+    expect(screen.queryByText('--')).not.toBeInTheDocument()
+  })
+
+  it('요약 정보가 하나도 없으면 요약 상자를 숨기고, 경로를 모르면 경로 미리보기를 안내 문구로 대신한다', () => {
     renderPage({
       detail: { ...HEONHWARO, place: { ...HEONHWARO.place, estimatedDurationSeconds: null } },
     })
 
-    for (const item of within(screen.getByRole('list', { name: '드라이브 정보' })).getAllByRole('listitem')) {
-      expect(item).toHaveTextContent('--')
-    }
+    expect(screen.queryByRole('list', { name: '드라이브 정보' })).not.toBeInTheDocument()
+    expect(screen.queryByText('--')).not.toBeInTheDocument()
     // 위치 · 시간 줄은 시간을 모르면 지역만 보여 준다 (홈 카드와 같은 규칙)
     expect(screen.getByText('강원 강릉시')).toBeInTheDocument()
     expect(screen.queryByText('강원 강릉시 · --')).not.toBeInTheDocument()

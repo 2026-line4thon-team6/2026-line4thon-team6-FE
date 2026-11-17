@@ -39,6 +39,49 @@ $gutter: 25px;
   margin-top: 58px;
 }
 
+// ── 등장 모션 ──
+// L2: 문구는 붕붕이가 뛰어오를 때, 동의 · 버튼은 손을 흔들 즈음 아래에서 올라온다
+.reveal {
+  animation: rise 420ms cubic-bezier(0.2, 0.8, 0.2, 1) 450ms both;
+}
+
+.revealLate {
+  animation-delay: 900ms;
+}
+
+// L3: 붕붕이가 자리를 잡은 뒤(화면 전환 420ms) 고개를 한 번 갸웃한다
+.tilt {
+  transform-origin: 50% 100%;
+  animation: tilt 700ms ease-in-out 500ms both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+@keyframes tilt {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  45% {
+    transform: rotate(-6deg);
+  }
+  75% {
+    transform: rotate(-3deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .tilt {
+    animation: none;
+  }
+}
+
 // ── 약관 동의 (Figma 미정의, 기능명세서 L2) ──
 .consent {
   display: flex;

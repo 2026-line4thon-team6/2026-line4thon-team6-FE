@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState, ViewTransition } from 'react'
 import { Navigate, Outlet, useLocation, useNavigate, useOutletContext, useSearchParams } from 'react-router'
 import { completeSocialLogin, login } from '@/api/auth'
 import type { Auth } from '@/hooks/useAuth'
@@ -128,7 +128,15 @@ export function OnboardingFlow({ auth }: AuthRouteProps) {
 
   if (auth.status === 'signedOut') return <Navigate to={LOGIN_PATH} replace />
   if (auth.user?.onboardingCompleted && !finished) return <Navigate to="/" replace />
-  return <Outlet context={{ onboarding, finish } satisfies FlowContext} />
+  // 단계가 바뀌면 새 화면이 오른쪽에서 밀려 들어온다 (styles/base/_view-transitions.scss).
+  // 뒤로 가기(popstate)는 React가 전환 없이 바로 그린다
+  return (
+    <ViewTransition update="onboarding-page" default="none">
+      <div>
+        <Outlet context={{ onboarding, finish } satisfies FlowContext} />
+      </div>
+    </ViewTransition>
+  )
 }
 
 function useFlow() {

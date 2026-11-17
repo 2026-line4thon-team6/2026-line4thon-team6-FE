@@ -24,6 +24,7 @@ const meta = {
     myUserId: MOCK_ME_ID,
     myNickname: '민준',
     partnerNickname: '민지',
+    myGender: 'MALE',
   },
 } satisfies Meta<typeof RecordDetailPage>
 
