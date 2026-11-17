@@ -981,7 +981,7 @@ function CoupleInviteRoute() {
       {...state}
       onBack={goBack}
       onRetry={retry}
-      onCopy={(code) => copyText(code).catch(() => undefined)}
+      onCopy={copyText}
       onShare={shareInviteCode}
       onConnect={connect}
       onRestore={restore}

@@ -12,6 +12,7 @@ interface CoupleInvitePageProps {
   code: string | null // 내 초대 코드
   onBack: () => void
   onRetry: () => void
+  // 복사하지 못하면 reject 한다 (실패 안내를 띄운다)
   onCopy: (code: string) => Promise<void>
   // 기기 공유 화면을 열었으면 'shared', 지원하지 않아 대신 복사했으면 'copied'
   onShare: (code: string) => Promise<'shared' | 'copied'>
@@ -45,6 +46,16 @@ function CoupleInvitePage({
   // 다시 연결할지 묻는 중인 연인 코드
   const [restoreCode, setRestoreCode] = useState<string | null>(null)
   const errorId = useId()
+
+  // 눌러도 눈에 보이는 변화가 없어 복사됐는지 알 수 없으니 결과를 토스트로 알린다 (Figma 커플 화면 토스트 문구)
+  const handleCopy = async (code: string) => {
+    try {
+      await onCopy(code)
+      setToast('커플 코드가 복사되었습니다.')
+    } catch {
+      setToast('코드를 복사하지 못했어요. 다시 시도해 주세요.')
+    }
+  }
 
   const handleShare = async () => {
     if (!code) return
@@ -110,7 +121,7 @@ function CoupleInvitePage({
                     className={styles.copy}
                     aria-label="내 코드 복사"
                     disabled={!code}
-                    onClick={() => code && void onCopy(code)}
+                    onClick={() => code && void handleCopy(code)}
                   >
                     복사
                   </button>
