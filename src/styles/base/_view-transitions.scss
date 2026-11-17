@@ -1,0 +1,48 @@
+// 화면 전환 (React <ViewTransition>). 클래스 이름은 컴포넌트의 enter · exit · update · share prop과 맞춘다.
+// CSS Modules가 이름을 바꾸지 않도록 전역에 둔다
+
+$ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+// 온보딩 단계 넘김: 새 화면이 오른쪽에서 살짝 밀려 들어오고 이전 화면은 왼쪽으로 빠진다
+::view-transition-old(.onboarding-page) {
+  animation: vt-page-out 220ms ease-in both;
+}
+
+::view-transition-new(.onboarding-page) {
+  animation: vt-page-in 340ms $ease-out 60ms both;
+}
+
+// 붕붕이: 이전 화면 자리에서 다음 화면 자리로 이어지며 포즈가 바뀐다
+::view-transition-group(.onboarding-mascot) {
+  animation-duration: 420ms;
+  animation-timing-function: $ease-out;
+}
+
+::view-transition-old(.onboarding-mascot),
+::view-transition-new(.onboarding-mascot) {
+  height: 100%;
+  object-fit: contain;
+  animation-duration: 420ms;
+}
+
+@keyframes vt-page-out {
+  to {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+@keyframes vt-page-in {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

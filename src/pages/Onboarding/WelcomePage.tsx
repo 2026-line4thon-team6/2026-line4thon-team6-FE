@@ -1,3 +1,4 @@
+import { ViewTransition } from 'react'
 import Button from '@/components/Button/Button'
 import type { ConsentType } from '@/types/auth'
 import styles from './GreetingPage.module.scss'
@@ -15,7 +16,9 @@ interface WelcomePageProps {
 function WelcomePage({ agreed, onAgreeChange, onNext, onOpenDocument }: WelcomePageProps) {
   return (
     <main className={styles.page}>
-      <WavingMascot />
+      <ViewTransition name="onboarding-mascot" share="onboarding-mascot">
+        <WavingMascot />
+      </ViewTransition>
       {/* 붕붕이가 점프하는 동안 문구가, 손을 흔들 즈음 동의 · 버튼이 올라온다 */}
       <h1 className={`${styles.message} ${styles.reveal}`}>
         {'반가워요! '}
