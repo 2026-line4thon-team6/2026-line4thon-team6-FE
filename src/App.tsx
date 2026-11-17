@@ -110,6 +110,7 @@ import type { LegalDocumentType } from '@/types/legal'
 import type { Notification } from '@/types/notification'
 import type { RecordSummary } from '@/types/record'
 import type { Me } from '@/types/me'
+import { reflectionCharacters } from '@/utils/character'
 import { WITHDRAWN_NOTICE } from '@/utils/withdrawError'
 import { CARD_PAGE_ENTER, PAGE_RECEDE } from '@/utils/cardTransition'
 import { todayInSeoul } from '@/utils/calendar'
@@ -431,15 +432,16 @@ interface BalanceGameRouteProps {
   myUserId: string
   myNickname: string | null
   partnerNickname: string | null
+  myGender?: Me['gender']
 }
 
-function BalanceGameRoute({ myUserId, myNickname, partnerNickname }: BalanceGameRouteProps) {
+function BalanceGameRoute({ myUserId, myNickname, partnerNickname, myGender = null }: BalanceGameRouteProps) {
   const navigate = useNavigate()
   const { status: driveStatus, drive } = useDrive()
   const game = useGameSession(drive, 'BALANCE')
   const responses = game.session?.responses ?? []
   const myChoice = responses.find((response) => response.authorUserId === myUserId)?.choice ?? null
-  const myRole = drive?.passengerUserId === myUserId ? 'PASSENGER' : 'DRIVER'
+  const myRole = reflectionCharacters(myGender).mine === 'MALE' ? 'DRIVER' : 'PASSENGER'
   const question = game.session?.currentQuestion ?? null
   // TODO: 응답 API는 본인 응답만 저장한다(D07). 폰 하나로 상대 선택까지 저장하려면 백엔드 확인 필요
   const [partnerPick, setPartnerPick] = useState<{ questionId: string; choice: 'A' | 'B' } | null>(null)
@@ -460,8 +462,8 @@ function BalanceGameRoute({ myUserId, myNickname, partnerNickname }: BalanceGame
       question={question}
       names={
         myRole === 'DRIVER'
-          ? { DRIVER: myNickname, PASSENGER: partnerNickname }
-          : { DRIVER: partnerNickname, PASSENGER: myNickname }
+          ? { DRIVER: myNickname || '나', PASSENGER: partnerNickname || '연인' }
+          : { DRIVER: partnerNickname || '연인', PASSENGER: myNickname || '나' }
       }
       choices={
         myRole === 'DRIVER'
@@ -1415,7 +1417,14 @@ function App() {
           <Route path="/drive/radio" element={<DriveRadioRoute />} />
           <Route
             path="/drive/game/balance"
-            element={<BalanceGameRoute myUserId={me.id} myNickname={me.nickname} partnerNickname={partnerNickname} />}
+            element={
+              <BalanceGameRoute
+                myUserId={me.id}
+                myNickname={me.nickname}
+                partnerNickname={partnerNickname}
+                myGender={me.gender}
+              />
+            }
           />
           <Route
             path="/drive/game/nonsense"

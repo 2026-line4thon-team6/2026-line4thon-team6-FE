@@ -55,4 +55,26 @@ describe('useSnapSheet', () => {
     swipe(result, 500, [])
     expect(result.current.snap).toBe('default')
   })
+
+  describe('손잡이 + 탭 영역', () => {
+    it('살짝 누르거나 10px 안쪽으로만 움직이면 시트는 그대로다 (탭은 그대로 눌린다)', () => {
+      const { result } = renderHook(() => useSnapSheet(heights))
+
+      act(() => result.current.areaProps.onPointerDown(pointer(500, 0)))
+      act(() => result.current.areaProps.onPointerMove(pointer(492, 16)))
+      act(() => result.current.areaProps.onPointerUp())
+
+      expect(result.current).toMatchObject({ snap: 'default', height: 268, dragging: false })
+    })
+
+    it('위아래로 10px 넘게 끌면 시트를 움직인다', () => {
+      const { result } = renderHook(() => useSnapSheet(heights))
+
+      act(() => result.current.areaProps.onPointerDown(pointer(500, 0)))
+      act(() => result.current.areaProps.onPointerMove(pointer(168, 2000)))
+      act(() => result.current.areaProps.onPointerUp())
+
+      expect(result.current.snap).toBe('full')
+    })
+  })
 })

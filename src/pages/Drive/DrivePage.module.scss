@@ -151,6 +151,10 @@ $gutter: 25px;
   pointer-events: none;
 }
 
+.sheetHeader {
+  touch-action: none;
+}
+
 .handle {
   display: block;
   width: calc(100% + #{$gutter * 2});
