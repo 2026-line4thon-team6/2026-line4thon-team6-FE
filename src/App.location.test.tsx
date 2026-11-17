@@ -17,8 +17,15 @@ vi.mock('./components/DriveMap/DriveMap', () => ({ default: () => <div data-test
 // 앱 전체를 띄우고 GPS 묶음 전송 · 도착 판정까지 기다리는 테스트라, CI처럼 바쁜 환경에서는 기본 대기(1초)를 넘길 때가 있다.
 // 동작은 그대로 두고 이 파일의 findBy · waitFor 대기만 늘린다
 const defaultAsyncTimeout = getConfig().asyncUtilTimeout
-beforeAll(() => configure({ asyncUtilTimeout: 5000 }))
-afterAll(() => configure({ asyncUtilTimeout: defaultAsyncTimeout }))
+// 테스트 하나의 제한 시간(기본 5초)도 늘린다. 대기만 늘리면 대기가 끝나기 전에 테스트 제한 시간에 먼저 걸린다
+beforeAll(() => {
+  configure({ asyncUtilTimeout: 5000 })
+  vi.setConfig({ testTimeout: 15_000 })
+})
+afterAll(() => {
+  configure({ asyncUtilTimeout: defaultAsyncTimeout })
+  vi.resetConfig()
+})
 
 const listeners = new Set<{ onChange: (position: Position) => void; onDenied?: () => void }>()
 const moveTo = (position: Position) => act(() => listeners.forEach(({ onChange }) => onChange(position)))
