@@ -21,6 +21,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event
   if (request.mode !== 'navigate') return
+  // 팀 QA 페이지(/qa.html)는 앱 화면이 아니라 저장하지 않는다 (앱 오프라인 화면이 QA 페이지로 바뀌지 않게)
+  if (new URL(request.url).pathname === '/qa.html') return
 
   event.respondWith(
     fetch(request)

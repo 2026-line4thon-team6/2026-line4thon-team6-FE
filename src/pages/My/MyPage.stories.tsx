@@ -17,6 +17,7 @@ const meta = {
     onLogout: fn(),
     onTabChange: fn(),
     onInstall: fn(),
+    onWithdraw: fn(async () => 'redirecting' as const),
   },
 } satisfies Meta<typeof MyPage>
 
@@ -50,4 +51,9 @@ export const InstallPrompt: Story = {
 // 앱 설치하기: 아이폰은 누르면 '공유 → 홈 화면에 추가' 안내 시트
 export const InstallGuideIos: Story = {
   args: { installMode: 'ios' },
+}
+
+// 본인 확인 후 탈퇴하지 못하고 돌아온 경우 (백엔드가 아직 탈퇴를 열지 않음)
+export const WithdrawFailed: Story = {
+  args: { withdrawError: '지금은 탈퇴를 처리할 수 없어요. 잠시 후 다시 시도해 주세요.' },
 }

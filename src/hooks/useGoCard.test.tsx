@@ -25,4 +25,13 @@ describe('useGoCard', () => {
     expect(result.current.location.pathname).toBe('/drives/drv_2/card')
     expect(result.current.location.state).toBeNull()
   })
+
+  it('드라이브를 마치고 갈 때는 그 사실을 함께 넘기고, 끝난 드라이브 화면을 기록에서 바꾼다', () => {
+    const { result } = renderHook(() => ({ go: useGoCard(), location: useLocation() }), { wrapper })
+
+    act(() => result.current.go('drv_3', '퇴근길', { replace: true, fromDriveEnd: true }))
+
+    expect(result.current.location.pathname).toBe('/drives/drv_3/card')
+    expect(result.current.location.state).toEqual({ cardTitle: '퇴근길', fromDriveEnd: true })
+  })
 })

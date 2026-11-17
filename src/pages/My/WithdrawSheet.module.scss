@@ -1,0 +1,52 @@
+// 회원 탈퇴 확인 시트 (Figma 시안 없음 — 로그아웃 시트와 같은 제목 · 버튼 구성)
+.content {
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  @include typo('title-m-bold');
+  color: color('black');
+  text-align: center;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 16px 0 0;
+  padding: 14px 16px 14px 32px;
+  border-radius: 12px;
+  @include typo('body-s');
+  color: color('gray-800');
+  background-color: color('coral-3');
+  word-break: keep-all;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  @include typo('body-m-medium');
+  color: color('black');
+
+  input {
+    width: 20px;
+    height: 20px;
+    accent-color: color('coral-pressed');
+  }
+}
+
+.error {
+  margin-top: 10px;
+  @include typo('caption');
+  color: color('red');
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 22px;
+}

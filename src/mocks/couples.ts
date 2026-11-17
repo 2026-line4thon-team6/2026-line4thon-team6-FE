@@ -284,6 +284,12 @@ export async function mockLogout(): Promise<void> {
   startNewAccount()
 }
 
+// 회원 탈퇴 (DELETE /me). 목 서버는 본인 재인증 없이 바로 계정을 지우고, 다음 로그인은 새 가입자가 된다
+export async function mockDeleteAccount(): Promise<void> {
+  signedIn = false
+  startNewAccount()
+}
+
 // 계정은 그대로 두고 세션만 끊는다 (앱 데이터를 지운 기기에서 기존 가입자가 다시 로그인하는 경우를 흉내 낸다)
 export function mockEndSession() {
   signedIn = false

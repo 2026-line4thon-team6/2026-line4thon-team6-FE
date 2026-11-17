@@ -1,6 +1,8 @@
 import { useEffect, useState, ViewTransition } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
+import { withdraw } from '@/api/auth'
 import { fetchCardShare } from '@/api/cards'
+import { getActiveDrive } from '@/api/drives'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
 import useAuth, { type Auth } from '@/hooks/useAuth'
 import useCoupleInvite from '@/hooks/useCoupleInvite'
@@ -76,6 +78,7 @@ import HomePage from '@/pages/Home/HomePage'
 import FaqPage from '@/pages/Faq/FaqPage'
 import LegalDocumentPage from '@/pages/LegalDocument/LegalDocumentPage'
 import MyPage, { type MyMenu } from '@/pages/My/MyPage'
+import type { WithdrawOutcome } from '@/pages/My/WithdrawSheet'
 import NotificationsPage from '@/pages/Notifications/NotificationsPage'
 import PlaceDetailPage from '@/pages/PlaceDetail/PlaceDetailPage'
 import PublicPlacePage from '@/pages/PublicPlace/PublicPlacePage'
@@ -107,6 +110,7 @@ import type { LegalDocumentType } from '@/types/legal'
 import type { Notification } from '@/types/notification'
 import type { RecordSummary } from '@/types/record'
 import type { Me } from '@/types/me'
+import { WITHDRAWN_NOTICE } from '@/utils/withdrawError'
 import { CARD_PAGE_ENTER, PAGE_RECEDE } from '@/utils/cardTransition'
 import { todayInSeoul } from '@/utils/calendar'
 import { formatDate } from '@/utils/formatDate'
@@ -226,7 +230,15 @@ function PlaceDetailRoute({ placeId, couple, mascotName, myUserId, onFavoriteCha
         onBack={goBack}
         onRetry={retry}
         onFavoriteToggle={handleFavoriteToggle}
-        onStartDrive={() => void drive.start(placeId)}
+        // 이름만 정하면 이 장소로 바로 경로 안내를 시작한다
+        onStartDrive={() =>
+          void drive.start(
+            placeId,
+            detail
+              ? { placeId: detail.place.id, name: detail.place.name, address: detail.place.address, coordinate: detail.place.coordinate }
+              : undefined,
+          )
+        }
         getShareUrl={getShareUrl}
         onCopyLink={(url) => void copyText(url)}
         onShareChannel={(channel, url) => void shareTo(channel, { url, title: detail?.place.name ?? '' })}
@@ -267,6 +279,9 @@ function DriveRoute({ myUserId }: { myUserId: string }) {
   const { alert: restAreaAlert, dismiss: dismissRestAreaAlert } = useRestAreaAlert(restAreas, map.current, driving)
   const restAreaDetail = useRestAreaDetail()
   const [arrivedDriveId, setArrivedDriveId] = useState<string | null>(null)
+  const goCard = useGoCard()
+  // 기록하지 않고 나가면 방금 생긴 빈 카드를 폐기한다 (실패해도 24시간 뒤 서버가 정리하므로 나가기는 막지 않는다)
+  const discardEndedCard = usePendingCardDiscard(() => {})
 
   useArrival({
     active: drive?.status === 'ACTIVE',
@@ -281,10 +296,18 @@ function DriveRoute({ myUserId }: { myUserId: string }) {
   if (status === 'empty') return <Navigate to="/" replace />
 
   // TODO: 실패 토스트
-  const handleEnd = async () => {
+  // 마치기 팝업(Figma 1046:10305): 기록하러 가기 → 그 드라이브의 카드 작성 화면(아래에서 올라오는 전환),
+  // 기록하지 않고 나가기 → 드라이브가 끝나며 생긴 빈 카드를 폐기하고 홈으로 (미작성 카드 배너에 남지 않게)
+  const handleEnd = async (next: 'record' | 'skip') => {
     const ended = await end('USER_ENDED', await gps.flush())
-    if (ended) navigate('/', { replace: true })
-    return ended !== null
+    if (!ended) return false
+    if (next === 'record') {
+      goCard(ended.id, ended.title, { replace: true, fromDriveEnd: true })
+    } else {
+      await discardEndedCard(ended.id)
+      navigate('/', { replace: true })
+    }
+    return true
   }
 
   return (
@@ -337,7 +360,7 @@ function DriveRoute({ myUserId }: { myUserId: string }) {
       {arrivedDriveId && (
         <CardPromptModal
           variant="arrived"
-          onConfirm={() => navigate(cardPath(arrivedDriveId), { replace: true })}
+          onConfirm={() => navigate(cardPath(arrivedDriveId), { replace: true, state: { fromDriveEnd: true } })}
           onClose={() => navigate('/', { replace: true })}
         />
       )}
@@ -345,9 +368,18 @@ function DriveRoute({ myUserId }: { myUserId: string }) {
   )
 }
 
+// 드라이브 화면에서 연 화면(DJ 플리 · 라디오)에서 드라이브로 돌아간다. 앞으로 '/drive'를 새로 쌓지 않고 기록을 되돌린다
+// (새로 쌓으면 드라이브를 마치고 카드에서 나갈 때 이미 끝난 플리 · 라디오 화면이 다시 열린다). 주소로 바로 열었으면 드라이브로 바꾼다
+function useBackToDrive() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  return () => (location.key === 'default' ? navigate('/drive', { replace: true }) : navigate(-1))
+}
+
 function DjPlaylistRoute() {
   const navigate = useNavigate()
   const location = useLocation()
+  const backToDrive = useBackToDrive()
   const { drive } = useDrive()
   const { playlistId = null } = (location.state ?? {}) as { playlistId?: string }
   const generation = usePlaylistGeneration(drive?.id ?? null, playlistId)
@@ -368,9 +400,9 @@ function DjPlaylistRoute() {
         onDelete={(trackId) => void generation.removeTrack(trackId)}
         onRestart={generation.restart}
         onSave={async () => {
-          if (await generation.save()) navigate('/drive')
+          if (await generation.save()) backToDrive()
         }}
-        onBack={() => navigate('/drive')}
+        onBack={backToDrive}
       />
     )
   }
@@ -528,7 +560,7 @@ function MemoryGameRoute({ myUserId, myNickname, partnerNickname }: BalanceGameR
 }
 
 function DriveRadioRoute() {
-  const navigate = useNavigate()
+  const backToDrive = useBackToDrive()
   const { drive } = useDrive()
   const player = useRadioPlayer()
   const [composing, setComposing] = useState(!player.episode)
@@ -572,7 +604,7 @@ function DriveRadioRoute() {
           setComposing(true)
         }}
         onMenu={() => setDrawerOpen(true)}
-        onBack={() => navigate('/drive')}
+        onBack={backToDrive}
       />
       {drawerOpen && <RadioStoriesDrawerRoute onSelect={play} onClose={() => setDrawerOpen(false)} />}
     </>
@@ -890,6 +922,29 @@ function MyRoute({ auth }: { auth: Auth }) {
     navigate(LOGIN_PATH, { replace: true })
   }
 
+  // 회원탈퇴: 진행 중인 드라이브가 있으면 서버가 막으므로(409) 카카오 본인 확인 전에 먼저 알린다.
+  // 실서버는 카카오 본인 확인 화면으로 이동하고, 돌아오면 OAuthCallbackRoute가 탈퇴를 마무리한다
+  const location = useLocation()
+  const withdrawError = (location.state as { withdrawError?: string } | null)?.withdrawError ?? null
+  const handleWithdraw = async (): Promise<WithdrawOutcome> => {
+    try {
+      const status = (await getActiveDrive()).data.drive?.status
+      if (status === 'PREPARING' || status === 'ACTIVE' || status === 'PAUSED') return 'activeDrive'
+    } catch {
+      // 확인하지 못하면 서버가 탈퇴 요청에서 다시 막는다
+    }
+    try {
+      const outcome = await withdraw(`${window.location.origin}/oauth/callback`)
+      if (outcome === 'withdrawn') {
+        await auth.signOut()
+        navigate(LOGIN_PATH, { replace: true, state: { notice: WITHDRAWN_NOTICE } })
+      }
+      return outcome
+    } catch {
+      return 'failed'
+    }
+  }
+
   return (
     <MyPage
       status={status}
@@ -899,6 +954,9 @@ function MyRoute({ auth }: { auth: Auth }) {
       onMenuClick={handleMenuClick}
       onLogout={() => void handleLogout()}
       onTabChange={goTab}
+      onWithdraw={handleWithdraw}
+      withdrawError={withdrawError}
+      onWithdrawErrorShown={() => navigate(location.pathname, { replace: true, state: null })}
       installMode={pwa.mode}
       onInstall={pwa.install}
     />
@@ -1190,7 +1248,10 @@ function DriveCardRoute({ driveId, userId, myNickname, partnerNickname, myGender
   // 카드를 지우면 들어온 화면(기록 지도 · 홈)으로 돌아간다. 주소로 바로 열었으면 기록 지도로 간다
   const goBackAfterDelete = useGoBack('/map')
   // 미작성 카드 목록 · 배너에서 들어오면 카드 이름을 알고 있어, 불러오는 동안에도 제목을 먼저 그린다
-  const pendingTitle = (useLocation().state as CardNavigationState | null)?.cardTitle ?? null
+  const cardState = useLocation().state as CardNavigationState | null
+  const pendingTitle = cardState?.cardTitle ?? null
+  // 드라이브를 마치고 바로 들어왔으면 나갈 때 홈으로 간다. 뒤에 쌓인 화면은 이미 끝난 드라이브 화면(플리 · 라디오 등)이다
+  const leaveCard = () => (cardState?.fromDriveEnd ? navigate('/', { replace: true }) : goBack())
   const { setMyText, save, saveDraft, retry, addPhotos, removePhoto, swapPhotos, remove, ...card } = useDriveCard(
     driveId,
     userId,
@@ -1205,12 +1266,15 @@ function DriveCardRoute({ driveId, userId, myNickname, partnerNickname, myGender
   // 나갈 때 쓰던 소감은 초안으로 남겨 둔다 (24시간 안에 배너로 다시 들어올 수 있다)
   const handleLeave = async () => {
     await saveDraft()
-    goBack()
+    leaveCard()
   }
 
   const handleDelete = async () => {
     const outcome = await remove()
-    if (outcome === 'deleted') goBackAfterDelete()
+    if (outcome === 'deleted') {
+      if (cardState?.fromDriveEnd) navigate('/', { replace: true })
+      else goBackAfterDelete()
+    }
     return outcome
   }
 

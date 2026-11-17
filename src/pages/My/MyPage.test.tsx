@@ -14,6 +14,7 @@ function renderPage(props: Partial<Props> = {}) {
     onMenuClick: vi.fn(),
     onLogout: vi.fn(),
     onTabChange: vi.fn(),
+    onWithdraw: vi.fn().mockResolvedValue('redirecting'),
   }
   render(<MyPage status="ready" couple={MOCK_COUPLE.couple} {...handlers} {...props} />)
   return { user: userEvent.setup(), ...handlers }
@@ -165,5 +166,60 @@ describe('하단 네비바', () => {
     await user.click(nav.getByRole('button', { name: '홈' }))
 
     expect(onTabChange).toHaveBeenCalledWith('home')
+  })
+})
+
+// 회원 탈퇴: 마이 맨 아래의 작은 글자 버튼 → 안내 · 확인 시트 → 카카오 본인 확인 (Figma 시안 없음)
+describe('회원탈퇴', () => {
+  const openSheet = async (user: ReturnType<typeof userEvent.setup>) => {
+    await user.click(screen.getByRole('button', { name: '회원탈퇴' }))
+    return screen.getByRole('dialog', { name: '정말 탈퇴하시겠어요?' })
+  }
+
+  it('메뉴 맨 아래에 회원탈퇴 버튼이 있고, 누르면 탈퇴하면 생기는 일을 안내한다', async () => {
+    const { user } = renderPage()
+
+    const sheet = await openSheet(user)
+    expect(sheet).toHaveTextContent('커플 연결이 해제돼요')
+    expect(sheet).toHaveTextContent('되돌릴 수 없어요')
+    expect(sheet).toHaveTextContent('카카오로 본인 확인')
+  })
+
+  it('안내를 확인했다고 체크해야 탈퇴를 진행할 수 있다', async () => {
+    const { user, onWithdraw } = renderPage()
+    const sheet = await openSheet(user)
+    const confirm = within(sheet).getByRole('button', { name: '카카오로 본인 확인하고 탈퇴' })
+
+    expect(confirm).toBeDisabled()
+    await user.click(within(sheet).getByRole('checkbox', { name: '안내를 모두 확인했어요' }))
+    await user.click(confirm)
+
+    expect(onWithdraw).toHaveBeenCalledTimes(1)
+  })
+
+  it('진행 중인 드라이브가 있으면 시트에 이유를 보여 준다', async () => {
+    const { user } = renderPage({ onWithdraw: vi.fn().mockResolvedValue('activeDrive') })
+    const sheet = await openSheet(user)
+
+    await user.click(within(sheet).getByRole('checkbox', { name: '안내를 모두 확인했어요' }))
+    await user.click(within(sheet).getByRole('button', { name: '카카오로 본인 확인하고 탈퇴' }))
+
+    expect(await within(sheet).findByRole('alert')).toHaveTextContent('진행 중인 드라이브가 있어요.')
+  })
+
+  it('취소를 누르면 시트를 닫는다', async () => {
+    const { user, onWithdraw } = renderPage()
+    const sheet = await openSheet(user)
+
+    await user.click(within(sheet).getByRole('button', { name: '취소' }))
+
+    expect(screen.queryByRole('dialog', { name: '정말 탈퇴하시겠어요?' })).not.toBeInTheDocument()
+    expect(onWithdraw).not.toHaveBeenCalled()
+  })
+
+  it('본인 확인 후 탈퇴하지 못하고 돌아왔으면 이유를 알려 준다', () => {
+    renderPage({ withdrawError: '지금은 탈퇴를 처리할 수 없어요. 잠시 후 다시 시도해 주세요.' })
+
+    expect(screen.getByRole('status')).toHaveTextContent('지금은 탈퇴를 처리할 수 없어요.')
   })
 })

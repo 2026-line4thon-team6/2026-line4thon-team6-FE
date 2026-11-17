@@ -11,8 +11,9 @@ export function formatDistance(meters: number) {
   return `${Math.round(meters / 100) / 10}km`
 }
 
-// 4800 → '1시간 20분'
+// 4800 → '1시간 20분'. 1분이 안 되면 '0분' 대신 '1분 미만'
 export function formatDriveTime(seconds: number) {
+  if (seconds < 60) return '1분 미만'
   const totalMinutes = Math.floor(seconds / 60)
   const hours = Math.floor(totalMinutes / 60)
   const minutes = totalMinutes % 60

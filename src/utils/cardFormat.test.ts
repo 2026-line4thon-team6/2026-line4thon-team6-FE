@@ -23,8 +23,10 @@ describe('formatDriveTime', () => {
     expect(formatDriveTime(2 * 60 * 60)).toBe('2시간')
   })
 
-  it('1분 미만은 0분으로 표시한다', () => {
-    expect(formatDriveTime(30)).toBe('0분')
+  it("1분이 안 되는 짧은 드라이브는 '0분' 대신 '1분 미만'으로 표시한다", () => {
+    expect(formatDriveTime(30)).toBe('1분 미만')
+    expect(formatDriveTime(0)).toBe('1분 미만')
+    expect(formatDriveTime(60)).toBe('1분')
   })
 })
 

@@ -1,4 +1,11 @@
-import { mockCompleteOnboarding, mockHasSession, mockLogin, mockLogout, mockRestoreSession } from '@/mocks/couples'
+import {
+  mockCompleteOnboarding,
+  mockDeleteAccount,
+  mockHasSession,
+  mockLogin,
+  mockLogout,
+  mockRestoreSession,
+} from '@/mocks/couples'
 import type { ApiResponse } from '@/types/api'
 import type { AuthAuthorization, AuthProvider, AuthRefreshResult, AuthTokenResult, OnboardingRequest } from '@/types/auth'
 import type { Me } from '@/types/me'
@@ -17,10 +24,14 @@ interface StoredTokens {
   refreshToken: string
 }
 
+// LOGIN: 로그인 · 가입, REAUTH: 회원 탈퇴 전 본인 재인증. 둘 다 같은 콜백 주소(/oauth/callback)로 돌아온다
+export type AuthPurpose = 'LOGIN' | 'REAUTH'
+
 interface PendingLogin {
   authSessionId: string
   state: string
   codeVerifier: string
+  purpose?: AuthPurpose
 }
 
 // 사생활 보호 모드 등에서 저장소 접근이 막혀도 앱은 동작해야 한다
@@ -134,8 +145,65 @@ export async function startSocialLogin(provider: AuthProvider, redirectUri: stri
     method: 'POST',
     body: JSON.stringify({ provider, redirectUri, codeChallenge: await createCodeChallenge(codeVerifier), purpose: 'LOGIN' }),
   })
-  write(session, PENDING_KEY, { authSessionId: data.authSessionId, state: data.state, codeVerifier } satisfies PendingLogin)
+  write(session, PENDING_KEY, { authSessionId: data.authSessionId, state: data.state, codeVerifier, purpose: 'LOGIN' } satisfies PendingLogin)
   return data.authorizationUrl
+}
+
+// 카카오 화면에서 돌아온 콜백이 로그인인지 탈퇴 재인증인지. 다녀오는 중인 세션이 없으면 null
+export function pendingAuthPurpose(): AuthPurpose | null {
+  const pending = read<PendingLogin>(session, PENDING_KEY)
+  return pending ? (pending.purpose ?? 'LOGIN') : null
+}
+
+// 다녀오는 중인 카카오 세션을 버린다 (재인증을 취소하고 돌아왔을 때)
+export function clearPendingAuth() {
+  write(session, PENDING_KEY, null)
+}
+
+// POST /auth/reauth/authorizations — 회원 탈퇴 전 카카오 본인 재인증을 시작한다 (PKCE S256)
+// 서버는 모르는 필드를 거절하므로 purpose 없이 보낸다. 돌아오는 주소는 로그인과 같은 /oauth/callback
+export async function startReauth(redirectUri: string): Promise<string> {
+  const codeVerifier = createCodeVerifier()
+  const { data } = await apiFetch<AuthAuthorization>('/auth/reauth/authorizations', {
+    method: 'POST',
+    headers: { 'Idempotency-Key': createIdempotencyKey() },
+    body: JSON.stringify({ provider: 'KAKAO', redirectUri, codeChallenge: await createCodeChallenge(codeVerifier) }),
+  })
+  write(session, PENDING_KEY, { authSessionId: data.authSessionId, state: data.state, codeVerifier, purpose: 'REAUTH' } satisfies PendingLogin)
+  return data.authorizationUrl
+}
+
+// POST /auth/reauth — 돌아온 코드로 탈퇴용 증명(5분, 1회용)을 받는다. state가 다르면 교환하지 않는다
+export async function completeReauth({ code, state }: { code: string; state: string }): Promise<string> {
+  const pending = read<PendingLogin>(session, PENDING_KEY)
+  write(session, PENDING_KEY, null)
+  if (!pending || pending.purpose !== 'REAUTH' || pending.state !== state) {
+    throw new ApiError(400, { error: { code: 'OAUTH_STATE_MISMATCH', message: '본인 확인을 다시 시도해 주세요.', details: [], retryable: false } })
+  }
+  const { data } = await apiFetch<{ reauthToken: string; expiresAt: string }>('/auth/reauth', {
+    method: 'POST',
+    headers: { 'Idempotency-Key': createIdempotencyKey() },
+    body: JSON.stringify({ authSessionId: pending.authSessionId, authorizationCode: code, state, codeVerifier: pending.codeVerifier }),
+  })
+  return data.reauthToken
+}
+
+// DELETE /me — 본인 재인증 증명으로 탈퇴한다. 성공하면 서버가 모든 세션을 끊으므로 기기의 토큰도 지운다
+export async function deleteAccount(reauthToken: string): Promise<void> {
+  await apiFetch('/me', { method: 'DELETE', headers: { 'X-Reauth-Token': reauthToken } })
+  clearTokens()
+}
+
+// 마이 > 회원탈퇴. 목 서버는 바로 탈퇴하고, 실서버는 카카오 본인 재인증 화면으로 이동한다
+// (돌아오면 OAuthCallbackRoute가 증명을 받아 deleteAccount를 부른다)
+export async function withdraw(redirectUri: string): Promise<'withdrawn' | 'redirecting'> {
+  if (USE_MOCK) {
+    await mockDeleteAccount()
+    clearTokens()
+    return 'withdrawn'
+  }
+  window.location.assign(await startReauth(redirectUri))
+  return 'redirecting'
 }
 
 // POST /auth/token — 공급자 로그인 화면에서 돌아온 코드를 서비스 토큰으로 바꾼다. state가 다르면 교환하지 않는다
