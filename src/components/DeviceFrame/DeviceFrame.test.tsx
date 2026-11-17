@@ -19,6 +19,14 @@ describe('DeviceFrame', () => {
       expect(deco).toHaveAttribute('aria-hidden', 'true')
     }
   })
+
+  it('화면 전환 스냅샷도 프레임 크기에 맞게 자르도록 배율을 문서 루트에 알린다', () => {
+    render(<DeviceFrame>앱</DeviceFrame>)
+
+    expect(document.documentElement.style.getPropertyValue('--device-scale')).toBe(
+      String(getDeviceScale(window.innerHeight)),
+    )
+  })
 })
 
 describe('getDeviceScale', () => {

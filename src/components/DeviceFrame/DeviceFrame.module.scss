@@ -159,4 +159,13 @@ $stage-bg: #efe8e6;
     background: #000;
     transform: translateX(-50%);
   }
+
+  // 화면 전환 중에도 새 화면 스냅샷 위에 남도록 따로 캡처한다
+  .island {
+    view-transition-name: device-island;
+  }
+
+  .homeIndicator {
+    view-transition-name: device-home-indicator;
+  }
 }

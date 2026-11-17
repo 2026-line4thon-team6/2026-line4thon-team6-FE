@@ -11,6 +11,12 @@ function useDeviceScale() {
     return () => window.removeEventListener('resize', update)
   }, [])
 
+  // 화면 전환(View Transition) 스냅샷은 문서 루트 아래 최상위 층에 그려져 프레임 밖 변수를 못 읽는다.
+  // 루트에도 배율을 알려 스냅샷을 화면 모서리에 맞게 자른다 (styles/base/_view-transitions.scss)
+  useEffect(() => {
+    document.documentElement.style.setProperty('--device-scale', String(scale))
+  }, [scale])
+
   return scale
 }
 
