@@ -43,9 +43,7 @@ interface DriveMapProps {
   onRestAreaClick?: (restAreaId: string) => void
   fitPadding?: [number, number, number, number]
   locateKey?: number
-  // 주행 중: 경로 전체 대신 내 위치(붕붕이)를 확대해 따라간다
   follow?: boolean
-  // 장소 상세처럼 작은 미리보기: 움직일 수 없고, 표시를 작게 하고 출발지 · 도착지 말풍선을 단다
   compact?: boolean
 }
 
@@ -79,7 +77,6 @@ function KakaoDriveMap({
     if (map && follow) map.setLevel(FOLLOW_LEVEL)
   }, [map, follow])
 
-  // 지도를 직접 끌면 따라가기를 멈추고, 현재 위치 버튼(locateKey)을 누르면 다시 따라간다
   const [following, setFollowing] = useState(true)
   const [prevLocateKey, setPrevLocateKey] = useState(locateKey)
   if (locateKey !== prevLocateKey) {

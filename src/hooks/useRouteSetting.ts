@@ -10,7 +10,6 @@ import { createIdempotencyKey } from '@/utils/share'
 
 const SEARCH_DELAY_MS = 300
 
-// 카카오 검색 결과는 우리 장소가 아니어서 placeId 없이 좌표로만 보낸다
 const toPoint = (place: PlaceSummary | SearchPlace): RoutePoint => ({
   placeId: 'canSave' in place && !place.canSave ? null : place.id,
   name: place.name,

@@ -7,6 +7,10 @@ $gutter: 25px;
   margin: 0 auto;
   overflow: hidden;
   background-color: color('coral-bg');
+
+  @media (max-width: 500px) {
+    max-width: none;
+  }
 }
 
 .map {
@@ -77,6 +81,7 @@ $gutter: 25px;
   right: 0;
   bottom: 0;
   left: 0;
+  pointer-events: none;
 }
 
 .overlay {
@@ -99,6 +104,7 @@ $gutter: 25px;
 
 .alert {
   min-width: 0;
+  pointer-events: auto;
   margin-right: auto;
 }
 
@@ -108,8 +114,13 @@ $gutter: 25px;
   gap: 12px;
 }
 
+.controls > * {
+  pointer-events: auto;
+}
+
 .panel {
   padding: 0 $gutter;
+  pointer-events: auto;
   overflow-y: auto;
   border-radius: 30px 30px 0 0;
   background-color: color('coral-bg');

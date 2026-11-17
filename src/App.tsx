@@ -657,7 +657,6 @@ function RouteSettingRoute({ partnerNickname }: { partnerNickname: string | null
     if (!routeSetting.route) return
     setConfirming(true)
     const saved = await setRoute(routeSetting.route.id)
-    // 출발까지 성공해야 드라이브 화면으로 돌아간다. 실패하면 경로 설정 화면에 남아 이유를 알린다
     const started = saved && drive?.status === 'PREPARING' ? await start() : 'started'
     setConfirming(false)
     if (!saved) return setToast('경로를 저장하지 못했어요. 다시 시도해 주세요.')
