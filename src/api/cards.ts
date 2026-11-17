@@ -1,6 +1,7 @@
 import {
   mockCompleteCard,
   mockDeleteCard,
+  mockDiscardCard,
   mockFetchCard,
   mockFetchCardShare,
   mockFetchDriveCard,
@@ -43,6 +44,18 @@ export async function deleteCard(card: Pick<Card, 'id' | 'coupleId' | 'version'>
   })
 }
 
+// POST /cards/{cardId}/discard — 둘 다 아무것도 쓰지 않은(UNWRITTEN) 카드를 기한 안에 폐기한다.
+// 누군가 쓰기 시작했으면 409 CARD_DRAFT_STARTED, 저장한 카드는 422 CARD_ALREADY_COMPLETED(기록 삭제로 지운다)
+export async function discardCard(card: Pick<Card, 'id' | 'coupleId' | 'version'>, idempotencyKey: string): Promise<void> {
+  if (USE_MOCK) return mockDiscardCard(card.id, { expectedVersion: card.version })
+
+  await apiFetch(`${cardPath(card.id)}/discard`, {
+    method: 'POST',
+    headers: { 'X-Couple-Id': card.coupleId, 'Idempotency-Key': idempotencyKey },
+    body: JSON.stringify({ expectedVersion: card.version }),
+  })
+}
+
 // GET /cards/{cardId}/share — 완료 카드의 커플 전용 공유 링크
 export function fetchCardShare(cardId: string): Promise<ApiResponse<CardShare>> {
   if (USE_MOCK) return mockFetchCardShare(cardId)
@@ -55,6 +68,30 @@ export function fetchDriveCard(driveId: string): Promise<ApiResponse<Card>> {
   if (USE_MOCK) return mockFetchDriveCard(driveId)
 
   return apiFetch<Card>(`/drives/${encodeURIComponent(driveId)}/card`)
+}
+
+// 미작성 카드 목록을 열 때 미리 받아 둔 카드. 작성 화면이 불러오는 중 화면 없이 바로 내용과 함께 열리게 한다.
+// 사진 링크(10분 서명 URL)가 낡지 않도록 짧게만 쓰고, 화면은 열리자마자 최신 카드를 다시 받는다
+const PREFETCH_MAX_AGE_MS = 60_000
+const prefetched = new Map<string, { card: Card; at: number }>()
+
+export async function prefetchDriveCard(driveId: string): Promise<void> {
+  try {
+    const { data } = await fetchDriveCard(driveId)
+    prefetched.set(driveId, { card: data, at: Date.now() })
+  } catch {
+    prefetched.delete(driveId)
+  }
+}
+
+export function peekDriveCard(driveId: string): Card | null {
+  const entry = prefetched.get(driveId)
+  if (!entry || Date.now() - entry.at > PREFETCH_MAX_AGE_MS) return null
+  return structuredClone(entry.card)
+}
+
+export function clearDriveCardCache() {
+  prefetched.clear()
 }
 
 // PATCH /cards/{cardId}/draft — 제목 · 사진 순서 임시저장. photoIds는 전체 순서이고 첫 사진이 대표다

@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>붕붕어스 QA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* 레이아웃: 왼쪽 휴대폰 크기 앱 미리보기(같은 사이트라 로그인 공유) + 오른쪽 테스트 케이스 · 결과 패널 */
+:root {
+  --bg: #fbf7f6; --surface: #ffffff; --surface-2: #f5eeec; --line: #eadfdc; --fg: #2a2223; --muted: #7d7072;
+  --accent: #cc5146; --accent-soft: #fde4e0;
+  --pass: #1f8a5b; --pass-soft: #dff3ea; --fail: #c83a3a; --fail-soft: #fbe2e2;
+  --block: #a8670d; --block-soft: #fbefd8; --na: #6f6a74; --na-soft: #ecebef;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --radius: 10px; color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1617; --surface: #231e1f; --surface-2: #2c2627; --line: #3a3233; --fg: #f1e9e8; --muted: #a99d9e;
+    --accent: #f08a7f; --accent-soft: #43282a; --pass: #5fd09c; --pass-soft: #183a2b; --fail: #f07a7a; --fail-soft: #452224;
+    --block: #e9b35c; --block-soft: #3f3019; --na: #b3adb8; --na-soft: #2f2c33; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 14px; line-height: 1.55; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+a { color: var(--accent); }
+button, select, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+
+.app { display: grid; grid-template-columns: auto minmax(0, 1fr); height: 100%; }
+/* 왼쪽: 앱 미리보기 */
+.preview { display: flex; flex-direction: column; gap: 10px; padding: 16px; border-right: 1px solid var(--line); background: var(--surface-2); height: 100%; min-height: 0; }
+.addr { display: flex; gap: 6px; align-items: center; }
+.addr .path { flex: 1; min-width: 0; padding: 7px 10px; border-radius: 8px; background: var(--surface); border: 1px solid var(--line); font-family: var(--font-mono); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.icon-btn { padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.phone-box { flex: 1; min-height: 0; display: flex; justify-content: center; align-items: flex-start; overflow: hidden; }
+.phone { width: 390px; height: 844px; border-radius: 28px; overflow: hidden; border: 1px solid var(--line); background: #fff; box-shadow: 0 10px 30px rgb(0 0 0 / 12%); transform-origin: top center; flex-shrink: 0; }
+.phone iframe { width: 390px; height: 844px; border: 0; display: block; }
+.login-tip { font-size: 12px; color: var(--muted); }
+/* 오른쪽: 테스트 패널 */
+.panel-side { height: 100%; overflow-y: auto; padding: 18px max(18px, env(safe-area-inset-right, 0px)) 48px 18px; }
+.side { max-width: 860px; display: flex; flex-direction: column; gap: 16px; }
+@media (max-width: 900px) {
+  .app { display: block; height: auto; }
+  .preview { display: none; }
+  .panel-side { height: auto; overflow: visible; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+}
+
+.top h1 { font-size: 20px; font-weight: 700; }
+.build { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.build b { color: var(--fg); font-weight: 600; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.env { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 14px; }
+.env label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.env input, .env select { padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); }
+.env input { width: 9em; }
+.saved { font-size: 12px; color: var(--muted); min-height: 1.2em; }
+.notice { margin: 0; padding: 10px 14px; border-radius: var(--radius); background: var(--block-soft); font-size: 13px; }
+
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.stat { padding: 11px 13px; }
+.stat .k { font-size: 12px; color: var(--muted); }
+.stat .v { font-size: 20px; font-weight: 700; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.stat .s { font-size: 12px; color: var(--muted); }
+.bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: var(--surface-2); margin-top: 8px; }
+.bar i { display: block; height: 100%; }
+@media (max-width: 640px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.tabs a { padding: 9px 13px; text-decoration: none; color: var(--muted); font-weight: 600; border-bottom: 2px solid transparent; white-space: nowrap; }
+.tabs a[aria-current="page"] { color: var(--fg); border-bottom-color: var(--accent); }
+.tabs .count { font-family: var(--font-mono); font-size: 11px; margin-left: 4px; padding: 1px 6px; border-radius: 999px; background: var(--surface-2); }
+.view[hidden] { display: none; }
+
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chip { padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-size: 12.5px; font-weight: 500; }
+.chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.filters .sep { width: 1px; height: 20px; background: var(--line); }
+.filters select { padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-size: 12.5px; }
+
+.module { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.module h2 { font-size: 13px; letter-spacing: 0.04em; color: var(--muted); font-weight: 600; }
+.case > summary { list-style: none; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 11px 14px; cursor: pointer; }
+.case > summary::-webkit-details-marker { display: none; }
+.case[data-current="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.case .id { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--muted); }
+.case .title { font-weight: 600; min-width: 0; }
+.case .meta { display: flex; gap: 6px; align-items: center; }
+.prio { font-family: var(--font-mono); font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--line); }
+.prio.P1 { color: var(--accent); border-color: var(--accent); }
+.pill { font-size: 11.5px; font-weight: 600; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+.pill.pass { background: var(--pass-soft); color: var(--pass); } .pill.fail { background: var(--fail-soft); color: var(--fail); }
+.pill.blocked { background: var(--block-soft); color: var(--block); } .pill.na { background: var(--na-soft); color: var(--na); }
+.pill.todo { background: var(--surface-2); color: var(--muted); }
+.case .body { padding: 12px 14px 14px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px 20px; border-top: 1px solid var(--line); }
+@media (max-width: 1180px) { .case .body { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) { .case > summary { grid-template-columns: minmax(0, 1fr) auto; } .case .id { grid-column: 1 / -1; } }
+.spec h3, .exec h3 { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: 0.03em; margin-bottom: 4px; }
+.spec section + section { margin-top: 10px; }
+.spec ol { margin: 0; padding-left: 20px; }
+.known { margin-top: 10px; padding: 8px 10px; border-radius: 8px; background: var(--block-soft); font-size: 12.5px; }
+.go { display: inline-flex; gap: 6px; align-items: center; margin-top: 10px; font-weight: 600; font-size: 13px; padding: 7px 11px; border-radius: 8px; border: 0; background: var(--accent-soft); color: var(--accent); text-decoration: none; }
+.exec { display: flex; flex-direction: column; gap: 10px; }
+.status { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.status button { padding: 9px 4px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); font-weight: 600; font-size: 13px; }
+.status button[aria-pressed="true"].pass { background: var(--pass); color: #fff; border-color: var(--pass); }
+.status button[aria-pressed="true"].fail { background: var(--fail); color: #fff; border-color: var(--fail); }
+.status button[aria-pressed="true"].blocked { background: var(--block); color: #fff; border-color: var(--block); }
+.status button[aria-pressed="true"].na { background: var(--na); color: #fff; border-color: var(--na); }
+.status button:disabled { opacity: 0.5; cursor: not-allowed; }
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--muted); }
+.field textarea, .field select { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); color: var(--fg); font-size: 13.5px; resize: vertical; }
+.fail-only[hidden] { display: none; }
+.others { display: flex; flex-wrap: wrap; gap: 6px; }
+.tester { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+td.num, th.num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.defect { padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.defect .head { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.sev { font-size: 11.5px; font-weight: 700; padding: 2px 7px; border-radius: 4px; color: #fff; }
+.sev.Critical { background: #8f1f1f; } .sev.Major { background: var(--fail); } .sev.Minor { background: var(--block); } .sev.Trivial { background: var(--na); }
+.defect p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.defect .env-line { font-size: 12px; color: var(--muted); }
+.empty { padding: 28px 16px; text-align: center; color: var(--muted); }
+.guide { padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; max-width: 72ch; }
+.guide h2 { font-size: 15px; }
+.guide ul, .guide ol { margin: 4px 0 0; padding-left: 20px; }
+.guide dl { margin: 4px 0 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; }
+.guide dt { font-weight: 600; } .guide dd { margin: 0; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="preview" aria-label="앱 미리보기">
+    <div class="addr">
+      <span class="path" id="frame-path">/</span>
+      <button type="button" class="icon-btn" id="frame-reload">새로고침</button>
+      <a class="icon-btn" id="frame-newtab" href="/" target="_blank" rel="noopener">새 탭 ↗</a>
+    </div>
+    <div class="phone-box" id="phone-box"><div class="phone" id="phone"><iframe id="frame" src="/" title="붕붕어스 앱"></iframe></div></div>
+    <p class="login-tip">카카오 로그인은 미리보기 안에서 안 돼요. <b>새 탭 ↗</b>에서 로그인한 뒤 <b>새로고침</b>을 누르면 여기에도 로그인돼요.</p>
+  </aside>
+
+  <main class="panel-side">
+    <div class="side">
+      <header class="top">
+        <h1>붕붕어스 QA</h1>
+        <div class="build"><span>대상 <b>운영 배포 사이트</b></span><span>테스트 기간 <b>2026-11-17 ~</b></span><span>결과 저장 <b>팀 공유</b></span></div>
+      </header>
+
+      <div class="card env" aria-label="내 테스트 환경">
+        <label for="tester-name">이름 <input id="tester-name" maxlength="30" placeholder="예: 혜영" autocomplete="nickname"></label>
+        <label for="env-device">기기
+          <select id="env-device"><option value="">선택</option><option>iPhone</option><option>Galaxy</option><option>기타 Android</option><option>PC</option></select>
+        </label>
+        <label for="env-browser">브라우저
+          <select id="env-browser"><option value="">선택</option><option>카카오톡 인앱</option><option>Safari</option><option>Chrome</option><option>Samsung Internet</option><option>Edge</option></select>
+        </label>
+        <span class="saved" id="save-state" aria-live="polite"></span>
+      </div>
+      <p class="notice" id="name-note">결과를 남기려면 먼저 <b>이름</b>을 적어 주세요. 팀 결과 요약 · 결함 목록에 이 이름으로 보여요.</p>
+
+      <section class="stats" aria-label="진행 요약">
+        <div class="card stat"><div class="k">내 진행률</div><div class="v" id="st-mine">0 / 0</div><div class="bar" id="bar-mine"></div></div>
+        <div class="card stat"><div class="k">전체 통과율</div><div class="v" id="st-rate">-</div><div class="s" id="st-rate-sub">실행된 결과 기준</div></div>
+        <div class="card stat"><div class="k">열린 결함</div><div class="v" id="st-defects">0</div><div class="s" id="st-defects-sub">Critical 0 · Major 0</div></div>
+        <div class="card stat"><div class="k">참여 테스터</div><div class="v" id="st-testers">0</div><div class="s">결과를 1개 이상 남긴 사람</div></div>
+      </section>
+
+      <nav class="tabs" aria-label="화면">
+        <a href="#run" data-view="run">테스트 실행</a>
+        <a href="#summary" data-view="summary">결과 요약</a>
+        <a href="#defects" data-view="defects">결함 목록<span class="count" id="tab-defects">0</span></a>
+        <a href="#guide" data-view="guide">진행 안내</a>
+      </nav>
+
+      <section class="view" id="view-run" aria-label="테스트 실행">
+        <div class="filters">
+          <div id="module-chips" class="filters"></div>
+          <span class="sep" aria-hidden="true"></span>
+          <label class="muted" for="f-prio">우선순위</label>
+          <select id="f-prio"><option value="">전체</option><option>P1</option><option>P2</option><option>P3</option></select>
+          <label class="muted" for="f-status">내 결과</label>
+          <select id="f-status"><option value="">전체</option><option value="todo">미실행</option><option value="pass">통과</option><option value="fail">실패</option><option value="blocked">차단</option><option value="na">해당 없음</option></select>
+        </div>
+        <div id="case-list"></div>
+      </section>
+
+      <section class="view" id="view-summary" aria-label="결과 요약" hidden>
+        <div class="card table-wrap"><table>
+          <thead><tr><th>모듈</th><th class="num">케이스</th><th class="num">실행</th><th class="num">통과</th><th class="num">실패</th><th class="num">차단</th><th class="num">통과율</th></tr></thead>
+          <tbody id="module-table"></tbody>
+        </table></div>
+        <div class="card table-wrap" style="margin-top:14px"><table>
+          <thead><tr><th>ID</th><th>케이스</th><th>우선순위</th><th>테스터별 결과</th></tr></thead>
+          <tbody id="case-table"></tbody>
+        </table></div>
+      </section>
+
+      <section class="view" id="view-defects" aria-label="결함 목록" hidden>
+        <div class="filters" style="margin-bottom:10px">
+          <label class="muted" for="f-sev">심각도</label>
+          <select id="f-sev"><option value="">전체</option><option>Critical</option><option>Major</option><option>Minor</option><option>Trivial</option></select>
+        </div>
+        <div id="defect-list" style="display:flex;flex-direction:column;gap:8px"></div>
+      </section>
+
+      <section class="view" id="view-guide" aria-label="진행 안내" hidden>
+        <div class="card guide">
+          <section><h2>진행 방법</h2><ol>
+            <li>위에 <b>이름 · 기기 · 브라우저</b>를 적어요. 결과마다 함께 기록돼요.</li>
+            <li>케이스를 펼치고 <b>화면 열기</b>를 누르면 왼쪽 미리보기가 그 화면으로 바뀌어요. (좁은 화면에서는 새 탭으로 열려요)</li>
+            <li>기대 결과와 같으면 <b>통과</b>, 다르면 <b>실패</b>를 누르고 심각도 · 실제 결과 · 재현 방법을 적어요.</li>
+            <li>앞선 문제나 서버 사정으로 못 하면 <b>차단</b>, 내 환경과 상관없으면 <b>해당 없음</b>이에요.</li>
+            <li>결과는 바로 저장되고 팀 전체가 결과 요약 · 결함 목록에서 함께 봐요(15초마다 새로 불러와요).</li>
+          </ol></section>
+          <section><h2>사전 조건</h2><ul>
+            <li>카카오 로그인은 미리보기 안에서 안 돼요. 왼쪽 위 <b>새 탭 ↗</b>에서 로그인하고 <b>새로고침</b>하세요.</li>
+            <li>커플 기능 · 드라이브 · 기록은 <b>연인과 연결된 계정 두 개</b>가 필요해요.</li>
+            <li>실서버라서 지우거나 연결을 해제한 데이터는 되돌릴 수 없어요. 삭제 · 연결 해제는 테스트용 계정으로 해 주세요.</li>
+            <li>위치 권한 · 사진 업로드 · 주행은 휴대폰에서 확인하는 게 정확해요. 휴대폰으로 이 페이지를 열면 화면 열기가 새 탭으로 열려요.</li>
+          </ul></section>
+          <section><h2>심각도 기준</h2><dl>
+            <dt>Critical</dt><dd>앱을 쓸 수 없음 · 데이터 손실 (로그인 불가, 드라이브 기록이 사라짐)</dd>
+            <dt>Major</dt><dd>핵심 기능이 동작하지 않지만 우회 가능 (카드 저장 실패, 잘못된 화면 이동)</dd>
+            <dt>Minor</dt><dd>기능은 되지만 표시 · 문구 · 레이아웃 문제</dd>
+            <dt>Trivial</dt><dd>사소한 개선 의견 · 오타</dd>
+          </dl></section>
+          <section><h2>알려진 이슈 (실패로 올리지 않아도 돼요)</h2><ul>
+            <li>홈 <b>교통 상황</b>은 서버가 아직 정보를 주지 않아 '--'로 보여요.</li>
+            <li><b>대천 해수욕장</b> 카드는 백엔드 배포 후에 보여요. 그 전까지 HOME-05는 차단으로 표시해 주세요.</li>
+            <li><b>DJ 플레이리스트 · AI 라디오</b>는 서버 키 설정을 확인 중이에요. 생성이 안 되면 실패로 남겨 주세요(원인 파악용).</li>
+            <li>장소 카드의 예상 소요 시간은 위치 권한을 허용해야 보여요.</li>
+          </ul></section>
+          <section><h2>결과 저장</h2><ul>
+            <li>로그인 없이 쓰는 팀 도구라, 이 주소를 아는 사람은 누구나 결과를 남길 수 있어요. 주소는 팀 안에서만 공유해 주세요.</li>
+          </ul></section>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+// 결과 저장소 (Supabase bbus-qa). 공개용 publishable 키라 페이지에 있어도 되고, 표 규칙으로 읽기 · 추가 · 수정만 열려 있다
+const SUPABASE_URL = 'https://fsptumndhtndpfqitibd.supabase.co'
+const SUPABASE_KEY = 'sb_publishable_uSpl49cK63jQDVRmFdXCfQ_wVxUW2Lu'
+const TABLE = SUPABASE_URL + '/rest/v1/qa_results'
+const HEADERS = { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' }
+
+// 테스트 케이스 (모듈 · 우선순위 · 사전 조건 · 단계 · 기대 결과 · 시작 화면)
+const MODULES = [
+  ['AUTH', '로그인'], ['ONB', '가입'], ['CPL', '커플 연결'], ['HOME', '홈'], ['PLACE', '장소 상세'],
+  ['DRV', '드라이브'], ['CARD', '드라이브 카드'], ['REC', '기록 지도'], ['MY', '마이 · 보관함'], ['ETC', '공통'],
+]
+const CASES = [
+  { id: 'AUTH-01', m: 'AUTH', p: 'P1', t: '처음 쓰는 카카오 계정으로 로그인하면 가입 화면으로 간다', pre: '가입한 적 없는 카카오 계정, 로그아웃 상태', path: '/login',
+    steps: ['배포 사이트에 접속한다', '카카오 로그인을 누른다', '카카오 동의를 마친다'], exp: '가입 환영 화면(붕붕이 인사)이 열린다' },
+  { id: 'AUTH-02', m: 'AUTH', p: 'P1', t: '가입을 마친 계정은 로그인하면 바로 홈으로 간다', pre: '가입 완료 계정, 로그아웃 상태', path: '/login',
+    steps: ['카카오 로그인을 누른다', '동의를 마친다'], exp: '홈 화면이 열리고 내 닉네임으로 인사한다' },
+  { id: 'AUTH-03', m: 'AUTH', p: 'P2', t: '로그아웃하면 로그인 화면으로 가고 뒤로가기로 돌아오지 않는다', pre: '로그인 상태', path: '/my',
+    steps: ['마이 > 로그아웃을 누른다', '브라우저 뒤로가기를 누른다'], exp: '로그인 화면이 열리고, 뒤로가기를 눌러도 홈 · 마이가 다시 열리지 않는다' },
+
+  { id: 'ONB-01', m: 'ONB', p: 'P1', t: '가입 단계를 끝까지 진행할 수 있다', pre: 'AUTH-01 직후', path: '/onboarding/welcome',
+    steps: ['약관에 동의하고 시작한다', '닉네임 · 생일 · 성별 · 처음 만난 날 · 붕붕이 이름을 차례로 입력한다', '마지막 단계에서 다음을 누른다'], exp: '연인 초대 화면이 열리고, 입력한 닉네임이 홈 · 마이에 반영된다' },
+  { id: 'ONB-02', m: 'ONB', p: 'P2', t: '닉네임을 비우거나 20자를 넘기면 다음으로 갈 수 없다', pre: '가입 닉네임 단계', path: '/onboarding/nickname',
+    steps: ['닉네임을 비워 둔다', '21자 이상을 입력해 본다'], exp: '다음 버튼이 막히거나 20자까지만 입력된다' },
+  { id: 'ONB-03', m: 'ONB', p: 'P3', t: '환영 화면 붕붕이 인사와 단계 전환이 자연스럽다', pre: '가입 환영 화면', path: '/onboarding/welcome',
+    steps: ['환영 화면을 연다', '다음 단계로 넘어간다'], exp: '붕붕이가 점프하며 손을 흔들고, 다음 단계가 오른쪽에서 밀려 들어온다' },
+
+  { id: 'CPL-01', m: 'CPL', p: 'P1', t: '내 코드를 복사하면 복사 안내가 뜬다', pre: '연인과 연결되지 않은 계정', path: '/couple/invite',
+    steps: ['연인 초대 화면에서 내 코드의 복사를 누른다', '메모장 등에 붙여 넣는다'], exp: '"커플 코드가 복사되었습니다." 안내가 뜨고 코드가 그대로 붙여 넣어진다' },
+  { id: 'CPL-02', m: 'CPL', p: 'P1', t: '연인 코드를 입력하면 커플로 연결된다', pre: '연결 안 된 계정 두 개', path: '/couple/invite',
+    steps: ['A 계정의 코드를 복사한다', 'B 계정에서 코드를 입력하고 연결한다'], exp: '두 계정 모두 홈에 D+일수와 연인 닉네임이 보인다' },
+  { id: 'CPL-03', m: 'CPL', p: 'P2', t: '틀린 코드를 입력하면 이유를 알려 준다', pre: '연결 안 된 계정', path: '/couple/invite',
+    steps: ['없는 코드를 입력하고 연결을 누른다'], exp: '연결되지 않고 코드를 다시 확인하라는 안내가 보인다' },
+  { id: 'CPL-04', m: 'CPL', p: 'P2', t: '커플 페이지에서 붕붕이 이름과 처음 만난 날을 바꿀 수 있다', pre: '연결된 계정', path: '/my/couple',
+    steps: ['마이 > 커플 페이지를 연다', '붕붕이 이름을 바꾼다', '처음 만난 날을 바꾼다'], exp: '바뀐 이름 · D+일수가 홈과 연인 화면에도 반영된다' },
+  { id: 'CPL-05', m: 'CPL', p: 'P3', t: '진행 중인 드라이브가 있으면 연결 해제 전에 정리하도록 안내한다', pre: '테스트용 연결 계정, 준비 중인 드라이브 있음 (실제 해제됨 주의)', path: '/my/couple',
+    steps: ['커플 페이지에서 연결 해제를 누른다', '진행 중인 드라이브 정리하기를 누른다', '다시 연결 해제를 누른다'], exp: '정리하기로 준비 중 드라이브가 취소되고, 그 뒤 연결 해제가 된다' },
+
+  { id: 'HOME-01', m: 'HOME', p: 'P1', t: '홈에 현재 위치의 날씨 · 기온이 보인다', pre: '위치 권한 허용', path: '/',
+    steps: ['홈을 연다', '위치 권한을 허용한다'], exp: '날씨와 기온(예: 흐림 15.8°)이 보인다', known: '교통 상황은 서버 미제공으로 "--"가 정상이에요.' },
+  { id: 'HOME-02', m: 'HOME', p: 'P1', t: '큐레이션 카테고리를 바꾸면 카드가 바뀐다', pre: '로그인 상태', path: '/',
+    steps: ['스마트 탐색 & 큐레이션에서 바다 · 야경 · 근교 카페 · 자연 · 차박을 차례로 누른다'], exp: '카테고리마다 다른 장소 카드가 사진과 함께 보인다' },
+  { id: 'HOME-03', m: 'HOME', p: 'P2', t: '장소 카드의 하트로 찜하면 찜한 코스에 반영된다', pre: '로그인 상태', path: '/',
+    steps: ['카드의 하트를 누른다', '마이 > 찜한 드라이브 코스를 연다'], exp: '찜한 장소가 목록에 있고, 하트를 다시 누르면 빠진다' },
+  { id: 'HOME-04', m: 'HOME', p: 'P2', t: '위치 권한을 막으면 설정에서 허용하라고 한 번 안내한다', pre: '브라우저 위치 권한 차단', path: '/',
+    steps: ['위치 권한을 차단한 채 홈을 연다'], exp: '"브라우저 설정에서 위치 권한을 허용하면…" 안내가 한 번 뜨고, 홈은 그대로 쓸 수 있다' },
+  { id: 'HOME-05', m: 'HOME', p: 'P2', t: '바다 첫 카드로 대천 해수욕장이 보인다', pre: '백엔드 대천 배포 후', path: '/',
+    steps: ['큐레이션에서 바다를 누른다', '첫 카드를 눌러 장소 상세를 연다'], exp: '첫 카드가 "보령 대천 해수욕장"이고 사진 · 상세가 열린다', known: '백엔드 배포 전에는 차단으로 표시해 주세요.' },
+
+  { id: 'PLACE-01', m: 'PLACE', p: 'P1', t: '장소 상세에 사진 · 주소 · 소개 · 드라이브 정보가 보인다', pre: '위치 권한 허용', path: '/',
+    steps: ['홈 큐레이션 카드를 누른다', '화면을 끝까지 내려 본다'], exp: '대표 사진, 지역 · 주소, 해시태그, 소개, 예상 소요 시간 · 주차 정보(값이 있는 칸만), 경로 미리보기 지도가 보인다' },
+  { id: 'PLACE-02', m: 'PLACE', p: 'P2', t: '장소 공유 링크는 로그인하지 않은 사람도 열 수 있다', pre: '로그인 상태 + 다른 기기 또는 시크릿 창', path: '/',
+    steps: ['장소 상세에서 공유하기 > 링크 복사를 누른다', '로그인하지 않은 브라우저에서 링크를 연다'], exp: '공개 장소 페이지가 열린다' },
+  { id: 'PLACE-03', m: 'PLACE', p: 'P2', t: '연인에게 보내기를 하면 연인에게 알림이 간다', pre: '연결된 계정 두 개', path: '/',
+    steps: ['A 계정 장소 상세에서 연인에게 보내기를 누른다', 'B 계정의 알림을 연다'], exp: 'B 계정에 장소 공유 알림이 있고, 누르면 그 장소가 열린다' },
+
+  { id: 'DRV-01', m: 'DRV', p: 'P1', t: '드라이브를 이름 · 경로를 정해 출발할 수 있다', pre: '연결된 계정, 위치 권한 허용', path: '/',
+    steps: ['홈에서 드라이브 시작하기를 누른다', '드라이브 이름을 정한다', '경로 설정에서 목적지를 검색해 고른다', '출발한다'], exp: '드라이브 화면에 지도 · 현재 위치 · 경로가 보이고 주행 기록이 시작된다' },
+  { id: 'DRV-02', m: 'DRV', p: 'P1', t: '주행 중 일시정지 · 재개할 수 있다', pre: 'DRV-01 주행 중', path: '/drive',
+    steps: ['일시정지를 누른다', '재개를 누른다'], exp: '일시정지 상태가 표시되고, 재개하면 다시 기록된다' },
+  { id: 'DRV-03', m: 'DRV', p: 'P1', t: '드라이브 마치기 팝업이 새 시안대로 보이고 경로 수정하기가 동작한다', pre: '주행 중', path: '/drive',
+    steps: ['드라이브 마치기를 누른다', '팝업 문구와 버튼을 확인한다', '경로 수정하기를 누른다'], exp: '"드라이브를 마치시겠어요?" 팝업에 기록하지 않고 나가기 · 기록하러 가기가 있고, 경로 수정하기는 마치지 않고 경로 설정으로 간다' },
+  { id: 'DRV-04', m: 'DRV', p: 'P1', t: '기록하러 가기를 누르면 그 드라이브의 카드 작성 화면이 올라온다', pre: '주행 중', path: '/drive',
+    steps: ['드라이브 마치기 > 기록하러 가기를 누른다'], exp: '드라이브가 끝나고 카드 작성 화면이 아래에서 올라오며, 뒤로가기로 끝난 드라이브에 돌아가지 않는다' },
+  { id: 'DRV-05', m: 'DRV', p: 'P1', t: '기록하지 않고 나가면 홈으로 가고 미작성 카드에 남지 않는다', pre: '주행 중', path: '/drive',
+    steps: ['드라이브 마치기 > 기록하지 않고 나가기를 누른다'], exp: '홈으로 가고, 미작성 카드 배너 · 목록에 그 드라이브가 없다' },
+  { id: 'DRV-06', m: 'DRV', p: 'P2', t: '준비만 하고 나간 드라이브를 홈 배너에서 이어서 준비할 수 있다', pre: '드라이브 이름까지 정하고 출발 전', path: '/',
+    steps: ['경로 설정 화면에서 뒤로 나와 홈으로 간다', '"준비 중인 드라이브가 있어요!" 배너를 누른다'], exp: '배너가 보이고, 누르면 준비하던 드라이브로 돌아간다' },
+  { id: 'DRV-07', m: 'DRV', p: 'P2', t: 'DJ 플레이리스트를 만들 수 있다', pre: '주행 중', path: '/drive',
+    steps: ['콘텐츠의 DJ 플레이리스트를 연다', '분위기 · 장르를 고르고 만든다'], exp: '플레이리스트가 만들어지고 곡을 누르면 Spotify로 이동한다', known: '서버 키 설정을 확인 중이에요. 생성이 안 되면 실패로 남겨 주세요.' },
+  { id: 'DRV-08', m: 'DRV', p: 'P2', t: 'AI 라디오에 사연을 보내면 라디오가 재생된다', pre: '주행 중', path: '/drive',
+    steps: ['콘텐츠의 라디오를 연다', '사연을 쓰고 보낸다', '완성되면 재생한다'], exp: '라디오 음성이 재생되고 보관함 > 라디오 사연에 남는다', known: '서버 키 설정을 확인 중이에요.' },
+  { id: 'DRV-09', m: 'DRV', p: 'P3', t: '휴게소 근처에서 스탬프를 찍을 수 있다', pre: '실제 휴게소 근처 주행', path: '/drive',
+    steps: ['휴게소 스탬프 탭을 연다', '현재 위치로 찾기 > 도장찍기를 누른다'], exp: '도장이 찍히고 카드의 휴게소 도장 수에 반영된다' },
+  { id: 'DRV-10', m: 'DRV', p: 'P2', t: '목적지 100m 안에 30초 머물면 도착 팝업이 뜬다', pre: '실제로 목적지까지 주행', path: '/drive',
+    steps: ['목적지 근처에 도착해 30초 이상 머문다'], exp: '드라이브가 끝나고 "목적지에 도착했어요!" 팝업이 뜬다' },
+  { id: 'DRV-11', m: 'DRV', p: 'P2', t: '주행한 거리 · 시간이 카드에 맞게 기록된다', pre: '실제로 5분 이상 이동한 드라이브', path: '/drive',
+    steps: ['기록하는 휴대폰을 들고 이동한다', '드라이브를 마치고 카드를 연다'], exp: '이동 거리 · 주행 시간이 실제와 비슷하다 (1분 미만은 "1분 미만")' },
+
+  { id: 'CARD-01', m: 'CARD', p: 'P1', t: '사진 · 소감을 넣고 카드를 저장할 수 있다', pre: '끝난 드라이브의 카드 작성 화면', path: '/',
+    steps: ['사진을 2장 추가한다', '순서 바꾸기 · 한 장 지우기를 해 본다', '소감(70자 이하)을 쓰고 저장한다'], exp: '저장 후 홈으로 가고, 기록 지도에 카드가 생긴다' },
+  { id: 'CARD-02', m: 'CARD', p: 'P1', t: '소감 칸은 내 칸 · 연인 칸으로 나뉘고 닉네임 · 캐릭터가 맞다', pre: '연결된 계정 두 개, 같은 카드', path: '/',
+    steps: ['A 계정에서 카드 작성 화면을 연다', 'B 계정에서도 같은 카드를 연다'], exp: '각자 화면 위쪽이 내 칸, 아래가 연인 칸이고, 이름은 닉네임, 캐릭터는 가입 때 고른 성별과 맞다' },
+  { id: 'CARD-03', m: 'CARD', p: 'P1', t: '미작성 카드가 여러 개면 목록에서 골라 작성 화면으로 끊김 없이 간다', pre: '미작성 카드 2개 이상', path: '/map',
+    steps: ['기록 지도의 미작성 드라이브 카드 배너를 누른다', '목록에서 카드 하나를 누른다'], exp: '목록이 열릴 때 화면이 들썩이지 않고, 누른 카드 이름이 작성 화면 제목 자리로 이어지며 작성 화면이 아래에서 올라온다' },
+  { id: 'CARD-04', m: 'CARD', p: 'P1', t: '미작성 카드 목록에서 휴지통으로 카드를 지울 수 있다', pre: '아무도 쓰지 않은 카드 + 작성 중 카드', path: '/map',
+    steps: ['미작성 카드 목록을 연다', '작성 중 카드에 휴지통이 없는지 본다', '안 쓴 카드의 휴지통 > 삭제하기를 누른다'], exp: '작성 중 카드엔 휴지통이 없고, 지운 카드는 목록과 배너에서 바로 빠진다 (연인 화면에서도)' },
+  { id: 'CARD-05', m: 'CARD', p: 'P2', t: '카드 작성 화면 오른쪽 위 휴지통으로 카드를 지울 수 있다', pre: '저장한 카드(24시간 안) 또는 아무도 안 쓴 카드', path: '/map',
+    steps: ['카드 작성 화면의 휴지통을 누른다', '삭제하기를 누른다'], exp: '들어온 화면으로 돌아가고 카드가 사라진다. 누군가 쓰기 시작한 카드는 휴지통이 없다' },
+  { id: 'CARD-06', m: 'CARD', p: 'P2', t: '쓰다가 나가도 24시간 안에 다시 들어오면 이어서 쓸 수 있다', pre: '카드 작성 중', path: '/',
+    steps: ['소감을 쓰다가 뒤로가기를 누른다', '홈의 미작성 카드 배너로 다시 들어간다'], exp: '쓰던 소감이 남아 있다' },
+
+  { id: 'REC-01', m: 'REC', p: 'P1', t: '기록 지도에 저장한 카드가 마커로 보이고 목록형으로 바꿀 수 있다', pre: '저장한 카드 1개 이상', path: '/map',
+    steps: ['기록 지도를 연다', '마커를 누른다', '목록형으로 바꾼다'], exp: '마커 미리보기가 뜨고, 목록형에서도 같은 기록이 보인다' },
+  { id: 'REC-02', m: 'REC', p: 'P2', t: '검색 · 날짜로 기록을 찾을 수 있다', pre: '저장한 카드 1개 이상', path: '/map',
+    steps: ['검색창에 장소 · 제목을 입력한다', '달력에서 날짜를 고른다', '날짜 검색을 해제한다'], exp: '조건에 맞는 기록만 보이고, 해제하면 전체로 돌아온다' },
+  { id: 'REC-03', m: 'REC', p: 'P2', t: '24시간이 지난 기록은 상세에서 보고 지울 수 있다', pre: '저장한 지 24시간 지난 카드', path: '/map',
+    steps: ['기록을 눌러 상세를 연다', '휴지통 > 삭제하기를 누른다'], exp: '정보 · 사진 · 소감이 보이고, 삭제하면 기록 지도에서 빠진다' },
+  { id: 'REC-04', m: 'REC', p: 'P3', t: '기록을 공유 · 스토리로 내보낼 수 있다', pre: '저장한 카드', path: '/map',
+    steps: ['기록의 공유를 누른다', '링크 복사 · 스토리를 해 본다'], exp: '연인만 볼 수 있는 링크가 복사되고, 스토리 이미지가 만들어진다' },
+  { id: 'REC-05', m: 'REC', p: 'P3', t: '연인과 연결 전에는 기록 대신 초대 안내가 보인다', pre: '연결 안 된 계정', path: '/map',
+    steps: ['기록 지도를 연다'], exp: '"연인과 연결하면…" 안내와 연인 초대하기 버튼이 보인다' },
+
+  { id: 'MY-01', m: 'MY', p: 'P2', t: '보관함에서 플레이리스트 · 라디오 사연 · 찜을 보고 더 불러올 수 있다', pre: '보관함 데이터가 있는 계정', path: '/my',
+    steps: ['마이에서 각 보관함을 연다', '목록 끝까지 내려 본다'], exp: '항목이 보이고 끝에서 다음 목록을 더 불러온다' },
+  { id: 'MY-02', m: 'MY', p: 'P2', t: '알림을 읽으면 표시가 사라지고 해당 화면으로 간다', pre: '새 알림이 있는 계정', path: '/notifications',
+    steps: ['홈 종 아이콘의 빨간 점을 확인한다', '알림을 누른다'], exp: '해당 장소 · 카드로 이동하고, 홈의 새 알림 표시가 사라진다' },
+  { id: 'MY-03', m: 'MY', p: 'P3', t: '약관 · 개인정보 처리방침 · 오픈소스 · FAQ가 읽기 좋게 보인다', pre: '로그인 상태', path: '/my',
+    steps: ['마이 하단의 각 문서를 연다'], exp: '조항 제목 · 목록이 구분돼 보이고 FAQ는 펼쳐서 답을 볼 수 있다' },
+
+  { id: 'ETC-01', m: 'ETC', p: 'P2', t: '바텀시트 · 팝업을 열 때 화면이 위아래로 들썩이지 않는다', pre: '어떤 화면이든', path: '/map',
+    steps: ['미작성 카드 목록, 달력, 공유 시트, 삭제 확인 팝업을 열고 닫는다'], exp: '시트가 아래에서 올라오는 동안 뒤 화면이 움직이지 않는다' },
+  { id: 'ETC-02', m: 'ETC', p: 'P3', t: '작은 화면 · 큰 화면에서 레이아웃이 깨지지 않는다', pre: '360px · 390px · 430px 폭 기기', path: '/',
+    steps: ['홈 · 장소 상세 · 카드 작성 · 기록 지도를 차례로 연다'], exp: '글자가 잘리거나 가로 스크롤이 생기지 않고, 상단 노치 · 하단 홈 바에 가리지 않는다' },
+]
+
+
+const STATUS = { pass: '통과', fail: '실패', blocked: '차단', na: '해당 없음', todo: '미실행' }
+const SEVERITIES = ['Critical', 'Major', 'Minor', 'Trivial']
+const ME_KEY = 'bbus-qa-me'
+
+// 나 (이 브라우저의 테스터)
+let me = { id: '', name: '', device: '', browser: '' }
+try { me = { ...me, ...JSON.parse(localStorage.getItem(ME_KEY) || '{}') } } catch {}
+if (!me.id) me.id = crypto.randomUUID()
+const saveMe = () => { try { localStorage.setItem(ME_KEY, JSON.stringify(me)) } catch {} }
+saveMe()
+
+// 결과: rows[testerId][caseId] = row
+let rows = {}
+const names = {} // testerId -> 최신 이름
+const mine = () => rows[me.id] || {}
+const ui = { module: '', prio: '', status: '', sev: '', current: '' }
+
+const $ = (s) => document.querySelector(s)
+const el = (tag, attrs = {}, ...children) => {
+  const node = document.createElement(tag)
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v === undefined || v === null || v === false) continue
+    if (k === 'class') node.className = v
+    else if (k === 'text') node.textContent = v
+    else if (k.startsWith('on')) node.addEventListener(k.slice(2), v)
+    else node.setAttribute(k, v === true ? '' : v)
+  }
+  for (const c of children.flat()) if (c != null) node.append(c.nodeType ? c : document.createTextNode(String(c)))
+  return node
+}
+const setSaveState = (t) => { $('#save-state').textContent = t }
+
+// 불러오기 (15초마다, 탭이 보일 때만)
+async function load() {
+  try {
+    const res = await fetch(TABLE + '?select=*&limit=5000', { headers: HEADERS })
+    if (!res.ok) throw new Error(res.status)
+    const list = await res.json()
+    const next = {}
+    for (const r of list) {
+      ;(next[r.tester_id] ||= {})[r.case_id] = r
+      names[r.tester_id] = r.tester_name
+    }
+    // 저장 대기 중인 내 결과는 화면 값을 지킨다
+    for (const [cid, r] of Object.entries(mine())) if (pending.has(cid)) (next[me.id] ||= {})[cid] = r
+    rows = next
+    if (!document.activeElement || document.activeElement.tagName !== 'TEXTAREA') render()
+    else renderStats()
+  } catch {
+    setSaveState('결과를 불러오지 못했어요. 네트워크를 확인해 주세요.')
+  }
+}
+setInterval(() => { if (document.visibilityState === 'visible') load() }, 15000)
+
+// 저장: 케이스마다 입력이 멈춘 뒤 한 번, 같은 케이스는 하나씩
+const pending = new Map(), timers = new Map(), writing = new Set()
+function setResult(cid, patch) {
+  if (!me.name) { $('#tester-name').focus(); setSaveState('먼저 이름을 적어 주세요.'); return false }
+  const prev = mine()[cid] || {}
+  const next = { ...prev, ...patch, tester_id: me.id, tester_name: me.name, case_id: cid, device: me.device || null, browser: me.browser || null, updated_at: new Date().toISOString() }
+  if (next.status !== 'fail') { next.severity = null; next.actual = null }
+  ;(rows[me.id] ||= {})[cid] = next
+  names[me.id] = me.name
+  pending.set(cid, next)
+  clearTimeout(timers.get(cid))
+  setSaveState('저장 대기 중…')
+  timers.set(cid, setTimeout(() => flush(cid), 'status' in patch ? 0 : 700))
+  return true
+}
+async function flush(cid) {
+  if (writing.has(cid) || !pending.has(cid)) return
+  const row = pending.get(cid); pending.delete(cid); writing.add(cid)
+  const body = { tester_id: row.tester_id, tester_name: row.tester_name, case_id: row.case_id, status: row.status ?? null, severity: row.severity ?? null,
+    actual: row.actual ?? null, note: row.note ?? null, device: row.device, browser: row.browser, updated_at: row.updated_at }
+  setSaveState('저장 중…')
+  try {
+    const res = await fetch(TABLE + '?on_conflict=tester_id,case_id', { method: 'POST', headers: { ...HEADERS, Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(body) })
+    if (!res.ok) throw new Error(await res.text())
+    setSaveState('저장됨')
+  } catch {
+    if (!pending.has(cid)) pending.set(cid, row)
+    setSaveState('저장하지 못했어요. 잠시 후 다시 시도할게요.')
+    setTimeout(() => flush(cid), 3000)
+  } finally {
+    writing.delete(cid)
+    if (pending.has(cid)) flush(cid)
+  }
+}
+// 이름을 바꾸면 내 지난 결과의 이름도 바꾼다
+let renameTimer = null
+async function renameAll() {
+  if (!me.name || !Object.keys(mine()).length) return
+  try { await fetch(TABLE + '?tester_id=eq.' + me.id, { method: 'PATCH', headers: { ...HEADERS, Prefer: 'return=minimal' }, body: JSON.stringify({ tester_name: me.name }) }) } catch {}
+}
+
+// 지표
+const allEntries = () => Object.entries(rows).flatMap(([tid, byCase]) => Object.values(byCase).filter((r) => r.status && CASES.some((c) => c.id === r.case_id)).map((r) => ({ tid, r })))
+function renderStats() {
+  const m = mine()
+  const done = CASES.filter((c) => m[c.id]?.status).length
+  $('#st-mine').textContent = `${done} / ${CASES.length}`
+  const counts = { pass: 0, fail: 0, blocked: 0, na: 0 }
+  for (const c of CASES) { const s = m[c.id]?.status; if (s) counts[s]++ }
+  $('#bar-mine').replaceChildren(...['pass', 'fail', 'blocked', 'na'].map((k) => el('i', { style: `width:${(counts[k] / CASES.length) * 100}%;background:var(--${k === 'blocked' ? 'block' : k})`, title: `${STATUS[k]} ${counts[k]}` })))
+  const entries = allEntries()
+  const exec = entries.filter((e) => e.r.status === 'pass' || e.r.status === 'fail')
+  const passed = exec.filter((e) => e.r.status === 'pass').length
+  $('#st-rate').textContent = exec.length ? Math.round((passed / exec.length) * 100) + '%' : '-'
+  $('#st-rate-sub').textContent = exec.length ? `통과 ${passed} · 실패 ${exec.length - passed} (차단 · 해당 없음 제외)` : '실행된 결과 기준'
+  const defects = entries.filter((e) => e.r.status === 'fail')
+  $('#st-defects').textContent = defects.length
+  $('#tab-defects').textContent = defects.length
+  const by = (s) => defects.filter((d) => d.r.severity === s).length
+  $('#st-defects-sub').textContent = `Critical ${by('Critical')} · Major ${by('Major')} · Minor ${by('Minor')}`
+  $('#st-testers').textContent = Object.values(rows).filter((byCase) => Object.values(byCase).some((r) => r.status)).length
+  $('#name-note').hidden = !!me.name
+}
+const personChip = (tid, status) => {
+  const chip = el('span', { class: 'tester' }, el('span', { text: tid === me.id ? '나' : names[tid] || '테스터' }))
+  if (status) chip.append(el('span', { class: 'pill ' + status, text: STATUS[status] }))
+  return chip
+}
+
+// 미리보기: 같은 사이트라 iframe 안 주소를 읽을 수 있다
+const frame = $('#frame')
+const wide = () => matchMedia('(min-width: 901px)').matches
+function openInPreview(path, cid) {
+  ui.current = cid || ui.current
+  if (wide()) { frame.src = path; $('#frame-path').textContent = path; render() }
+  else window.open(path, 'bbus-site')
+}
+$('#frame-reload').addEventListener('click', () => { try { frame.contentWindow.location.reload() } catch { frame.src = frame.src } })
+setInterval(() => {
+  try { const loc = frame.contentWindow.location; const p = loc.pathname + loc.search; $('#frame-path').textContent = p; $('#frame-newtab').href = p } catch {}
+}, 800)
+function fitPhone() {
+  const box = $('#phone-box'); const phone = $('#phone')
+  const scale = Math.min(1, box.clientHeight / 844, box.clientWidth / 390)
+  phone.style.transform = `scale(${scale})`
+  phone.style.marginBottom = `${(scale - 1) * 844}px`
+  $('.preview').style.width = `${Math.round(390 * Math.max(scale, 0.55) + 32)}px`
+}
+addEventListener('resize', fitPhone)
+
+// 테스트 실행
+const open = new Set()
+function renderRun() {
+  $('#module-chips').replaceChildren(
+    el('button', { type: 'button', class: 'chip', 'aria-pressed': String(ui.module === ''), onclick: () => { ui.module = ''; render() } }, '전체'),
+    ...MODULES.map(([key, label]) => el('button', { type: 'button', class: 'chip', 'aria-pressed': String(ui.module === key), onclick: () => { ui.module = key; render() } }, label)),
+  )
+  const list = $('#case-list'); list.replaceChildren()
+  let shown = 0
+  for (const [key, label] of MODULES) {
+    if (ui.module && ui.module !== key) continue
+    const cases = CASES.filter((c) => c.m === key).filter((c) => !ui.prio || c.p === ui.prio)
+      .filter((c) => !ui.status || (mine()[c.id]?.status || 'todo') === ui.status)
+    if (!cases.length) continue
+    shown += cases.length
+    list.append(el('div', { class: 'module' }, el('h2', { text: `${label} · ${key}` }), ...cases.map(caseCard)))
+  }
+  if (!shown) list.append(el('div', { class: 'card empty', text: '조건에 맞는 케이스가 없어요. 필터를 바꿔 보세요.' }))
+}
+function caseCard(c) {
+  const r = mine()[c.id] || {}
+  const s = r.status || 'todo'
+  const details = el('details', { class: 'card case', id: 'case-' + c.id, 'data-current': String(ui.current === c.id) })
+  if (open.has(c.id)) details.open = true
+  details.addEventListener('toggle', () => { details.open ? open.add(c.id) : open.delete(c.id) })
+  details.append(el('summary', {}, el('span', { class: 'id', text: c.id }), el('span', { class: 'title', text: c.t }),
+    el('span', { class: 'meta' }, el('span', { class: 'prio ' + c.p, text: c.p }), el('span', { class: 'pill ' + s, text: STATUS[s] }))))
+  const spec = el('div', { class: 'spec' },
+    el('section', {}, el('h3', { text: '사전 조건' }), el('p', { style: 'margin:0', text: c.pre })),
+    el('section', {}, el('h3', { text: '테스트 단계' }), el('ol', {}, c.steps.map((st) => el('li', { text: st })))),
+    el('section', {}, el('h3', { text: '기대 결과' }), el('p', { style: 'margin:0', text: c.exp })),
+  )
+  if (c.known) spec.append(el('div', { class: 'known', text: '알려진 이슈 · ' + c.known }))
+  spec.append(el('button', { type: 'button', class: 'go', onclick: () => openInPreview(c.path, c.id) }, '화면 열기 ', el('span', { class: 'mono', text: c.path })))
+
+  const disabled = !me.name
+  const status = el('div', { class: 'status', role: 'group', 'aria-label': c.id + ' 결과' },
+    ...['pass', 'fail', 'blocked', 'na'].map((k) => el('button', { type: 'button', class: k, 'aria-pressed': String(s === k), disabled,
+      onclick: () => { if (setResult(c.id, { status: s === k ? null : k })) { if (k === 'fail') open.add(c.id); render() } } }, STATUS[k])))
+  const failBox = el('div', { class: 'fail-only' }); failBox.hidden = s !== 'fail'
+  const sevSel = el('select', { id: 'sev-' + c.id, disabled }, el('option', { value: '' }, '심각도 선택'), ...SEVERITIES.map((v) => el('option', { value: v, selected: r.severity === v }, v)))
+  sevSel.addEventListener('change', () => { setResult(c.id, { severity: sevSel.value || null }); renderStats() })
+  const act = el('textarea', { id: 'act-' + c.id, rows: '3', maxlength: '2000', placeholder: '실제로 어떻게 됐는지, 재현 순서를 적어 주세요', disabled })
+  act.value = r.actual || ''
+  act.addEventListener('input', () => setResult(c.id, { actual: act.value }))
+  failBox.append(el('label', { class: 'field', for: 'sev-' + c.id }, '심각도', sevSel), el('label', { class: 'field', for: 'act-' + c.id, style: 'margin-top:8px' }, '실제 결과 · 재현 방법', act))
+  const note = el('textarea', { id: 'note-' + c.id, rows: '2', maxlength: '1000', placeholder: '의견 · 개선 제안 (선택)', disabled })
+  note.value = r.note || ''
+  note.addEventListener('input', () => setResult(c.id, { note: note.value }))
+  const others = el('div', { class: 'others' })
+  for (const [tid, byCase] of Object.entries(rows)) if (tid !== me.id && byCase[c.id]?.status) others.append(personChip(tid, byCase[c.id].status))
+  const exec = el('div', { class: 'exec' }, el('h3', { text: '내 결과' }), status, failBox, el('label', { class: 'field', for: 'note-' + c.id }, '메모', note))
+  if (others.childNodes.length) exec.append(el('h3', { text: '다른 테스터' }), others)
+  details.append(el('div', { class: 'body' }, spec, exec))
+  return details
+}
+
+// 결과 요약
+function renderSummary() {
+  const tbody = $('#module-table'); tbody.replaceChildren()
+  for (const [key, label] of MODULES) {
+    const ids = CASES.filter((c) => c.m === key).map((c) => c.id)
+    const entries = allEntries().filter((e) => ids.includes(e.r.case_id))
+    const n = (s) => entries.filter((e) => e.r.status === s).length
+    const p = n('pass'), f = n('fail')
+    tbody.append(el('tr', {}, el('td', { text: `${label} (${key})` }), el('td', { class: 'num', text: ids.length }),
+      el('td', { class: 'num', text: ids.filter((id) => entries.some((e) => e.r.case_id === id)).length }),
+      el('td', { class: 'num', text: p }), el('td', { class: 'num', text: f }), el('td', { class: 'num', text: n('blocked') }),
+      el('td', { class: 'num', text: p + f ? Math.round((p / (p + f)) * 100) + '%' : '-' })))
+  }
+  const ct = $('#case-table'); ct.replaceChildren()
+  for (const c of CASES) {
+    const box = el('div', { class: 'others' })
+    for (const [tid, byCase] of Object.entries(rows)) if (byCase[c.id]?.status) box.append(personChip(tid, byCase[c.id].status))
+    if (!box.childNodes.length) box.append(el('span', { class: 'muted', text: '아직 결과 없음' }))
+    ct.append(el('tr', {}, el('td', { class: 'mono', text: c.id }), el('td', { text: c.t }), el('td', {}, el('span', { class: 'prio ' + c.p, text: c.p })), el('td', {}, box)))
+  }
+}
+
+// 결함 목록
+function renderDefects() {
+  const list = $('#defect-list'); list.replaceChildren()
+  const order = { Critical: 0, Major: 1, Minor: 2, Trivial: 3 }
+  const defects = allEntries().filter((e) => e.r.status === 'fail' && (!ui.sev || e.r.severity === ui.sev))
+    .sort((a, b) => (order[a.r.severity] ?? 4) - (order[b.r.severity] ?? 4) || String(b.r.updated_at).localeCompare(String(a.r.updated_at)))
+  if (!defects.length) { list.append(el('div', { class: 'card empty', text: ui.sev ? '이 심각도의 결함이 없어요.' : '아직 올라온 결함이 없어요. 실패로 표시하면 여기에 모여요.' })); return }
+  for (const d of defects) {
+    const c = CASES.find((x) => x.id === d.r.case_id)
+    const envText = [d.r.device, d.r.browser].filter(Boolean).join(' · ') || '환경 미기록'
+    const when = d.r.updated_at ? new Date(d.r.updated_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''
+    const card = el('article', { class: 'card defect' },
+      el('div', { class: 'head' }, el('span', { class: 'sev ' + (d.r.severity || 'Trivial'), text: d.r.severity || '심각도 미정' }),
+        el('a', { class: 'mono', href: '#run', onclick: () => { ui.module = ''; ui.status = ''; open.add(d.r.case_id); setTimeout(() => document.getElementById('case-' + d.r.case_id)?.scrollIntoView({ block: 'start' }), 0) }, text: d.r.case_id }),
+        el('b', { text: c ? c.t : d.r.case_id }),
+        c ? el('button', { type: 'button', class: 'icon-btn', onclick: () => openInPreview(c.path, c.id) }, '화면 열기') : null),
+      el('p', { text: d.r.actual || '(실제 결과 미작성)' }))
+    if (d.r.note) card.append(el('p', { class: 'muted', text: '메모 · ' + d.r.note }))
+    card.append(el('div', { class: 'env-line' }, personChip(d.tid), ` ${envText} · ${when}`))
+    list.append(card)
+  }
+}
+
+// 탭
+const VIEWS = ['run', 'summary', 'defects', 'guide']
+const currentView = () => { const h = location.hash.slice(1); return VIEWS.includes(h) ? h : 'run' }
+addEventListener('hashchange', () => render())
+function render() {
+  renderStats()
+  const v = currentView()
+  for (const name of VIEWS) $('#view-' + name).hidden = name !== v
+  document.querySelectorAll('.tabs a').forEach((a) => a.setAttribute('aria-current', a.dataset.view === v ? 'page' : 'false'))
+  if (v === 'run') renderRun()
+  if (v === 'summary') renderSummary()
+  if (v === 'defects') renderDefects()
+}
+
+// 이름 · 환경
+const nameInput = $('#tester-name')
+nameInput.value = me.name
+nameInput.addEventListener('input', () => {
+  const wasEmpty = !me.name
+  me.name = nameInput.value.trim().slice(0, 30); saveMe()
+  clearTimeout(renameTimer); renameTimer = setTimeout(renameAll, 800)
+  if (wasEmpty !== !me.name) render(); else renderStats()
+})
+for (const [id, key] of [['#env-device', 'device'], ['#env-browser', 'browser']]) {
+  const sel = $(id); sel.value = me[key] || ''
+  sel.addEventListener('change', () => { me[key] = sel.value; saveMe() })
+}
+$('#f-prio').addEventListener('change', (e) => { ui.prio = e.target.value; render() })
+$('#f-status').addEventListener('change', (e) => { ui.status = e.target.value; render() })
+$('#f-sev').addEventListener('change', (e) => { ui.sev = e.target.value; render() })
+
+fitPhone(); render(); load()
+</script>
+</body>
+</html>

@@ -25,7 +25,7 @@ describe('useRecommendations', () => {
     const { result } = await renderLoaded()
 
     expect(result.current.category).toBe('SEA')
-    expect(names(result.current.places)).toEqual(['시흥 오이도', '강릉 헌화로', '인천 을왕리 해수욕장'])
+    expect(names(result.current.places)).toEqual(['보령 대천 해수욕장', '시흥 오이도', '강릉 헌화로', '인천 을왕리 해수욕장'])
   })
 
   it('카테고리를 바꾸면 그 카테고리를 불러오고, 한 번 불러온 카테고리는 다시 요청하지 않는다', async () => {
@@ -37,7 +37,7 @@ describe('useRecommendations', () => {
     await waitFor(() => expect(names(result.current.places)).toEqual(['남양주 북한강 카페거리', '파주 헤이리 예술마을', '양평 서종 카페거리']))
 
     act(() => result.current.setCategory('SEA'))
-    expect(names(result.current.places)).toEqual(['시흥 오이도', '강릉 헌화로', '인천 을왕리 해수욕장'])
+    expect(names(result.current.places)).toEqual(['보령 대천 해수욕장', '시흥 오이도', '강릉 헌화로', '인천 을왕리 해수욕장'])
     expect(spy.mock.calls.map(([category]) => category)).toEqual(['SEA', 'NEARBY_CAFE'])
   })
 

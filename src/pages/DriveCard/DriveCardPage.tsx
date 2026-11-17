@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, ViewTransition } from 'react'
 import carIcon from '@/assets/icons/car-coral.svg'
 import pinIcon from '@/assets/icons/pin-coral-sm.svg'
 import playlistIcon from '@/assets/icons/playlist.svg'
@@ -10,9 +10,12 @@ import GlassIconButton from '@/components/GlassIconButton/GlassIconButton'
 import { isCardEditable, MAX_REFLECTION_LENGTH } from '@/hooks/useDriveCard'
 import type { Card } from '@/types/card'
 import type { Me } from '@/types/me'
+import { CARD_TITLE_SHARE, cardTitleTransitionName } from '@/utils/cardTransition'
 import { reflectionCharacters, type CharacterGender } from '@/utils/character'
 import { formatCardDate, formatDistance, formatDriveTime, formatPlaylistDuration } from '@/utils/cardFormat'
 import styles from './DriveCardPage.module.scss'
+import DeleteCardModal from '@/pages/RecordDetail/DeleteCardModal'
+import { DELETE_CARD_ERRORS, type DeleteOutcome } from '@/hooks/useCardDetail'
 import LeaveCardModal from './LeaveCardModal'
 import PhotoSection from './PhotoSection'
 
@@ -21,6 +24,9 @@ const CHARACTER_IMAGES: Record<CharacterGender, string> = { MALE: maleImage, FEM
 interface DriveCardPageProps {
   status: 'loading' | 'ready' | 'error' | 'unavailable'
   card: Card | null
+  // 미작성 카드 목록 · 배너에서 들어올 때 이미 아는 드라이브 · 카드 이름. 불러오는 동안에도 제목 자리에 먼저 그린다
+  driveId?: string
+  pendingTitle?: string | null
   // 소감은 내 칸 · 연인 칸. 캐릭터는 가입 때 고른 내 성별을 따른다 (운전자 · 동승자 구분 없음)
   myGender: Me['gender']
   // 소감 칸 이름은 각자의 닉네임 (모르면 나 · 연인)
@@ -42,12 +48,16 @@ interface DriveCardPageProps {
   onRemovePhoto: (mediaId: string) => void
   onSwapPhotos: () => void
   onSave: () => void
+  // 저장을 마친 카드를 지운다. 결과에 따라 화면을 나가거나 팝업에 안내를 띄운다
+  onDelete: () => Promise<DeleteOutcome>
 }
 
 // 드라이브 카드 작성 화면 (드라이브 도착 팝업 · 홈 미작성 배너에서 들어온다)
 function DriveCardPage({
   status,
   card,
+  driveId,
+  pendingTitle,
   myGender,
   myNickname,
   partnerNickname,
@@ -64,8 +74,31 @@ function DriveCardPage({
   onRemovePhoto,
   onSwapPhotos,
   onSave,
+  onDelete,
 }: DriveCardPageProps) {
   const [leaveOpen, setLeaveOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  if (status === 'loading' && driveId && pendingTitle) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.topBar}>
+          <GlassIconButton icon="back" aria-label="뒤로가기" onClick={onLeave} />
+        </div>
+        <main className={styles.content}>
+          <p className={styles.titleBar}>
+            <img src={carIcon} alt="" />
+            <CardTitle driveId={driveId} title={pendingTitle} />
+          </p>
+          <p className={styles.loadingHint} role="status">
+            카드를 불러오는 중이에요.
+          </p>
+        </main>
+      </div>
+    )
+  }
 
   if (status !== 'ready' || !card) {
     return (
@@ -96,6 +129,20 @@ function DriveCardPage({
   }
   const editable = card.canEdit && !busy
 
+  const closeDelete = () => {
+    setDeleteOpen(false)
+    setDeleteError(null)
+  }
+
+  const handleDelete = async () => {
+    setDeleting(true)
+    setDeleteError(null)
+    const outcome = await onDelete()
+    setDeleting(false)
+    if (outcome !== 'deleted') setDeleteError(DELETE_CARD_ERRORS[outcome])
+  }
+
+  const deletable = card.canDelete || (card.status === 'UNWRITTEN' && isCardEditable(card))
   const characters = reflectionCharacters(myGender)
   const slots = [
     { mine: true, name: myNickname || '나', character: characters.mine },
@@ -107,12 +154,21 @@ function DriveCardPage({
       <header className={styles.topBar}>
         <GlassIconButton icon="back" aria-label="뒤로가기" onClick={handleBack} />
         <h1 className={styles.date}>{formatCardDate(card.driveDate)}</h1>
+        {/* 저장을 마친 카드(기록 삭제)와 아무도 쓰지 않은 카드(폐기)는 지울 수 있다. 쓰기 시작한 카드는 지울 수 없다 */}
+        {deletable && (
+          <GlassIconButton
+            className={styles.delete}
+            icon="delete"
+            aria-label="카드 삭제"
+            onClick={() => setDeleteOpen(true)}
+          />
+        )}
       </header>
 
       <main className={styles.content}>
         <p className={styles.titleBar}>
           <img src={carIcon} alt="" />
-          <span className={styles.title}>{card.title}</span>
+          <CardTitle driveId={card.driveId} title={card.title} />
         </p>
 
         <p className={styles.region}>
@@ -207,6 +263,10 @@ function DriveCardPage({
         </Button>
       </main>
 
+      {deleteOpen && (
+        <DeleteCardModal deleting={deleting} error={deleteError} onConfirm={() => void handleDelete()} onClose={closeDelete} />
+      )}
+
       {leaveOpen && (
         <LeaveCardModal
           onLeave={() => {
@@ -217,6 +277,15 @@ function DriveCardPage({
         />
       )}
     </div>
+  )
+}
+
+// 카드 이름. 미작성 카드 목록에서 누른 카드 이름이 이 자리로 이어져 올라온다 (공유 요소 화면 전환)
+function CardTitle({ driveId, title }: { driveId: string; title: string }) {
+  return (
+    <ViewTransition name={cardTitleTransitionName(driveId)} share={CARD_TITLE_SHARE} default="none">
+      <span className={styles.title}>{title}</span>
+    </ViewTransition>
   )
 }
 

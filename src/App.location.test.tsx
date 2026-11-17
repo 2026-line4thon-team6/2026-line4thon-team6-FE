@@ -1,7 +1,7 @@
-import { act, render, screen, waitFor, within } from '@testing-library/react'
+import { act, configure, getConfig, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { resetMockCards } from '@/mocks/cards'
 import { resetMockCouple } from '@/mocks/couples'
 import { mockEndRequests, mockRecordedGps, resetMockDrives } from '@/mocks/drives'
@@ -13,6 +13,12 @@ import type { Position } from '@/utils/location'
 import App from './App'
 
 vi.mock('./components/DriveMap/DriveMap', () => ({ default: () => <div data-testid="drive-map" /> }))
+
+// 앱 전체를 띄우고 GPS 묶음 전송 · 도착 판정까지 기다리는 테스트라, CI처럼 바쁜 환경에서는 기본 대기(1초)를 넘길 때가 있다.
+// 동작은 그대로 두고 이 파일의 findBy · waitFor 대기만 늘린다
+const defaultAsyncTimeout = getConfig().asyncUtilTimeout
+beforeAll(() => configure({ asyncUtilTimeout: 5000 }))
+afterAll(() => configure({ asyncUtilTimeout: defaultAsyncTimeout }))
 
 const listeners = new Set<{ onChange: (position: Position) => void; onDenied?: () => void }>()
 const moveTo = (position: Position) => act(() => listeners.forEach(({ onChange }) => onChange(position)))
@@ -113,7 +119,7 @@ describe('목적지 도착', () => {
     moveTo(at({ latitude: 37.5, longitude: 127.0 }, 300, 3))
 
     await user.click(screen.getByRole('button', { name: '드라이브 마치기' }))
-    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: '드라이브 종료' }))
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: '기록하지 않고 나가기' }))
     expect(await screen.findByRole('button', { name: '드라이브 시작하기' })).toBeInTheDocument()
 
     const recorded = mockRecordedGps('drv_mock_1')

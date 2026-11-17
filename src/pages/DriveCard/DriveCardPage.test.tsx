@@ -32,6 +32,7 @@ function renderPage(props: Partial<Props> = {}) {
     onRemovePhoto: vi.fn(),
     onSwapPhotos: vi.fn(),
     onSave: vi.fn(),
+    onDelete: vi.fn().mockResolvedValue('deleted'),
   }
   render(
     <DriveCardPage
@@ -326,5 +327,89 @@ describe('불러오기 상태', () => {
     expect(screen.getByText('작성 기간이 지났거나 작성할 수 없는 카드예요.')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: '뒤로가기' }))
     expect(onLeave).toHaveBeenCalled()
+  })
+})
+
+// 저장을 마친 카드는 24시간 동안 이 화면에서 고치므로, 기록 상세처럼 여기서도 지울 수 있다 (서버는 완료한 카드만 삭제 허용)
+describe('카드 삭제', () => {
+  const COMPLETED: Card = { ...EMPTY_CARD, status: 'COMPLETED', canDelete: true }
+
+  it('저장을 마친 카드는 휴지통을 누르면 삭제 확인을 띄우고, 취소하면 닫는다', async () => {
+    const { user, onDelete } = renderPage({ card: COMPLETED })
+
+    await user.click(screen.getByRole('button', { name: '카드 삭제' }))
+    const dialog = screen.getByRole('dialog', { name: '카드를 삭제하시겠어요?' })
+    expect(within(dialog).getByText('삭제한 드라이브 기록은 복구할 수 없어요.')).toBeInTheDocument()
+
+    await user.click(within(dialog).getByRole('button', { name: '취소' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(onDelete).not.toHaveBeenCalled()
+  })
+
+  it('삭제하기를 누르면 삭제를 요청한다', async () => {
+    const { user, onDelete } = renderPage({ card: COMPLETED })
+
+    await user.click(screen.getByRole('button', { name: '카드 삭제' }))
+    await user.click(screen.getByRole('button', { name: '삭제하기' }))
+
+    expect(onDelete).toHaveBeenCalledTimes(1)
+  })
+
+  it('삭제에 실패하면 팝업에 안내를 보여 주고 다시 시도할 수 있다', async () => {
+    const onDelete = vi.fn().mockResolvedValueOnce('failed').mockResolvedValueOnce('conflict')
+    const { user } = renderPage({ card: COMPLETED, onDelete })
+
+    await user.click(screen.getByRole('button', { name: '카드 삭제' }))
+    await user.click(screen.getByRole('button', { name: '삭제하기' }))
+    expect(await within(screen.getByRole('dialog')).findByRole('alert')).toHaveTextContent('삭제하지 못했어요. 다시 시도해 주세요.')
+
+    await user.click(screen.getByRole('button', { name: '삭제하기' }))
+    expect(await within(screen.getByRole('dialog')).findByRole('alert')).toHaveTextContent(
+      '카드 내용이 바뀌었어요. 확인 후 다시 삭제해 주세요.',
+    )
+  })
+
+  // 아무도 쓰지 않은 카드는 서버의 폐기 API로 지울 수 있다. 누군가 쓰기 시작한(DRAFT) 카드는 지울 수 없다
+  it('아무도 쓰지 않은 카드는 저장 전이어도 휴지통을 보여 준다', () => {
+    renderPage({ card: { ...EMPTY_CARD, status: 'UNWRITTEN', canDelete: false } })
+
+    expect(screen.getByRole('button', { name: '카드 삭제' })).toBeInTheDocument()
+  })
+
+  it('누군가 쓰기 시작한 카드(DRAFT)는 휴지통을 숨긴다', () => {
+    renderPage({ card: { ...EMPTY_CARD, status: 'DRAFT', canDelete: false } })
+
+    expect(screen.queryByRole('button', { name: '카드 삭제' })).not.toBeInTheDocument()
+  })
+
+  it('그사이 연인이 쓰기 시작해 지우지 못하면 팝업에 알려 준다', async () => {
+    const { user } = renderPage({
+      card: { ...EMPTY_CARD, status: 'UNWRITTEN', canDelete: false },
+      onDelete: vi.fn().mockResolvedValue('started'),
+    })
+
+    await user.click(screen.getByRole('button', { name: '카드 삭제' }))
+    await user.click(screen.getByRole('button', { name: '삭제하기' }))
+
+    expect(await within(screen.getByRole('dialog')).findByRole('alert')).toHaveTextContent(
+      '연인이 카드를 쓰기 시작해서 지울 수 없어요.',
+    )
+  })
+})
+
+// 미작성 카드 목록에서 고른 카드는 이름을 알고 있어, 불러오는 동안에도 제목 자리에 먼저 그린다 (화면 전환이 끊기지 않게)
+describe('불러오는 중', () => {
+  it('목록에서 고른 카드 이름을 제목 자리에 먼저 보여 준다', () => {
+    renderPage({ status: 'loading', card: null, driveId: 'drv_1', pendingTitle: '바다 드라이브' })
+
+    expect(screen.getByText('바다 드라이브')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('카드를 불러오는 중이에요.')
+  })
+
+  it('이름을 모르면 불러오는 중 안내만 보여 준다', () => {
+    renderPage({ status: 'loading', card: null })
+
+    expect(screen.getByRole('status')).toHaveTextContent('카드를 불러오는 중이에요.')
+    expect(screen.queryByText('바다 드라이브')).not.toBeInTheDocument()
   })
 })

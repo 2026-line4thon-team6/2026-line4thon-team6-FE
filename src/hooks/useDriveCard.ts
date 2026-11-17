@@ -1,13 +1,17 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import {
   completeCard,
+  deleteCard,
+  discardCard,
   discardUploadedPhoto,
   fetchDriveCard,
+  peekDriveCard,
   saveCardDraft,
   saveMyReflection,
   uploadCardPhoto,
 } from '@/api/cards'
 import { ApiError } from '@/api/client'
+import type { DeleteOutcome } from '@/hooks/useCardDetail'
 import type { Card, Reflection } from '@/types/card'
 import { photoRefreshDelay } from '@/utils/photoRefresh'
 import { createIdempotencyKey } from '@/utils/share'
@@ -44,16 +48,20 @@ export const isCardEditable = (card: Card, now = Date.now()) => card.canEdit && 
 // 드라이브 카드 작성 화면의 데이터와 동작 (불러오기 · 사진 추가/삭제/순서 변경 · 소감 · 저장)
 // 드라이브가 바뀌면 부모에서 key={driveId}로 새로 마운트한다
 function useDriveCard(driveId: string, myUserId: string) {
-  const [state, setState] = useState<State>({ status: 'loading', card: null })
+  // 미작성 카드 목록에서 미리 받아 둔 카드가 있으면 불러오는 중 없이 바로 그 카드로 시작한다 (뒤에서 최신 카드로 바꾼다)
+  const [initial] = useState(() => peekDriveCard(driveId))
+  const [state, setState] = useState<State>(() =>
+    initial ? { status: 'ready', card: initial } : { status: 'loading', card: null },
+  )
   const [attempt, setAttempt] = useState(0)
-  const [myText, setMyTextState] = useState('')
+  const [myText, setMyTextState] = useState(() => (initial ? (findMine(initial, myUserId)?.text ?? '') : ''))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // 연속된 요청에서 최신 버전을 쓰기 위해 화면 상태와 별도로 들고 있는다
-  const cardRef = useRef<Card | null>(null)
+  const cardRef = useRef<Card | null>(initial)
   const completeKey = useRef<string | null>(null)
   // 타이머 · 화면 이탈 이벤트에서 지금 입력된 소감을 읽기 위해 들고 있는다
-  const textRef = useRef('')
+  const textRef = useRef(initial ? (findMine(initial, myUserId)?.text ?? '') : '')
   // 진행 중인 소감 초안 저장. 소감 버전이 꼬이지 않게 다음 저장은 앞의 저장이 끝난 뒤에 보낸다
   const draftTask = useRef<Promise<void>>(Promise.resolve())
   // 저장하기가 소감을 제출하는 동안에는 초안 저장을 보내지 않는다 (같은 버전으로 겹쳐 충돌하지 않게)
@@ -72,6 +80,9 @@ function useDriveCard(driveId: string, myUserId: string) {
         if (ignore) return
         cardRef.current = data
         setState({ status: 'ready', card: data })
+        // 미리 받아 둔 카드로 먼저 열려 그사이 소감을 쓰기 시작했으면, 쓰던 글은 덮지 않는다
+        const typed = initial !== null && textRef.current !== (findMine(initial, myUserId)?.text ?? '')
+        if (typed) return
         textRef.current = findMine(data, myUserId)?.text ?? ''
         setMyTextState(textRef.current)
       })
@@ -84,7 +95,7 @@ function useDriveCard(driveId: string, myUserId: string) {
     return () => {
       ignore = true
     }
-  }, [driveId, myUserId, attempt])
+  }, [driveId, myUserId, attempt, initial])
 
   // 사진 링크(10분 서명 URL)가 만료되기 전에 새 링크만 받아 바꾼다.
   // 쓰는 중인 내용을 덮지 않도록 카드 버전이 그대로면 사진 목록을, 상대가 바꿔 버전이 다르면
@@ -342,6 +353,28 @@ function useDriveCard(driveId: string, myUserId: string) {
   const canSave =
     !!card && card.canEdit && ((card.photos.length ?? 0) > 0 || myText.trim().length > 0 || partnerText !== null)
 
+  // 카드를 지운다. 저장을 마친 카드는 기록 삭제(DELETE), 아무도 쓰지 않은 카드는 폐기(POST discard)로 지운다.
+  // 이미 사라진 카드(404 · 기한이 지난 410)는 지워진 것으로 본다. 그사이 연인이 쓰기 시작했거나(started)
+  // 카드가 바뀌었으면(conflict) 최신 카드를 다시 불러온다. 지운 뒤에는 화면을 나가며 초안을 저장하지 않게 카드를 비워 둔다
+  const remove = async (): Promise<DeleteOutcome> => {
+    await draftTask.current
+    const card = cardRef.current
+    if (!card) return 'failed'
+    try {
+      if (card.status === 'COMPLETED') await deleteCard(card)
+      else await discardCard(card, createIdempotencyKey())
+    } catch (reason) {
+      if (reason instanceof ApiError && reason.status === 409) {
+        const { data } = await fetchDriveCard(driveId).catch(() => ({ data: card }))
+        setCard(data)
+        return reason.code === 'CARD_DRAFT_STARTED' ? 'started' : 'conflict'
+      }
+      if (!(reason instanceof ApiError && (reason.status === 404 || reason.status === 410))) return 'failed'
+    }
+    cardRef.current = null
+    return 'deleted'
+  }
+
   return {
     ...state,
     myText,
@@ -357,6 +390,7 @@ function useDriveCard(driveId: string, myUserId: string) {
     swapPhotos,
     save,
     saveDraft,
+    remove,
   }
 }
 

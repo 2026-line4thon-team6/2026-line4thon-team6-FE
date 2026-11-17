@@ -4,6 +4,7 @@ import {
   MOCK_CARD_DRIVE_ID,
   MOCK_ME_ID,
   mockCompleteCard,
+  mockDiscardCard,
   mockFetchDriveCard,
   mockFetchPendingCards,
   mockSaveCardDraft,
@@ -137,5 +138,40 @@ describe('미작성 카드 (GET /home 의 pendingCards)', () => {
     expect(data[0]).toMatchObject({ driveId: MOCK_CARD_DRIVE_ID, status: 'UNWRITTEN' })
     expect(data[0].remainingSeconds).toBeGreaterThan(0)
     expect(data[0].remainingSeconds).toBeLessThanOrEqual(24 * 3600)
+  })
+})
+
+// 백엔드 POST /cards/{cardId}/discard: 둘 다 아무것도 쓰지 않은 카드만 기한 안에 폐기한다
+describe('POST /cards/{cardId}/discard', () => {
+  it('미작성 카드는 폐기되고, 카드 화면 · 미작성 목록에서 사라진다', async () => {
+    const card = await loadCard()
+    expect(card.canDelete).toBe(false)
+
+    await mockDiscardCard(card.id, { expectedVersion: card.version })
+
+    await expect(mockFetchDriveCard(MOCK_CARD_DRIVE_ID)).rejects.toMatchObject({ status: 404 })
+    expect((await mockFetchPendingCards()).data).toEqual([])
+  })
+
+  it('누군가 쓰기 시작한 카드는 409 CARD_DRAFT_STARTED, 저장한 카드는 422, 버전이 다르면 409 VERSION_CONFLICT', async () => {
+    const card = await loadCard()
+    await expect(mockDiscardCard(card.id, { expectedVersion: card.version + 1 })).rejects.toMatchObject({
+      status: 409,
+      code: 'VERSION_CONFLICT',
+    })
+
+    await mockSaveMyReflection(card.id, { text: '쓰는 중', submitted: false, expectedVersion: 0 })
+    await expect(mockDiscardCard(card.id, { expectedVersion: card.version })).rejects.toMatchObject({
+      status: 409,
+      code: 'CARD_DRAFT_STARTED',
+    })
+
+    await mockSaveMyReflection(card.id, { text: '다 썼다', submitted: true, expectedVersion: 1 })
+    const completed = (await mockCompleteCard(card.id, { expectedVersion: card.version })).data
+    expect(completed.canDelete).toBe(true)
+    await expect(mockDiscardCard(card.id, { expectedVersion: completed.version })).rejects.toMatchObject({
+      status: 422,
+      code: 'CARD_ALREADY_COMPLETED',
+    })
   })
 })

@@ -54,13 +54,16 @@ function createCard(now = Date.now()): Card {
     editableUntil: new Date(now + 18 * HOUR).toISOString(),
     completedAt: null,
     canEdit: true,
-    canDelete: true,
+    // 서버처럼 저장을 마친 카드만 삭제할 수 있다 (미작성 카드는 폐기 API로 지운다)
+    canDelete: false,
     version: 1,
     driverUserId: PARTNER_ID,
   }
 }
 
 let card: Card = createCard()
+// 폐기한 카드는 카드 화면 · 미작성 목록에서 사라진다
+let discarded = false
 // 업로드했지만 아직 카드에 붙이지 않은 사진 (mediaId → 미리보기 주소)
 let uploads = new Map<string, string>()
 let uploadCount = 0
@@ -68,12 +71,13 @@ let uploadCount = 0
 // 테스트 · 스토리에서 처음 상태로 되돌린다
 export function resetMockCards() {
   card = createCard()
+  discarded = false
   uploads = new Map()
   uploadCount = 0
 }
 
 function getCard(cardId: string) {
-  if (cardId !== card.id) throw fail(404, 'NOT_FOUND', '카드를 찾을 수 없어요.')
+  if (cardId !== card.id || discarded) throw fail(404, 'NOT_FOUND', '카드를 찾을 수 없어요.')
   if (Date.now() >= Date.parse(card.editableUntil)) {
     card = { ...card, status: 'EXPIRED', canEdit: false }
     throw fail(410, 'CARD_EXPIRED', '작성 기간이 지난 카드예요.')
@@ -88,12 +92,12 @@ function checkVersion(expected: number, actual: number) {
 const copy = (value: Card): Card => structuredClone(value)
 
 export async function mockFetchDriveCard(driveId: string): Promise<ApiResponse<Card>> {
-  if (driveId !== card.driveId) throw fail(404, 'CARD_UNAVAILABLE', '이 드라이브는 카드를 만들 수 없어요.')
+  if (driveId !== card.driveId || discarded) throw fail(404, 'CARD_UNAVAILABLE', '이 드라이브는 카드를 만들 수 없어요.')
   return { data: copy(card), meta: meta() }
 }
 
 export async function mockFetchPendingCards(): Promise<ApiResponse<PendingCard[]>> {
-  const pending = card.status === 'UNWRITTEN' || card.status === 'DRAFT'
+  const pending = !discarded && (card.status === 'UNWRITTEN' || card.status === 'DRAFT')
   const remainingSeconds = Math.max(0, Math.floor((Date.parse(card.editableUntil) - Date.now()) / 1000))
   const data: PendingCard[] =
     pending && remainingSeconds > 0
@@ -188,9 +192,19 @@ export async function mockCompleteCard(cardId: string, body: { expectedVersion: 
     ...current,
     status: 'COMPLETED',
     completedAt: current.completedAt ?? new Date().toISOString(),
+    canDelete: true,
     version: current.version + 1,
   }
   return { data: copy(card), meta: meta() }
+}
+
+// POST /cards/{cardId}/discard — 둘 다 아무것도 쓰지 않은 카드만 폐기한다 (백엔드와 같은 규칙)
+export async function mockDiscardCard(cardId: string, body: { expectedVersion: number }): Promise<void> {
+  const current = getCard(cardId)
+  checkVersion(body.expectedVersion, current.version)
+  if (current.status === 'COMPLETED') throw fail(422, 'CARD_ALREADY_COMPLETED', '저장한 카드는 기록 삭제로 지워 주세요.')
+  if (current.status !== 'UNWRITTEN') throw fail(409, 'CARD_DRAFT_STARTED', '작성을 시작한 카드는 폐기할 수 없습니다.')
+  discarded = true
 }
 
 // ── 기록 상세 (GET /cards/{cardId} · DELETE /cards/{cardId}) ──

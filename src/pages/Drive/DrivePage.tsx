@@ -14,6 +14,7 @@ import useSnapSheet from '@/hooks/useSnapSheet'
 import { getDriveStats } from '@/utils/driveStats'
 import styles from './DrivePage.module.scss'
 import DriveConfirmModal from './DriveConfirmModal'
+import DriveEndModal from './DriveEndModal'
 import RestAreaAlert from './RestAreaAlert'
 
 type PanelTab = 'contents' | 'stamps'
@@ -28,6 +29,7 @@ interface DrivePageProps {
   drive: Drive | null
   currentCoordinate?: Coordinate | null
   routePath?: Coordinate[]
+  routeDurationSeconds?: number | null
   origin?: Coordinate | null
   destination?: Coordinate | null
   restAreas?: { id: string; name: string; coordinate: Coordinate }[]
@@ -40,7 +42,10 @@ interface DrivePageProps {
   onLocate?: () => void
   onPause?: () => void
   onResume?: () => void
-  onEnd?: () => Promise<boolean>
+  // 드라이브를 마친다. record: 카드 작성 화면으로 · skip: 카드를 남기지 않고 나간다 (Figma 1046:10305)
+  onEnd?: (next: 'record' | 'skip') => Promise<boolean>
+  // 출발 전 드라이브 그만하기 (POST /drives/{driveId}/cancel)
+  onCancel?: () => Promise<boolean>
   locationDenied?: boolean
   onLocationRetry?: () => Promise<boolean>
   contents?: ReactNode
@@ -71,6 +76,7 @@ function DrivePage({
   drive,
   currentCoordinate = null,
   routePath,
+  routeDurationSeconds = null,
   origin,
   destination,
   restAreas,
@@ -84,6 +90,7 @@ function DrivePage({
   onPause,
   onResume,
   onEnd,
+  onCancel,
   locationDenied = false,
   onLocationRetry,
   contents,
@@ -92,6 +99,8 @@ function DrivePage({
   const [renaming, setRenaming] = useState(false)
   const [confirmingEnd, setConfirmingEnd] = useState(false)
   const [ending, setEnding] = useState(false)
+  const [confirmingCancel, setConfirmingCancel] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
   const [tab, setTab] = useState<PanelTab>('contents')
   const [locateKey, setLocateKey] = useState(0)
   const [toast, setToast] = useState<string | null>(null)
@@ -128,18 +137,28 @@ function DrivePage({
 
   const driving = drive?.status === 'ACTIVE' || drive?.status === 'PAUSED'
   const paused = drive?.status === 'PAUSED'
+  const preparing = drive?.status === 'PREPARING'
   const askLocation = locationDenied && drive?.status === 'ACTIVE' && !locationDismissed && !confirmingEnd
 
   const handleRename = async (title: string) => {
     if (await onRename(title)) setRenaming(false)
   }
 
-  const handleEnd = async () => {
+  const handleEnd = async (next: 'record' | 'skip') => {
     if (!onEnd) return
     setEnding(true)
-    const ended = await onEnd()
+    const ended = await onEnd(next)
     setEnding(false)
     if (ended) setConfirmingEnd(false)
+  }
+
+  const handleCancel = async () => {
+    if (!onCancel) return
+    setCancelling(true)
+    const cancelled = await onCancel()
+    setCancelling(false)
+    setConfirmingCancel(false)
+    if (!cancelled) setToast('드라이브를 그만하지 못했어요. 다시 시도해 주세요.')
   }
 
   const locate = () => {
@@ -171,6 +190,7 @@ function DrivePage({
           onRestAreaClick={onRestAreaClick}
           fitPadding={FIT_PADDING}
           locateKey={locateKey}
+          follow={driving}
         />
       </div>
 
@@ -184,7 +204,13 @@ function DrivePage({
       )}
 
       <header className={styles.header}>
-        <GlassIconButton icon="back" aria-label="뒤로 가기" onClick={onBack} />
+        {!driving && (
+          <GlassIconButton
+            icon="back"
+            aria-label="뒤로 가기"
+            onClick={preparing && onCancel ? () => setConfirmingCancel(true) : onBack}
+          />
+        )}
         {drive && <DriveTitleBar className={styles.title} title={drive.title} onClick={() => setRenaming(true)} />}
         <RouteSearchButton className={styles.routeButton} onClick={onRouteSearch} />
       </header>
@@ -207,6 +233,9 @@ function DrivePage({
               />
             )}
             <div className={styles.controls}>
+              {preparing && onCancel && (
+                <GlassIconButton icon="exit" aria-label="드라이브 준비 그만하기" onClick={() => setConfirmingCancel(true)} />
+              )}
               {driving && (
                 <>
                   <GlassIconButton icon="exit" aria-label="드라이브 마치기" onClick={() => setConfirmingEnd(true)} />
@@ -220,7 +249,7 @@ function DrivePage({
               <GlassIconButton icon="locate" aria-label="현재 위치로 이동" onClick={locate} />
             </div>
           </div>
-          <DriveStats items={getDriveStats(drive, runningSeconds)} />
+          <DriveStats items={getDriveStats(drive, runningSeconds, routeDurationSeconds)} />
         </div>
 
         <section
@@ -266,16 +295,26 @@ function DrivePage({
       )}
 
       {confirmingEnd && (
-        <DriveConfirmModal
-          title="드라이브를 마치시겠어요?"
-          description="조금 더 달리고 싶다면 경로를 수정해 보세요."
-          cancelLabel="경로 수정"
-          confirmLabel="드라이브 종료"
-          cancelWidth={117}
-          confirmDisabled={ending}
-          onCancel={editRoute}
-          onConfirm={() => void handleEnd()}
+        <DriveEndModal
+          busy={ending}
+          onRecord={() => void handleEnd('record')}
+          onSkip={() => void handleEnd('skip')}
+          onEditRoute={editRoute}
           onClose={() => setConfirmingEnd(false)}
+        />
+      )}
+
+      {confirmingCancel && (
+        <DriveConfirmModal
+          title="드라이브 준비를 그만할까요?"
+          description="준비 중에 한 게임 기록도 함께 사라져요."
+          cancelLabel="계속 준비하기"
+          confirmLabel="그만하기"
+          cancelWidth={136}
+          confirmDisabled={cancelling}
+          onCancel={() => setConfirmingCancel(false)}
+          onConfirm={() => void handleCancel()}
+          onClose={() => setConfirmingCancel(false)}
         />
       )}
 

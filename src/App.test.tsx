@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { logout } from '@/api/auth'
+import { ApiError } from '@/api/client'
+import * as drivesApi from '@/api/drives'
 import { prepareDrive } from '@/api/drives'
 import {
   MOCK_PARTNER_INVITE_CODE,
@@ -974,15 +976,27 @@ describe('드라이브 주행 · 마치기', () => {
     expect(screen.queryByText('기록이 중단되었어요.')).not.toBeInTheDocument()
   })
 
-  it('나가기 → 드라이브 종료를 누르면 도착 팝업 없이 홈으로 간다', async () => {
+  // Figma 1046:10305: 마치기 팝업은 '기록하러 가기'(카드 작성) · '기록하지 않고 나가기'(카드 폐기 후 홈)로 나뉜다
+  it('나가기 → 기록하지 않고 나가기를 누르면 도착 팝업 없이 홈으로 간다', async () => {
     const user = await startDriving()
 
     await user.click(screen.getByRole('button', { name: '드라이브 마치기' }))
     const confirm = await screen.findByRole('dialog', { name: '드라이브를 마치시겠어요?' })
-    await user.click(within(confirm).getByRole('button', { name: '드라이브 종료' }))
+    await user.click(within(confirm).getByRole('button', { name: '기록하지 않고 나가기' }))
 
     expect(await screen.findByRole('button', { name: '드라이브 시작하기' })).toBeInTheDocument()
     expect(screen.queryByRole('dialog', { name: /목적지에 도착했어요!/ })).not.toBeInTheDocument()
+  })
+
+  it('나가기 → 기록하러 가기를 누르면 드라이브를 마치고 그 드라이브의 카드 작성 화면으로 간다', async () => {
+    const user = await startDriving()
+
+    await user.click(screen.getByRole('button', { name: '드라이브 마치기' }))
+    const confirm = await screen.findByRole('dialog', { name: '드라이브를 마치시겠어요?' })
+    await user.click(within(confirm).getByRole('button', { name: '기록하러 가기' }))
+
+    expect(await screen.findByText('작성 기간이 지났거나 작성할 수 없는 카드예요.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '드라이브 시작하기' })).not.toBeInTheDocument()
   })
 
   it('주행 중 경로 탐색을 누르면 정해 둔 목적지로 검색한 결과를 보여 준다', async () => {
@@ -1093,12 +1107,60 @@ describe('드라이브 주행 · 마치기', () => {
     expect(screen.queryByRole('button', { name: /DJ 플레이리스트/ })).not.toBeInTheDocument()
   })
 
-  it('드라이브 화면의 뒤로 가기를 누르면 홈으로 간다', async () => {
-    const user = await startDriving()
+  async function openPreparedDrive() {
+    const user = renderApp()
+    await startDriveFromHome(user)
+    await user.click(await screen.findByRole('button', { name: '붕붕! 붕붕이가 출발' }))
+    await screen.findByRole('button', { name: '경로 탐색' })
+    return user
+  }
+
+  it('출발 전 뒤로 가기는 그만할지 물어보고, 계속 준비하기를 누르면 그대로 남는다', async () => {
+    const user = await openPreparedDrive()
 
     await user.click(screen.getByRole('button', { name: '뒤로 가기' }))
+    const dialog = await screen.findByRole('dialog', { name: '드라이브 준비를 그만할까요?' })
+    await user.click(within(dialog).getByRole('button', { name: '계속 준비하기' }))
 
-    expect(await screen.findByRole('button', { name: /기록 중인 드라이브가 있어요/ })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '경로 탐색' })).toBeInTheDocument()
+  })
+
+  it('출발 전 나가기 아이콘으로 그만하면 드라이브를 취소하고 홈으로 간다', async () => {
+    const user = await openPreparedDrive()
+
+    await user.click(screen.getByRole('button', { name: '드라이브 준비 그만하기' }))
+    const dialog = await screen.findByRole('dialog', { name: '드라이브 준비를 그만할까요?' })
+    await user.click(within(dialog).getByRole('button', { name: '그만하기' }))
+
+    expect(await screen.findByRole('button', { name: '드라이브 시작하기' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /준비 중인 드라이브가 있어요/ })).not.toBeInTheDocument()
+  })
+
+  it('만든 사람이 아니라 출발이 막히면 경로 설정 화면에 남아 알린다', async () => {
+    const user = await openPreparedDrive()
+    vi.spyOn(drivesApi, 'startDrive').mockRejectedValueOnce(
+      new ApiError(403, {
+        error: { code: 'PERMISSION_DENIED', message: '', details: [], retryable: false },
+        meta: { requestId: 'r', serverTime: '' },
+      }),
+    )
+
+    await user.click(screen.getByRole('button', { name: '경로 탐색' }))
+    await user.type(await screen.findByRole('textbox', { name: '도착지' }), '한강 공원')
+    const results = await screen.findByRole('list', { name: '검색 결과' })
+    await user.click(within(results).getByRole('button', { name: /서울 반포 한강공원/ }))
+    await user.click(await screen.findByRole('button', { name: '경로 설정하기' }))
+
+    expect(await screen.findByText(/님만 출발할 수 있어요\./)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '경로 설정하기' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '드라이브 마치기' })).not.toBeInTheDocument()
+  })
+
+  it('주행을 시작하면 뒤로 가기가 사라진다', async () => {
+    await startDriving()
+
+    expect(screen.queryByRole('button', { name: '뒤로 가기' })).not.toBeInTheDocument()
   })
 
   it('라디오: 카드 → 사연 입력 → 보내기 → 재생 중 → 중단하기', async () => {
@@ -1209,11 +1271,11 @@ describe('드라이브 주행 · 마치기', () => {
     expect(await screen.findByRole('button', { name: /라디오\s*재생 중/ })).toBeInTheDocument()
   })
 
-  it('드라이브 마치기 팝업에서 경로 수정을 누르면 경로 설정 화면으로 간다', async () => {
+  it('드라이브 마치기 팝업에서 경로 수정하기를 누르면 경로 설정 화면으로 간다', async () => {
     const user = await startDriving()
 
     await user.click(screen.getByRole('button', { name: '드라이브 마치기' }))
-    await user.click(await screen.findByRole('button', { name: '경로 수정' }))
+    await user.click(await screen.findByRole('button', { name: '경로 수정하기' }))
 
     expect(await screen.findByRole('heading', { level: 1, name: '경로 설정' })).toBeInTheDocument()
   })

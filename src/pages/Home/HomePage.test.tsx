@@ -190,7 +190,7 @@ describe('스마트 탐색 & 큐레이션', () => {
   it('처음에는 선택된 카테고리의 장소만 표시한다', () => {
     renderHome()
 
-    expect(spotNames()).toEqual(['시흥 오이도', '강릉 헌화로', '인천 을왕리 해수욕장'])
+    expect(spotNames()).toEqual(['보령 대천 해수욕장', '시흥 오이도', '강릉 헌화로', '인천 을왕리 해수욕장'])
   })
 
   it('칩을 탭하면 그 칩이 강조되고 해당 테마의 장소로 목록이 바뀐다', async () => {
@@ -205,12 +205,12 @@ describe('스마트 탐색 & 큐레이션', () => {
   })
 
   it.each([
-    ['바다', ['시흥 오이도', '강릉 헌화로', '인천 을왕리 해수욕장']],
+    ['바다', ['보령 대천 해수욕장', '시흥 오이도', '강릉 헌화로', '인천 을왕리 해수욕장']],
     ['야경', ['서울 남산 순환도로', '서울 반포한강공원', '인천 송도 센트럴파크']],
     ['근교 카페', ['남양주 북한강 카페거리', '파주 헤이리 예술마을', '양평 서종 카페거리']],
     ['자연', ['양평 두물머리', '가평 청평호반', '포천 산정호수']],
     ['차박', ['태안 몽산포 캠핑장', '가평 자라섬 캠핑장', '포천 백로주 캠핑장']],
-  ])('목 데이터: %s 카테고리의 장소 3곳을 사진과 함께 표시한다', async (category, expected) => {
+  ])('목 데이터: %s 카테고리의 추천 장소를 사진과 함께 표시한다', async (category, expected) => {
     const { user } = renderHome()
 
     await user.click(within(curation()).getByRole('button', { name: category }))
@@ -242,7 +242,7 @@ describe('스마트 탐색 & 큐레이션', () => {
   it('장소 카드에 장소명, 위치와 예상 소요 시간, 해시태그를 표시한다', () => {
     renderHome()
 
-    const card = within(curation()).getAllByRole('article')[0]
+    const card = within(curation()).getAllByRole('article')[1]
     expect(within(card).getByRole('heading', { name: '시흥 오이도' })).toBeInTheDocument()
     expect(card).toHaveTextContent('경기 시흥시 · 약 1시간')
     expect(card).toHaveTextContent('#일몰')
@@ -253,7 +253,7 @@ describe('스마트 탐색 & 큐레이션', () => {
     renderHome({ places: [{ ...MOCK_PLACES[0], estimatedDurationSeconds: null }] })
 
     const card = within(curation()).getByRole('article')
-    expect(card).toHaveTextContent('경기 시흥시')
+    expect(card).toHaveTextContent('충남 보령시')
     expect(card).not.toHaveTextContent('·')
   })
 
@@ -267,13 +267,13 @@ describe('스마트 탐색 & 큐레이션', () => {
 
   it('하트를 탭하면 찜 상태 변경을 요청하고 상세로는 이동하지 않는다', async () => {
     const { user, onLikeToggle, onSpotClick } = renderHome()
-    const [liked, notLiked] = within(curation()).getAllByRole('article')
+    const [notLiked, liked] = within(curation()).getAllByRole('article')
 
     await user.click(within(liked).getByRole('button', { name: '좋아요 취소' }))
     await user.click(within(notLiked).getByRole('button', { name: '좋아요' }))
 
     expect(onLikeToggle).toHaveBeenNthCalledWith(1, 'plc_oido', false)
-    expect(onLikeToggle).toHaveBeenNthCalledWith(2, 'plc_heonhwaro', true)
+    expect(onLikeToggle).toHaveBeenNthCalledWith(2, 'plc_daecheon', true)
     expect(onSpotClick).not.toHaveBeenCalled()
   })
 

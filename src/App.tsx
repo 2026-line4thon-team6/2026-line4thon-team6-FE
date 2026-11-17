@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, ViewTransition } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 import { fetchCardShare } from '@/api/cards'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
@@ -10,6 +10,7 @@ import useFavorites from '@/hooks/useFavorites'
 import useLegalDocument from '@/hooks/useLegalDocument'
 import useMyCouple from '@/hooks/useMyCouple'
 import CardPromptModal from '@/components/CardPromptModal/CardPromptModal'
+import PendingCardSheet from '@/components/PendingCardSheet/PendingCardSheet'
 import DriveNameSheet from '@/components/DriveNameSheet/DriveNameSheet'
 import Toast from '@/components/Toast/Toast'
 import useCardDetail from '@/hooks/useCardDetail'
@@ -26,6 +27,9 @@ import useGpsRecorder from '@/hooks/useGpsRecorder'
 import useDriveCard from '@/hooks/useDriveCard'
 import useNotifications from '@/hooks/useNotifications'
 import useHome from '@/hooks/useHome'
+import useGoCard, { type CardNavigationState } from '@/hooks/useGoCard'
+import usePendingCardDiscard from '@/hooks/usePendingCardDiscard'
+import usePendingCardPicker from '@/hooks/usePendingCardPicker'
 import usePendingCards from '@/hooks/usePendingCards'
 import useRecommendations from '@/hooks/useRecommendations'
 import usePlaceDetail from '@/hooks/usePlaceDetail'
@@ -103,6 +107,7 @@ import type { LegalDocumentType } from '@/types/legal'
 import type { Notification } from '@/types/notification'
 import type { RecordSummary } from '@/types/record'
 import type { Me } from '@/types/me'
+import { CARD_PAGE_ENTER, PAGE_RECEDE } from '@/utils/cardTransition'
 import { todayInSeoul } from '@/utils/calendar'
 import { formatDate } from '@/utils/formatDate'
 import { distanceMeters } from '@/utils/location'
@@ -245,7 +250,7 @@ const NEAR_DESTINATION_METERS = 300
 function DriveRoute({ myUserId }: { myUserId: string }) {
   const navigate = useNavigate()
   const location = useLocation()
-  const { status, drive, rename, pause, resume, end, sync } = useDrive()
+  const { status, drive, rename, pause, resume, end, cancel, sync } = useDrive()
   const { playing: radioPlaying } = useRadioPlayer()
   const drivePlaylist = useDrivePlaylist(drive)
   const map = useDriveMap(drive?.routeId ?? null)
@@ -262,6 +267,9 @@ function DriveRoute({ myUserId }: { myUserId: string }) {
   const { alert: restAreaAlert, dismiss: dismissRestAreaAlert } = useRestAreaAlert(restAreas, map.current, driving)
   const restAreaDetail = useRestAreaDetail()
   const [arrivedDriveId, setArrivedDriveId] = useState<string | null>(null)
+  const goCard = useGoCard()
+  // 기록하지 않고 나가면 방금 생긴 빈 카드를 폐기한다 (실패해도 24시간 뒤 서버가 정리하므로 나가기는 막지 않는다)
+  const discardEndedCard = usePendingCardDiscard(() => {})
 
   useArrival({
     active: drive?.status === 'ACTIVE',
@@ -276,10 +284,18 @@ function DriveRoute({ myUserId }: { myUserId: string }) {
   if (status === 'empty') return <Navigate to="/" replace />
 
   // TODO: 실패 토스트
-  const handleEnd = async () => {
+  // 마치기 팝업(Figma 1046:10305): 기록하러 가기 → 그 드라이브의 카드 작성 화면(아래에서 올라오는 전환),
+  // 기록하지 않고 나가기 → 드라이브가 끝나며 생긴 빈 카드를 폐기하고 홈으로 (미작성 카드 배너에 남지 않게)
+  const handleEnd = async (next: 'record' | 'skip') => {
     const ended = await end('USER_ENDED', await gps.flush())
-    if (ended) navigate('/', { replace: true })
-    return ended !== null
+    if (!ended) return false
+    if (next === 'record') {
+      goCard(ended.id, ended.title, { replace: true })
+    } else {
+      await discardEndedCard(ended.id)
+      navigate('/', { replace: true })
+    }
+    return true
   }
 
   return (
@@ -289,6 +305,7 @@ function DriveRoute({ myUserId }: { myUserId: string }) {
         drive={drive}
         currentCoordinate={map.current}
         routePath={map.path}
+        routeDurationSeconds={map.routeDurationSeconds}
         origin={map.origin}
         destination={map.destination}
         restAreas={restAreas}
@@ -306,6 +323,11 @@ function DriveRoute({ myUserId }: { myUserId: string }) {
         onPause={() => void pause()}
         onResume={() => void resume()}
         onEnd={handleEnd}
+        onCancel={async () => {
+          const cancelled = await cancel()
+          if (cancelled) navigate('/', { replace: true })
+          return cancelled
+        }}
         locationDenied={map.locationDenied}
         onLocationRetry={map.retryLocation}
         // TODO: 게임 화면 연결
@@ -588,7 +610,7 @@ function RadioStoriesDrawerRoute({
   )
 }
 
-function RouteSettingRoute() {
+function RouteSettingRoute({ partnerNickname }: { partnerNickname: string | null }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { status, drive, setRoute, start } = useDrive()
@@ -597,6 +619,7 @@ function RouteSettingRoute() {
   const routeRestAreas = useRouteRestAreas(routeSetting.route?.polyline ?? null)
   const restAreaDetail = useRestAreaDetail()
   const [confirming, setConfirming] = useState(false)
+  const [toast, setToast] = useState<string | null>(null)
 
   if (status === 'empty') return <Navigate to="/" replace />
 
@@ -606,10 +629,18 @@ function RouteSettingRoute() {
     if (!routeSetting.route) return
     setConfirming(true)
     const saved = await setRoute(routeSetting.route.id)
-    if (saved && drive?.status === 'PREPARING') await start()
+    // 출발까지 성공해야 드라이브 화면으로 돌아간다. 실패하면 경로 설정 화면에 남아 이유를 알린다
+    const started = saved && drive?.status === 'PREPARING' ? await start() : 'started'
     setConfirming(false)
-    // TODO: 실패 토스트
-    if (saved) backToDrive()
+    if (!saved) return setToast('경로를 저장하지 못했어요. 다시 시도해 주세요.')
+    if (started === 'started') return backToDrive()
+    setToast(
+      started === 'RECORDER_ONLY'
+        ? `드라이브를 만든 ${partnerNickname ?? '연인'}님만 출발할 수 있어요.`
+        : started === 'NO_LOCATION'
+          ? '현재 위치를 확인할 수 없어 출발하지 못했어요.'
+          : '출발하지 못했어요. 다시 시도해 주세요.',
+    )
   }
 
   return (
@@ -634,6 +665,7 @@ function RouteSettingRoute() {
         onClose={backToDrive}
       />
       {restAreaDetail.detail && <RestAreaDetailModal detail={restAreaDetail.detail} onClose={restAreaDetail.close} />}
+      {toast && <Toast message={toast} onDone={() => setToast(null)} />}
     </>
   )
 }
@@ -653,6 +685,13 @@ function RecordMapRoute({ pendingCards, pendingReceivedAt, onEnter }: RecordMapR
   const navigate = useNavigate()
   const goTab = useTabNavigate()
   const pendingCard = usePendingCards(pendingCards, pendingReceivedAt)
+  // 카드 작성 화면이 아래에서 올라오고, 누른 카드 이름이 제목 자리로 이어진다
+  const goCard = useGoCard()
+  const pendingPicker = usePendingCardPicker(pendingCard, (driveId) =>
+    goCard(driveId, pendingCard?.cards.find((card) => card.driveId === driveId)?.title),
+  )
+  // 목록에서 카드를 지우면 홈 정보(미작성 카드 목록)를 다시 받는다
+  const discardPending = usePendingCardDiscard(onEnter)
 
   // 처음 마운트 때만 부른다 (onEnter는 렌더마다 새 함수라 의존성에 넣지 않는다)
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -715,8 +754,9 @@ function RecordMapRoute({ pendingCards, pendingReceivedAt, onEnter }: RecordMapR
     if (list.status === 'error') list.retry()
   }
 
+  // 카드 작성 화면으로 갈 때는 이 화면이 살짝 물러나며 어두워진다
   return (
-    <>
+    <ViewTransition exit={PAGE_RECEDE} default="none">
       <RecordMapPage
         view={view}
         totalCount={list.totalCount}
@@ -738,7 +778,7 @@ function RecordMapRoute({ pendingCards, pendingReceivedAt, onEnter }: RecordMapR
         onCardClick={(card) => navigate(`/cards/${encodeURIComponent(card.cardId)}`)}
         onShare={handleShare}
         pendingCard={pendingCard}
-        onPendingCardClick={(driveId) => navigate(cardPath(driveId))}
+        onPendingCardClick={pendingPicker.open}
       />
       {sharing && (
         <RecordShareSheet
@@ -757,7 +797,15 @@ function RecordMapRoute({ pendingCards, pendingReceivedAt, onEnter }: RecordMapR
           onClose={() => setCalendarOpen(false)}
         />
       )}
-    </>
+      {pendingPicker.sheetOpen && pendingCard && (
+        <PendingCardSheet
+          cards={pendingCard.cards}
+          onSelect={pendingPicker.select}
+          onClose={pendingPicker.close}
+          onDiscard={discardPending}
+        />
+      )}
+    </ViewTransition>
   )
 }
 
@@ -1064,13 +1112,20 @@ function HomeRoute({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => onEnter(), [])
 
+  // 카드 작성 화면이 아래에서 올라오고, 목록에서 누른 카드 이름은 제목 자리로 이어진다
+  const goCardWithTransition = useGoCard()
   const goCard = (driveId: string) => {
     onPendingPromptSeen()
-    navigate(cardPath(driveId))
+    goCardWithTransition(driveId, summary?.cards.find((card) => card.driveId === driveId)?.title)
   }
+  // 미작성 카드가 2개 이상이면 배너를 눌렀을 때 목록에서 고르게 한다
+  const pendingPicker = usePendingCardPicker(summary, goCard)
+  // 목록에서 카드를 지우면 홈 정보(미작성 카드 목록)를 다시 받는다
+  const discardPending = usePendingCardDiscard(onEnter)
 
+  // 카드 작성 화면으로 갈 때는 이 화면이 살짝 물러나며 어두워진다
   return (
-    <>
+    <ViewTransition exit={PAGE_RECEDE} default="none">
       <HomePage
         timeOfDay={timeOfDay}
         home={home}
@@ -1087,7 +1142,7 @@ function HomeRoute({
         onLikeToggle={onLikeToggle}
         onStartDrive={() => void drive.start()}
         onTabChange={goTab}
-        onPendingCardClick={goCard}
+        onPendingCardClick={pendingPicker.open}
       />
       <DriveNameSheet
         open={drive.sheetOpen}
@@ -1096,6 +1151,14 @@ function HomeRoute({
         onSubmit={(name) => void drive.submit(name)}
         onClose={drive.closeSheet}
       />
+      {pendingPicker.sheetOpen && summary && (
+        <PendingCardSheet
+          cards={summary.cards}
+          onSelect={pendingPicker.select}
+          onClose={pendingPicker.close}
+          onDiscard={discardPending}
+        />
+      )}
       {summary && !pendingPromptSeen && (
         <CardPromptModal
           variant="pending"
@@ -1117,7 +1180,7 @@ function HomeRoute({
           />
         )
       )}
-    </>
+    </ViewTransition>
   )
 }
 
@@ -1133,7 +1196,11 @@ interface DriveCardRouteProps {
 function DriveCardRoute({ driveId, userId, myNickname, partnerNickname, myGender }: DriveCardRouteProps) {
   const navigate = useNavigate()
   const goBack = useGoBack()
-  const { setMyText, save, saveDraft, retry, addPhotos, removePhoto, swapPhotos, ...card } = useDriveCard(
+  // 카드를 지우면 들어온 화면(기록 지도 · 홈)으로 돌아간다. 주소로 바로 열었으면 기록 지도로 간다
+  const goBackAfterDelete = useGoBack('/map')
+  // 미작성 카드 목록 · 배너에서 들어오면 카드 이름을 알고 있어, 불러오는 동안에도 제목을 먼저 그린다
+  const pendingTitle = (useLocation().state as CardNavigationState | null)?.cardTitle ?? null
+  const { setMyText, save, saveDraft, retry, addPhotos, removePhoto, swapPhotos, remove, ...card } = useDriveCard(
     driveId,
     userId,
   )
@@ -1150,20 +1217,32 @@ function DriveCardRoute({ driveId, userId, myNickname, partnerNickname, myGender
     goBack()
   }
 
+  const handleDelete = async () => {
+    const outcome = await remove()
+    if (outcome === 'deleted') goBackAfterDelete()
+    return outcome
+  }
+
+  // 미작성 카드 목록 · 배너에서 들어올 때는 아래에서 올라온다 (다른 화면에서 올 때는 전환 없음)
   return (
-    <DriveCardPage
-      {...card}
-      myNickname={myNickname}
-      partnerNickname={partnerNickname}
-      myGender={myGender}
-      onMyTextChange={setMyText}
-      onLeave={() => void handleLeave()}
-      onRetry={retry}
-      onAddPhotos={(files) => void addPhotos(files)}
-      onRemovePhoto={(mediaId) => void removePhoto(mediaId)}
-      onSwapPhotos={() => void swapPhotos()}
-      onSave={() => void handleSave()}
-    />
+    <ViewTransition enter={CARD_PAGE_ENTER} default="none">
+      <DriveCardPage
+        {...card}
+        driveId={driveId}
+        pendingTitle={pendingTitle}
+        myNickname={myNickname}
+        partnerNickname={partnerNickname}
+        myGender={myGender}
+        onMyTextChange={setMyText}
+        onLeave={() => void handleLeave()}
+        onRetry={retry}
+        onAddPhotos={(files) => void addPhotos(files)}
+        onRemovePhoto={(mediaId) => void removePhoto(mediaId)}
+        onSwapPhotos={() => void swapPhotos()}
+        onSave={() => void handleSave()}
+        onDelete={handleDelete}
+      />
+    </ViewTransition>
   )
 }
 
@@ -1257,7 +1336,7 @@ function App() {
           />
           <Route path="/notifications" element={<NotificationsRoute onRead={handleNotificationRead} />} />
           <Route path="/drive" element={<DriveRoute myUserId={me.id} />} />
-          <Route path="/drive/route" element={<RouteSettingRoute />} />
+          <Route path="/drive/route" element={<RouteSettingRoute partnerNickname={partnerNickname} />} />
           <Route path="/drive/playlist" element={<DjPlaylistRoute />} />
           <Route path="/drive/radio" element={<DriveRadioRoute />} />
           <Route
