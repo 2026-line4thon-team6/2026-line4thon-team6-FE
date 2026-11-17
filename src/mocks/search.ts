@@ -1,8 +1,8 @@
 import type { SearchPlacesParams } from '@/api/search'
 import type { ApiResponse, CursorPage } from '@/types/api'
-import type { PlaceCategory, PlaceSummary } from '@/types/place'
+import type { PlaceCategory } from '@/types/place'
 import type { Coordinate } from '@/types/route'
-import type { ReverseGeocode, SearchHistoryItem } from '@/types/search'
+import type { ReverseGeocode, SearchHistoryItem, SearchPlace } from '@/types/search'
 import { createMeta, distanceBetween, mockApiError, paginate } from './utils'
 
 export const MOCK_CURRENT_COORDINATE: Coordinate = { latitude: 37.4837, longitude: 127.0324 }
@@ -97,11 +97,11 @@ export async function mockSearchPlaces({
   coordinate,
   cursor,
   limit = 20,
-}: SearchPlacesParams): Promise<ApiResponse<CursorPage<PlaceSummary>>> {
+}: SearchPlacesParams): Promise<ApiResponse<CursorPage<SearchPlace>>> {
   const keyword = normalize(q)
   if (!keyword || q.length > 100) throw mockApiError(422, 'VALIDATION_FAILED', '검색어는 1~100자로 입력해 주세요.')
 
-  const matched = PLACES.map((seed, index): PlaceSummary => {
+  const matched = PLACES.map((seed, index): SearchPlace => {
     const distanceMeters = coordinate ? distanceBetween(coordinate, seed.coordinate) : null
     return {
       id: `plc_search_${index + 1}`,
@@ -111,6 +111,7 @@ export async function mockSearchPlaces({
       estimatedDurationSeconds: distanceMeters === null ? null : Math.round((distanceMeters * 1.3) / AVERAGE_SPEED_MPS),
       distanceMeters,
       isFavorite: false,
+      canSave: false,
     }
   })
     .filter((place) => normalize(place.name).includes(keyword) || normalize(place.address).includes(keyword))

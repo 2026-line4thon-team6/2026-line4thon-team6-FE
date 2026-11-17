@@ -4,24 +4,25 @@ import { createRoute } from '@/api/routes'
 import { deleteSearchHistory, getSearchHistory, reverseGeocode, saveSearchHistory, searchPlaces } from '@/api/search'
 import type { PlaceSummary } from '@/types/place'
 import type { Route, RoutePoint } from '@/types/route'
-import type { SearchHistoryItem } from '@/types/search'
+import type { SearchHistoryItem, SearchPlace } from '@/types/search'
 import { getCurrentCoordinate } from '@/utils/location'
 import { createIdempotencyKey } from '@/utils/share'
 
 const SEARCH_DELAY_MS = 300
 
-const toPoint = ({ id, name, address, coordinate }: PlaceSummary): RoutePoint => ({
-  placeId: id,
-  name,
-  address,
-  coordinate,
+// 카카오 검색 결과는 우리 장소가 아니어서 placeId 없이 좌표로만 보낸다
+const toPoint = (place: PlaceSummary | SearchPlace): RoutePoint => ({
+  placeId: 'canSave' in place && !place.canSave ? null : place.id,
+  name: place.name,
+  address: place.address,
+  coordinate: place.coordinate,
 })
 
 function useRouteSetting(destinationPlaceId?: string, initialQuery = '') {
   const [origin, setOrigin] = useState<RoutePoint | null>(null)
   const [history, setHistory] = useState<SearchHistoryItem[]>([])
   const [query, setQuery] = useState(initialQuery)
-  const [results, setResults] = useState<PlaceSummary[] | null>(null)
+  const [results, setResults] = useState<SearchPlace[] | null>(null)
   const [route, setRoute] = useState<Route | null>(null)
   const [routeStatus, setRouteStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [locationStatus, setLocationStatus] = useState<'loading' | 'ready' | 'unavailable'>('loading')
@@ -116,7 +117,7 @@ function useRouteSetting(destinationPlaceId?: string, initialQuery = '') {
     deleteSearchHistory(historyId).catch(loadHistory)
   }
 
-  const selectPlace = (place: PlaceSummary) => {
+  const selectPlace = (place: SearchPlace) => {
     if (query.trim()) void saveQuery(query.trim())
     setQuery(place.name)
     void routeTo(toPoint(place))

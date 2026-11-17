@@ -6,9 +6,8 @@ import {
   mockSearchPlaces,
 } from '@/mocks/search'
 import type { ApiResponse, CursorPage } from '@/types/api'
-import type { PlaceSummary } from '@/types/place'
 import type { Coordinate } from '@/types/route'
-import type { ReverseGeocode, SearchHistoryItem } from '@/types/search'
+import type { ReverseGeocode, SearchHistoryItem, SearchPlace } from '@/types/search'
 import { apiFetch, USE_MOCK } from './client'
 
 export interface SearchPlacesParams {
@@ -18,7 +17,7 @@ export interface SearchPlacesParams {
   limit?: number
 }
 
-export function searchPlaces(params: SearchPlacesParams): Promise<ApiResponse<CursorPage<PlaceSummary>>> {
+export function searchPlaces(params: SearchPlacesParams): Promise<ApiResponse<CursorPage<SearchPlace>>> {
   if (USE_MOCK) return mockSearchPlaces(params)
 
   const query = new URLSearchParams({ q: params.q })
@@ -28,7 +27,7 @@ export function searchPlaces(params: SearchPlacesParams): Promise<ApiResponse<Cu
   }
   if (params.cursor) query.set('cursor', params.cursor)
   if (params.limit) query.set('limit', String(params.limit))
-  return apiFetch<CursorPage<PlaceSummary>>(`/places?${query}`)
+  return apiFetch<CursorPage<SearchPlace>>(`/places?${query}`)
 }
 
 export function getSearchHistory(): Promise<ApiResponse<SearchHistoryItem[]>> {
