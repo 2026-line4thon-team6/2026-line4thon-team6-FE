@@ -17,7 +17,8 @@ function useOverlay<T extends HTMLElement>(onClose: () => void) {
     )
     const previousOverflows = scrollers.map((element) => element.style.overflow)
     scrollers.forEach((element) => (element.style.overflow = 'hidden'))
-    if (!ref.current?.contains(document.activeElement)) ref.current?.focus()
+    // 올라오는 중인 시트로 포커스를 옮길 때 브라우저가 화면을 스크롤하지 않게 한다 (화면 전체가 위아래로 들썩이는 현상)
+    if (!ref.current?.contains(document.activeElement)) ref.current?.focus({ preventScroll: true })
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onCloseRef.current()
@@ -27,7 +28,7 @@ function useOverlay<T extends HTMLElement>(onClose: () => void) {
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
       scrollers.forEach((element, index) => (element.style.overflow = previousOverflows[index] ?? ''))
-      if (previousFocus instanceof HTMLElement) previousFocus.focus()
+      if (previousFocus instanceof HTMLElement) previousFocus.focus({ preventScroll: true })
     }
   }, [])
 
