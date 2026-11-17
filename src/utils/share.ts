@@ -83,10 +83,10 @@ export async function shareImage(image: Blob, { fileName, title }: { fileName: s
 
 // 이미지를 클립보드에 PNG로 넣는다 (기록 공유 시트의 '이미지 복사').
 // 아이폰 사파리는 누른 순간에 클립보드를 써야 해서, 만들고 있는 이미지(Promise)를 기다리지 않고 바로 넘긴다.
-// 이미지 복사를 지원하지 않는 브라우저면 거절한다 (부르는 쪽이 링크 복사로 바꾼다)
-export async function copyImage(image: Promise<Blob>): Promise<void> {
+// 이미지 복사를 지원하지 않는 브라우저면 이미지를 만들지 않고 거절한다 (부르는 쪽이 링크 복사로 바꾼다)
+export async function copyImage(createImage: () => Promise<Blob>): Promise<void> {
   if (typeof ClipboardItem === 'undefined' || !navigator.clipboard?.write) throw new Error('이미지 복사를 지원하지 않아요.')
-  await navigator.clipboard.write([new ClipboardItem({ 'image/png': image })])
+  await navigator.clipboard.write([new ClipboardItem({ 'image/png': createImage() })])
 }
 
 export type ImageSaveResult = 'shared' | 'downloaded' | 'cancelled'

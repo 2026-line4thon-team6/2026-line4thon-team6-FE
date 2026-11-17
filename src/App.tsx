@@ -766,7 +766,7 @@ function RecordMapRoute({ pendingCards, pendingReceivedAt, onEnter }: RecordMapR
   // 링크 칸 자리의 '이미지 복사': 같은 공유 이미지를 클립보드에 넣는다. 이미지 복사를 지원하지 않으면 링크를 복사한다
   const handleCopyImage = async (card: RecordSummary, link: ShareLink): Promise<'image' | 'link'> => {
     try {
-      await copyImage(createStoryImage(storyOf(card)))
+      await copyImage(() => createStoryImage(storyOf(card)))
       return 'image'
     } catch (error) {
       if (link.status !== 'ready') throw error

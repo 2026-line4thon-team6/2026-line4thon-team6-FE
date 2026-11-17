@@ -57,16 +57,18 @@ describe('copyImage', () => {
     })
 
     const image = Promise.resolve(IMAGE)
-    await copyImage(image)
+    await copyImage(() => image)
 
     expect(write).toHaveBeenCalledTimes(1)
     expect(items[0]?.['image/png']).toBe(image)
   })
 
-  it('이미지 복사를 지원하지 않는 브라우저면 거절한다', async () => {
+  it('이미지 복사를 지원하지 않는 브라우저면 이미지를 만들지 않고 거절한다', async () => {
     vi.stubGlobal('ClipboardItem', undefined)
+    const createImage = vi.fn(() => Promise.resolve(IMAGE))
 
-    await expect(copyImage(Promise.resolve(IMAGE))).rejects.toThrow()
+    await expect(copyImage(createImage)).rejects.toThrow()
+    expect(createImage).not.toHaveBeenCalled()
   })
 })
 
