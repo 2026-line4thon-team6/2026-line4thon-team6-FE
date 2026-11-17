@@ -38,8 +38,8 @@ function StampBoard({ book, onStampClick, onEmptyClick }: StampBoardProps) {
   const earned = (book?.items ?? [])
     .filter((area) => area.earned)
     .sort((a, b) => (a.earnedAt ?? '').localeCompare(b.earnedAt ?? ''))
-  const capacity = Math.max(book?.capacity ?? SLOTS.length, earned.length)
-  const slots: (RestArea | null)[] = Array.from({ length: capacity }, (_, i) => earned[i] ?? null)
+  const boardCount = Math.max(1, Math.ceil(earned.length / SLOTS.length))
+  const slots: (RestArea | null)[] = Array.from({ length: boardCount * SLOTS.length }, (_, i) => earned[i] ?? null)
 
   return (
     <>

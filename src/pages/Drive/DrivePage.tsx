@@ -36,6 +36,7 @@ interface DrivePageProps {
   onRestAreaAlertClose?: () => void
   onRename: (title: string) => Promise<boolean>
   onRouteSearch: () => void
+  onBack?: () => void
   onLocate?: () => void
   onPause?: () => void
   onResume?: () => void
@@ -78,6 +79,7 @@ function DrivePage({
   onRestAreaAlertClose,
   onRename,
   onRouteSearch,
+  onBack,
   onLocate,
   onPause,
   onResume,
@@ -182,6 +184,7 @@ function DrivePage({
       )}
 
       <header className={styles.header}>
+        <GlassIconButton icon="back" aria-label="뒤로 가기" onClick={onBack} />
         {drive && <DriveTitleBar className={styles.title} title={drive.title} onClick={() => setRenaming(true)} />}
         <RouteSearchButton className={styles.routeButton} onClick={onRouteSearch} />
       </header>

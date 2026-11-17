@@ -14,6 +14,7 @@ interface MemoryGamePageProps {
   names: Record<Role, string | null>
   winner: Role | null
   busy: boolean
+  noRecords?: boolean
   onWinnerChange: (role: Role) => void
   onNext: () => void
   onRetry: () => void
@@ -26,6 +27,7 @@ function MemoryGamePage({
   names,
   winner,
   busy,
+  noRecords = false,
   onWinnerChange,
   onNext,
   onRetry,
@@ -52,10 +54,20 @@ function MemoryGamePage({
         )}
         {status === 'error' && (
           <div className={styles.message} role="alert">
-            <p>문제를 만들지 못했어요.</p>
-            <Button className={styles.retry} variant="secondary" size="sm" onClick={onRetry}>
-              다시 시도
-            </Button>
+            {noRecords ? (
+              <p>
+                아직 함께 마친 드라이브가 없어요.
+                <br />
+                드라이브를 한 번 마치면 추억 게임을 할 수 있어요.
+              </p>
+            ) : (
+              <>
+                <p>문제를 만들지 못했어요.</p>
+                <Button className={styles.retry} variant="secondary" size="sm" onClick={onRetry}>
+                  다시 시도
+                </Button>
+              </>
+            )}
           </div>
         )}
 

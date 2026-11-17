@@ -20,6 +20,7 @@ import useArrival from '@/hooks/useArrival'
 import useDriveRestAreas from '@/hooks/useDriveRestAreas'
 import usePlaylistGeneration from '@/hooks/usePlaylistGeneration'
 import useDriveMap from '@/hooks/useDriveMap'
+import useDrivePlaylist from '@/hooks/useDrivePlaylist'
 import useGpsRecorder from '@/hooks/useGpsRecorder'
 import useDriveCard from '@/hooks/useDriveCard'
 import useNotifications from '@/hooks/useNotifications'
@@ -242,6 +243,7 @@ function DriveRoute({ myUserId }: { myUserId: string }) {
   const location = useLocation()
   const { status, drive, rename, pause, resume, end, sync } = useDrive()
   const { playing: radioPlaying } = useRadioPlayer()
+  const drivePlaylist = useDrivePlaylist(drive)
   const map = useDriveMap(drive?.routeId ?? null)
   const driving = drive?.status === 'ACTIVE'
   const gps = useGpsRecorder({
@@ -296,6 +298,7 @@ function DriveRoute({ myUserId }: { myUserId: string }) {
             state: drive?.destination ? { destinationName: drive.destination.name } : location.state,
           })
         }
+        onBack={() => navigate('/')}
         onPause={() => void pause()}
         onResume={() => void resume()}
         onEnd={handleEnd}
@@ -309,6 +312,7 @@ function DriveRoute({ myUserId }: { myUserId: string }) {
               navigate(kind === 'radio' ? '/drive/radio' : `/drive/game/${kind}`)
             }}
             radioPlaying={radioPlaying}
+            playlist={drivePlaylist}
           />
         }
         stamps={<StampsTab drive={drive} currentCoordinate={map.current} />}
@@ -491,6 +495,7 @@ function MemoryGameRoute({ myUserId, myNickname, partnerNickname }: BalanceGameR
       }
       winner={winner}
       busy={game.busy}
+      noRecords={game.failure === 'MEMORY_RECORDS_REQUIRED'}
       onWinnerChange={(selectedRole) => void game.respond({ type: 'MEMORY', selectedRole }, myUserId)}
       onNext={() => void game.advance()}
       onRetry={game.retry}

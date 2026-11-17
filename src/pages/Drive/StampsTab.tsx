@@ -26,7 +26,6 @@ const claimMessage = (claim: StampClaim | null) => {
 }
 
 function StampsTab({ drive, currentCoordinate }: StampsTabProps) {
-  const stamps = useStamps(drive)
   const search = useRestAreaSearch(currentCoordinate)
   const detail = useRestAreaDetail()
   const [claiming, setClaiming] = useState(false)
@@ -34,6 +33,7 @@ function StampsTab({ drive, currentCoordinate }: StampsTabProps) {
   const [selected, setSelected] = useState<Selected | null>(null)
   const [busy, setBusy] = useState<'locate' | 'submit' | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const stamps = useStamps(drive, (claim) => setToast(claimMessage(claim)))
 
   const closeClaim = () => {
     setClaiming(false)

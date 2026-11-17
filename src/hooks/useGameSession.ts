@@ -26,6 +26,7 @@ function useGameSession(drive: Pick<Drive, 'id' | 'coupleId'> | null, type: Game
   const [session, setSession] = useState<GameSession | null>(null)
   const [busy, setBusy] = useState(false)
   const [attempt, setAttempt] = useState(0)
+  const [failure, setFailure] = useState<string | null>(null)
   const jobRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -42,6 +43,7 @@ function useGameSession(drive: Pick<Drive, 'id' | 'coupleId'> | null, type: Game
         setSession(data)
         setStatus('playing')
       } else if (job.status === 'FAILED' || job.status === 'CANCELLED') {
+        setFailure(job.error?.code ?? null)
         setStatus('error')
       } else {
         timer = setTimeout(() => void poll(jobId).catch(() => !ignore && setStatus('error')), Math.max(1, job.retryAfterSeconds) * 1000)
@@ -139,12 +141,14 @@ function useGameSession(drive: Pick<Drive, 'id' | 'coupleId'> | null, type: Game
 
   const retry = () => {
     setSession(null)
+    setFailure(null)
     setStatus('generating')
     setAttempt((value) => value + 1)
   }
 
   return {
     status,
+    failure,
     session,
     busy,
     respond,
