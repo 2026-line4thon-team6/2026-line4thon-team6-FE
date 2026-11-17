@@ -252,6 +252,7 @@ function DrivePage({
           <DriveStats items={getDriveStats(drive, runningSeconds, routeDurationSeconds)} />
         </div>
 
+        <div className={styles.grabZone} style={{ bottom: sheet.height }} aria-hidden {...sheet.handleProps} />
         <section
           className={[styles.panel, !sheet.dragging && styles.settling].filter(Boolean).join(' ')}
           style={{ height: sheet.height }}

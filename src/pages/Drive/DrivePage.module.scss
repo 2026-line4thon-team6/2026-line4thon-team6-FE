@@ -118,6 +118,15 @@ $gutter: 25px;
   pointer-events: auto;
 }
 
+.grabZone {
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 20px;
+  pointer-events: auto;
+  touch-action: none;
+}
+
 .panel {
   padding: 0 $gutter;
   pointer-events: auto;
