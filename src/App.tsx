@@ -27,6 +27,7 @@ import useGpsRecorder from '@/hooks/useGpsRecorder'
 import useDriveCard from '@/hooks/useDriveCard'
 import useNotifications from '@/hooks/useNotifications'
 import useHome from '@/hooks/useHome'
+import usePendingCardDiscard from '@/hooks/usePendingCardDiscard'
 import usePendingCardPicker from '@/hooks/usePendingCardPicker'
 import usePendingCards from '@/hooks/usePendingCards'
 import useRecommendations from '@/hooks/useRecommendations'
@@ -669,6 +670,8 @@ function RecordMapRoute({ pendingCards, pendingReceivedAt, onEnter }: RecordMapR
   const goTab = useTabNavigate()
   const pendingCard = usePendingCards(pendingCards, pendingReceivedAt)
   const pendingPicker = usePendingCardPicker(pendingCard, (driveId) => navigate(cardPath(driveId)))
+  // 목록에서 카드를 지우면 홈 정보(미작성 카드 목록)를 다시 받는다
+  const discardPending = usePendingCardDiscard(onEnter)
 
   // 처음 마운트 때만 부른다 (onEnter는 렌더마다 새 함수라 의존성에 넣지 않는다)
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -774,7 +777,12 @@ function RecordMapRoute({ pendingCards, pendingReceivedAt, onEnter }: RecordMapR
         />
       )}
       {pendingPicker.sheetOpen && pendingCard && (
-        <PendingCardSheet cards={pendingCard.cards} onSelect={pendingPicker.select} onClose={pendingPicker.close} />
+        <PendingCardSheet
+          cards={pendingCard.cards}
+          onSelect={pendingPicker.select}
+          onClose={pendingPicker.close}
+          onDiscard={discardPending}
+        />
       )}
     </>
   )
@@ -1089,6 +1097,8 @@ function HomeRoute({
   }
   // 미작성 카드가 2개 이상이면 배너를 눌렀을 때 목록에서 고르게 한다
   const pendingPicker = usePendingCardPicker(summary, goCard)
+  // 목록에서 카드를 지우면 홈 정보(미작성 카드 목록)를 다시 받는다
+  const discardPending = usePendingCardDiscard(onEnter)
 
   return (
     <>
@@ -1118,7 +1128,12 @@ function HomeRoute({
         onClose={drive.closeSheet}
       />
       {pendingPicker.sheetOpen && summary && (
-        <PendingCardSheet cards={summary.cards} onSelect={pendingPicker.select} onClose={pendingPicker.close} />
+        <PendingCardSheet
+          cards={summary.cards}
+          onSelect={pendingPicker.select}
+          onClose={pendingPicker.close}
+          onDiscard={discardPending}
+        />
       )}
       {summary && !pendingPromptSeen && (
         <CardPromptModal

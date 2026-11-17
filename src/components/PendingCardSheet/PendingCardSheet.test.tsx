@@ -55,4 +55,45 @@ describe('PendingCardSheet', () => {
     await user.click(screen.getByRole('button', { name: '닫기' }))
     expect(onClose).toHaveBeenCalled()
   })
+
+  // 아무도 쓰지 않은 카드는 목록에서 바로 지울 수 있다 (서버가 쓰기 시작한 카드는 거절한다)
+  describe('카드 지우기', () => {
+    it('아무도 쓰지 않은 카드에만 휴지통이 있고, 누르면 확인 팝업을 띄운 뒤 그 카드를 지운다', async () => {
+      const onDiscard = vi.fn().mockResolvedValue('deleted')
+      const user = userEvent.setup()
+      render(
+        <PendingCardSheet
+          cards={[item('drv_a', { title: '쓰던 카드', writing: true }), item('drv_b', { title: '안 쓴 카드' })]}
+          onSelect={vi.fn()}
+          onClose={vi.fn()}
+          onDiscard={onDiscard}
+        />,
+      )
+
+      expect(screen.queryByRole('button', { name: '쓰던 카드 지우기' })).not.toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: '안 쓴 카드 지우기' }))
+      const dialog = screen.getByRole('dialog', { name: '카드를 삭제하시겠어요?' })
+      await user.click(within(dialog).getByRole('button', { name: '삭제하기' }))
+
+      expect(onDiscard).toHaveBeenCalledWith('drv_b')
+      expect(screen.queryByRole('dialog', { name: '카드를 삭제하시겠어요?' })).not.toBeInTheDocument()
+    })
+
+    it('지우지 못하면 팝업에 이유를 보여 준다', async () => {
+      const user = userEvent.setup()
+      render(
+        <PendingCardSheet
+          cards={[item('drv_b', { title: '안 쓴 카드' })]}
+          onSelect={vi.fn()}
+          onClose={vi.fn()}
+          onDiscard={vi.fn().mockResolvedValue('started')}
+        />,
+      )
+
+      await user.click(screen.getByRole('button', { name: '안 쓴 카드 지우기' }))
+      await user.click(screen.getByRole('button', { name: '삭제하기' }))
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('연인이 카드를 쓰기 시작해서 지울 수 없어요.')
+    })
+  })
 })

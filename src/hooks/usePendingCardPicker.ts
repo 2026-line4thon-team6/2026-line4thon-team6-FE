@@ -4,8 +4,8 @@ import type { PendingCards } from './usePendingCards'
 // 미작성 카드 배너를 눌렀을 때: 1개면 바로 그 카드로, 2개 이상이면 목록 시트에서 고르게 한다
 function usePendingCardPicker(summary: PendingCards | null, goCard: (driveId: string) => void) {
   const [open, setOpen] = useState(false)
-  // 보는 사이 마감이 지나거나 저장돼 1개 이하가 되면 시트를 닫는다
-  const sheetOpen = open && (summary?.count ?? 0) > 1
+  // 한 번 연 시트는 목록에서 지워 1개만 남아도 열어 둔다. 마감 · 저장 · 삭제로 0개가 되면 닫는다
+  const sheetOpen = open && (summary?.count ?? 0) > 0
 
   return {
     sheetOpen,

@@ -51,4 +51,17 @@ describe('usePendingCardPicker', () => {
 
     expect(result.current.sheetOpen).toBe(false)
   })
+
+  it('목록에서 지워 1개만 남아도 시트는 열어 둔다 (0개가 되면 닫는다)', () => {
+    const { result, rerender } = renderHook(({ value }) => usePendingCardPicker(value, vi.fn()), {
+      initialProps: { value: summary(2) as PendingCards | null },
+    })
+
+    act(() => result.current.open())
+    rerender({ value: summary(1) })
+    expect(result.current.sheetOpen).toBe(true)
+
+    rerender({ value: null })
+    expect(result.current.sheetOpen).toBe(false)
+  })
 })
