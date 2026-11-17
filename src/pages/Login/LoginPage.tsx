@@ -6,11 +6,13 @@ import styles from './LoginPage.module.scss'
 interface LoginPageProps {
   status: 'idle' | 'loading'
   error: string | null
+  // 탈퇴를 마치고 돌아왔을 때 등 알림 (오류가 아님)
+  notice?: string | null
   onKakaoLogin: () => void
 }
 
 // L1 로그인 메인. 앱 로그인은 카카오만 제공한다 (API 확정 정책 D09 · Figma의 Google 버튼은 넣지 않음)
-function LoginPage({ status, error, onKakaoLogin }: LoginPageProps) {
+function LoginPage({ status, error, notice = null, onKakaoLogin }: LoginPageProps) {
   const loading = status === 'loading'
 
   return (
@@ -33,6 +35,11 @@ function LoginPage({ status, error, onKakaoLogin }: LoginPageProps) {
             <img className={styles.kakaoIcon} src={kakaoIcon} alt="" />
             {loading ? '로그인 중' : '카카오로 3초 만에 시작하기'}
           </button>
+          {notice && !error && (
+            <p className={styles.notice} role="status">
+              {notice}
+            </p>
+          )}
           {error && (
             <p className={styles.error} role="alert">
               {error}

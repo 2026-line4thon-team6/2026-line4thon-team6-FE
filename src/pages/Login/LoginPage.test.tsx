@@ -29,3 +29,9 @@ it('로그인에 실패하면 안내한다', () => {
 
   expect(screen.getByRole('alert')).toHaveTextContent('로그인하지 못했어요. 다시 시도해 주세요.')
 })
+
+it('탈퇴를 마치고 오면 완료 안내를 보여 준다', () => {
+  render(<LoginPage status="idle" error={null} notice="탈퇴가 완료됐어요." onKakaoLogin={vi.fn()} />)
+
+  expect(screen.getByRole('status')).toHaveTextContent('탈퇴가 완료됐어요.')
+})

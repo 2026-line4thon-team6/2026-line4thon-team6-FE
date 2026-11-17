@@ -103,3 +103,11 @@
   color: color('coral-pressed');
   text-align: center;
 }
+
+// 탈퇴 완료 등 알림 (오류보다 차분한 회색)
+.notice {
+  @include typo('caption');
+  color: color('gray-600');
+  text-align: center;
+  word-break: keep-all;
+}

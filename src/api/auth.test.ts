@@ -1,6 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { resetMockCouple } from '@/mocks/couples'
-import { completeSocialLogin, login, logout, restoreSession, startSocialLogin } from './auth'
+import {
+  completeReauth,
+  completeSocialLogin,
+  deleteAccount,
+  login,
+  logout,
+  pendingAuthPurpose,
+  restoreSession,
+  startReauth,
+  startSocialLogin,
+  withdraw,
+} from './auth'
 
 // 목 서버(VITE_API_BASE_URL 없음) 기준. 실제 OAuth 콜백 교환은 fetch를 바꿔 끼워 확인한다
 beforeEach(() => {
@@ -73,5 +84,72 @@ describe('소셜 로그인 (실서버 OAuth · PKCE)', () => {
 
     await expect(completeSocialLogin({ code: 'c', state: 'other' })).rejects.toThrow()
     expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+// 회원 탈퇴: 카카오 본인 재인증(5분 증명) → DELETE /me (X-Reauth-Token). 백엔드 명세 deleteAccount · reauthenticate
+describe('회원 탈퇴', () => {
+  const json = (status: number, body: unknown) =>
+    Promise.resolve(new Response(body === null ? null : JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } }))
+
+  it('재인증을 시작하면 PKCE challenge를 보내고, 돌아오면 같은 verifier로 탈퇴용 증명을 받는다', async () => {
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      void init
+      if (url.endsWith('/auth/reauth/authorizations')) {
+        return json(201, { data: { authSessionId: 'auth_re', authorizationUrl: 'https://kauth.example/reauth', state: 'st_re', expiresAt: '' }, meta: {} })
+      }
+      return json(200, { data: { reauthToken: 'proof_01', expiresAt: '2026-11-17T10:05:00Z' }, meta: {} })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const url = await startReauth('https://app.example/oauth/callback')
+    expect(url).toBe('https://kauth.example/reauth')
+    const [, startInit] = fetchMock.mock.calls[0]
+    // 서버는 모르는 필드를 거절한다: purpose 없이 provider · redirectUri · codeChallenge만 보낸다
+    const start = JSON.parse(String(startInit?.body))
+    expect(Object.keys(start).sort()).toEqual(['codeChallenge', 'provider', 'redirectUri'])
+    expect(start).toMatchObject({ provider: 'KAKAO', redirectUri: 'https://app.example/oauth/callback' })
+    expect(new Headers(startInit?.headers).get('Idempotency-Key')?.length).toBeGreaterThanOrEqual(16)
+    expect(pendingAuthPurpose()).toBe('REAUTH')
+
+    const proof = await completeReauth({ code: 'oauth_code', state: 'st_re' })
+    const [completeUrl, completeInit] = fetchMock.mock.calls[1]
+    expect(completeUrl).toMatch(/\/auth\/reauth$/)
+    expect(JSON.parse(String(completeInit?.body))).toMatchObject({ authSessionId: 'auth_re', authorizationCode: 'oauth_code', state: 'st_re' })
+    expect(proof).toBe('proof_01')
+    expect(pendingAuthPurpose()).toBeNull()
+  })
+
+  it('로그인으로 시작한 콜백은 LOGIN으로 구분한다', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => json(201, { data: { authSessionId: 'a', authorizationUrl: 'https://k', state: 's', expiresAt: '' }, meta: {} })))
+    await startSocialLogin('KAKAO', 'https://app.example/oauth/callback')
+
+    expect(pendingAuthPurpose()).toBe('LOGIN')
+  })
+
+  it('탈퇴하면 증명을 X-Reauth-Token에 담아 DELETE /me 하고, 기기의 토큰을 지운다', async () => {
+    localStorage.setItem('bbus.auth', JSON.stringify({ accessToken: 'a', refreshToken: 'r' }))
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      void url
+      void init
+      return json(204, null)
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await deleteAccount('proof_01')
+
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toMatch(/\/me$/)
+    expect(init?.method).toBe('DELETE')
+    expect(new Headers(init?.headers).get('X-Reauth-Token')).toBe('proof_01')
+    expect(localStorage.getItem('bbus.auth')).toBeNull()
+  })
+
+  it('목 서버에서는 본인 확인 없이 바로 탈퇴되고 세션이 없어진다', async () => {
+    await login('KAKAO')
+
+    expect(await withdraw('https://app.example/oauth/callback')).toBe('withdrawn')
+    expect(localStorage.getItem('bbus.auth')).toBeNull()
+    expect(await restoreSession()).toBeNull()
   })
 })
