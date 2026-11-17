@@ -2,8 +2,6 @@ import { useState } from 'react'
 import pinIcon from '@/assets/icons/pin-lg.svg'
 import durationIcon from '@/assets/images/info/info-car.svg'
 import parkingIcon from '@/assets/images/info/info-parking.svg'
-import roadIcon from '@/assets/images/info/info-road.svg'
-import visitIcon from '@/assets/images/info/info-sun.svg'
 import Button from '@/components/Button/Button'
 import DriveMap from '@/components/DriveMap/DriveMap'
 import GlassIconButton from '@/components/GlassIconButton/GlassIconButton'
@@ -42,9 +40,10 @@ interface PlaceDetailPageProps {
 }
 
 // '오후 5-8시 (일몰 시간대)' → ['오후 5-8시', '(일몰 시간대)']
-function splitNote(text: string) {
-  const match = /^(.*?)\s*(\(.+\))$/.exec(text)
-  return match ? [match[1], match[2]] : [text, null]
+// '카카오T 을왕주차장 · 목적지에서 296m'처럼 '·'로 이어진 값은 앞부분을 값, 뒷부분을 보조 줄로 나눈다
+function splitDetail(text: string): [string, string | null] {
+  const [main, ...rest] = text.split(/\s+·\s+/)
+  return [main, rest.length > 0 ? rest.join(' · ') : null]
 }
 
 function PlaceDetailPage({
@@ -87,19 +86,16 @@ function PlaceDetailPage({
     )
   }
 
-  const { place, photos, introduction, parkingInfo, recommendedVisitTime, mainRoads } = detail
+  const { place, photos, introduction, parkingInfo } = detail
   const category = PLACE_CATEGORIES[place.category]
   const durationSeconds = route?.durationSeconds ?? place.estimatedDurationSeconds
-  // 서버가 아직 채우지 않은 항목은 칸째 숨기고, 남은 칸이 폭을 똑같이 나눈다 (4칸이 다 있으면 시안 비율)
-  const [visitTime, visitNote] = recommendedVisitTime ? splitNote(recommendedVisitTime) : [null, null]
+  // 주요 경로 · 추천 방문 시간은 서버 데이터가 없어 빼고, 소요 시간 · 주차 정보 두 칸을 넓게 쓴다.
+  // 값이 없는 칸은 숨긴다
+  const [parking, parkingNote] = parkingInfo ? splitDetail(parkingInfo) : [null, null]
   const summaryItems = [
-    { label: '예상 소요 시간', icon: durationIcon, value: durationSeconds === null ? null : formatDuration(durationSeconds) },
-    { label: '주요 경로', icon: roadIcon, value: mainRoads.length > 0 ? mainRoads.join(', ') : null },
-    { label: '주차 정보', icon: parkingIcon, value: parkingInfo || null },
-    { label: '추천 방문 시간', icon: visitIcon, value: visitTime, note: visitNote },
+    { label: '예상 소요 시간', icon: durationIcon, value: durationSeconds === null ? null : formatDuration(durationSeconds), note: null },
+    { label: '주차 정보', icon: parkingIcon, value: parking, note: parkingNote },
   ].filter((item) => item.value)
-  const summaryColumns =
-    summaryItems.length < 4 ? { gridTemplateColumns: `repeat(${summaryItems.length}, 1fr)` } : undefined
   // 맨 위에는 대표 사진 1장만 보여 준다 (Figma 70:1744). 사진이 없으면 장소 썸네일
   const heroPhoto = photos[0] ?? place.thumbnailUrl
 
@@ -169,7 +165,7 @@ function PlaceDetailPage({
         {introduction && <p className={styles.introduction}>{introduction}</p>}
 
         {summaryItems.length > 0 && (
-          <ul className={styles.summary} aria-label="드라이브 정보" style={summaryColumns}>
+          <ul className={styles.summary} aria-label="드라이브 정보">
             {summaryItems.map(({ label, icon, value, note }) => (
               <li key={label}>
                 <span className={styles.summaryIcon}>
