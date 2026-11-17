@@ -6,7 +6,7 @@ import playlistButtonIcon from '@/assets/icons/playlist-button.svg'
 import maleImage from '@/assets/images/record-driver.webp'
 import femaleImage from '@/assets/images/record-passenger.webp'
 import GlassIconButton from '@/components/GlassIconButton/GlassIconButton'
-import type { DeleteOutcome } from '@/hooks/useCardDetail'
+import { DELETE_CARD_ERRORS, type DeleteOutcome } from '@/hooks/useCardDetail'
 import type { Card, CardPlaylist } from '@/types/card'
 import { formatDate } from '@/utils/formatDate'
 import { formatDistance, formatDriveTime } from '@/utils/formatDrive'
@@ -35,11 +35,6 @@ interface RecordDetailPageProps {
 const EMPTY_REFLECTION = {
   mine: '기록을 작성하지 않았어요 :)',
   partner: '상대방이 기록을 남기지 않았어요 :)',
-}
-
-const DELETE_ERRORS: Record<Exclude<DeleteOutcome, 'deleted'>, string> = {
-  failed: '삭제하지 못했어요. 다시 시도해 주세요.',
-  conflict: '카드 내용이 바뀌었어요. 확인 후 다시 삭제해 주세요.',
 }
 
 // 소감 작성자 캐릭터. 카드 응답에 운전자 · 동승자 구분이 없어 순서대로 쓴다
@@ -72,7 +67,7 @@ function RecordDetailPage({
     setDeleteError(null)
     const outcome = await onDelete()
     setDeleting(false)
-    if (outcome !== 'deleted') setDeleteError(DELETE_ERRORS[outcome])
+    if (outcome !== 'deleted') setDeleteError(DELETE_CARD_ERRORS[outcome])
   }
 
   const photos = card ? [...card.photos].sort((a, b) => a.order - b.order) : []

@@ -7,6 +7,12 @@ import { photoRefreshDelay } from '@/utils/photoRefresh'
 type Status = 'loading' | 'ready' | 'notFound' | 'error'
 export type DeleteOutcome = 'deleted' | 'conflict' | 'failed'
 
+// 삭제가 실패했을 때 삭제 확인 팝업에 보여 줄 안내 (기록 상세 · 카드 작성 화면 공용)
+export const DELETE_CARD_ERRORS: Record<Exclude<DeleteOutcome, 'deleted'>, string> = {
+  failed: '삭제하지 못했어요. 다시 시도해 주세요.',
+  conflict: '카드 내용이 바뀌었어요. 확인 후 다시 삭제해 주세요.',
+}
+
 interface State {
   status: Status
   card: Card | null
