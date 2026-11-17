@@ -23,7 +23,6 @@ const ROUTE_FIT_PADDING: [number, number, number, number] = [56, 40, 24, 40]
 interface PlaceDetailPageProps {
   status: 'loading' | 'ready' | 'error'
   detail: PlaceDetail | null
-  // 현재 위치에서 이 장소까지의 경로. 위치를 모르거나 아직 못 받았으면 null
   route?: PlaceRoute | null
   // 연결된 연인의 이름. 연결 전이면 null
   partnerNickname: string | null

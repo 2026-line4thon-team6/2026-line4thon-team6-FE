@@ -13,7 +13,6 @@ export type GenerationStep = 'loading' | 'select' | 'generating' | 'done'
 const EMPTY: PlaylistPreference = { moods: [], weather: null, genres: [] }
 
 // 취향 선택 → 생성(작업 상태 확인) → 생성 완료
-// playlistId를 넘기면 이미 만든 플레이리스트를 불러와 생성 완료 화면부터 보여 준다
 function usePlaylistGeneration(driveId: string | null, playlistId: string | null = null) {
   const [config, setConfig] = useState<AppConfig | null>(null)
   const [preference, setPreference] = useState<PlaylistPreference>(EMPTY)

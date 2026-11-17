@@ -62,7 +62,6 @@ function useDrive() {
   const rename = (title: string) => update({ title })
   const setRoute = (routeId: string) => update({ routeId })
 
-  // 실패하면 이유를 돌려준다. RECORDER_ONLY: 드라이브를 만든 사람(기록 사용자)만 출발할 수 있다
   const start = async (): Promise<'started' | 'NO_LOCATION' | 'RECORDER_ONLY' | 'FAILED'> => {
     const drive = latest.current
     if (!drive) return 'FAILED'
@@ -82,7 +81,6 @@ function useDrive() {
     }
   }
 
-  // 출발 전 드라이브를 없앤다. 그사이 상태가 바뀌었으면(409) 최신 드라이브를 다시 받는다
   const cancel = async () => {
     const drive = latest.current
     if (!drive) return false

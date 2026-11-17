@@ -23,7 +23,6 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-// 서버는 게임 쓰기 요청에 X-Couple-Id를, 응답 저장 외에는 Idempotency-Key도 필수로 받는다
 describe('게임 API 헤더', () => {
   const options = { coupleId: 'cpl_01', idempotencyKey: 'game-key-00000001' }
 

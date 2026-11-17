@@ -5,7 +5,6 @@ import styles from './PlaylistSummaryCard.module.scss'
 
 interface PlaylistSummaryCardProps {
   playlist: CardPlaylist | null
-  // 넘기면 카드 전체를 누를 수 있다
   onClick?: () => void
   className?: string
 }

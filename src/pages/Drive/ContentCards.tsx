@@ -19,7 +19,6 @@ const GAMES: { kind: ContentKind; title: string; description: string; image: str
 
 interface ContentCardsProps {
   onPlaylistClick?: () => void
-  // 이미 만든 플레이리스트 카드를 눌렀을 때
   onPlaylistOpen?: (playlistId: string) => void
   onContentClick?: (kind: ContentKind) => void
   radioPlaying?: boolean
