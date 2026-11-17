@@ -234,45 +234,6 @@ $bottom-bar-height: 19px + 50px;
   background-color: color('gray-100');
 }
 
-.mapImage {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-// 출발지 · 도착지 말풍선. SVG(67 x 48)에 그림자 여백 10px이 포함되어 있다
-.mapLabel {
-  position: absolute;
-  width: 47px;
-  height: 28px;
-  @include typo('caption');
-  color: color('black');
-  text-align: center;
-
-  img {
-    position: absolute;
-    top: -10px;
-    left: -10px;
-    max-width: none;
-  }
-
-  span {
-    position: relative;
-    display: block;
-    padding-top: 2px;
-  }
-}
-
-.origin {
-  top: 9px;
-  left: 20px;
-}
-
-.destination {
-  top: 7px;
-  right: 60px;
-}
-
 .mapEmpty {
   display: flex;
   align-items: center;

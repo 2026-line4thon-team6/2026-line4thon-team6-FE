@@ -21,6 +21,7 @@ import useDriveRestAreas from '@/hooks/useDriveRestAreas'
 import usePlaylistGeneration from '@/hooks/usePlaylistGeneration'
 import useDriveMap from '@/hooks/useDriveMap'
 import useDrivePlaylist from '@/hooks/useDrivePlaylist'
+import usePlaceRoute from '@/hooks/usePlaceRoute'
 import useGpsRecorder from '@/hooks/useGpsRecorder'
 import useDriveCard from '@/hooks/useDriveCard'
 import useNotifications from '@/hooks/useNotifications'
@@ -201,6 +202,7 @@ function PlaceDetailRoute({ placeId, couple, mascotName, myUserId, onFavoriteCha
   const goBack = useGoBack()
   const drive = useStartDrive(myUserId)
   const { status, detail, retry, toggleFavorite, getShareUrl, sendToPartner } = usePlaceDetail(placeId)
+  const route = usePlaceRoute(detail?.place ?? null)
   const handleSend = useSendToPartner({ coupleId: couple?.id ?? null, send: sendToPartner, onCoupleChanged })
 
   const handleFavoriteToggle = async (favorite: boolean) => {
@@ -213,6 +215,7 @@ function PlaceDetailRoute({ placeId, couple, mascotName, myUserId, onFavoriteCha
       <PlaceDetailPage
         status={status}
         detail={detail}
+        route={route}
         partnerNickname={couple?.partnerNickname ?? null}
         onBack={goBack}
         onRetry={retry}

@@ -96,3 +96,39 @@
   max-width: none;
   pointer-events: none;
 }
+
+.compact {
+  .origin {
+    width: 12px;
+    height: 12px;
+  }
+
+  .pin {
+    width: 26px;
+    height: 30px;
+  }
+}
+
+// 출발지 · 도착지 말풍선. SVG(67 x 48)에 그림자 여백 10px이 포함되어 있다
+.label {
+  position: relative;
+  display: block;
+  width: 47px;
+  height: 28px;
+  @include typo('caption');
+  color: color('black');
+  text-align: center;
+
+  img {
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    max-width: none;
+  }
+
+  span {
+    position: relative;
+    display: block;
+    padding-top: 2px;
+  }
+}
