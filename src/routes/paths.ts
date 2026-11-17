@@ -1,5 +1,7 @@
 // 로그인 · 가입 화면 흐름 (기능명세서 L1~L8). L9 연인 초대는 App의 /couple/invite
 export const LOGIN_PATH = '/login'
+// 마이. 회원 탈퇴 재인증에서 돌아와 실패를 알릴 때 쓴다
+export const MY_PATH = '/my'
 export const ONBOARDING_PATHS = {
   welcome: '/onboarding/welcome', // L2
   intro: '/onboarding/intro', // L3

@@ -1,6 +1,8 @@
 import { useEffect, useState, ViewTransition } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
+import { withdraw } from '@/api/auth'
 import { fetchCardShare } from '@/api/cards'
+import { getActiveDrive } from '@/api/drives'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
 import useAuth, { type Auth } from '@/hooks/useAuth'
 import useCoupleInvite from '@/hooks/useCoupleInvite'
@@ -76,6 +78,7 @@ import HomePage from '@/pages/Home/HomePage'
 import FaqPage from '@/pages/Faq/FaqPage'
 import LegalDocumentPage from '@/pages/LegalDocument/LegalDocumentPage'
 import MyPage, { type MyMenu } from '@/pages/My/MyPage'
+import type { WithdrawOutcome } from '@/pages/My/WithdrawSheet'
 import NotificationsPage from '@/pages/Notifications/NotificationsPage'
 import PlaceDetailPage from '@/pages/PlaceDetail/PlaceDetailPage'
 import PublicPlacePage from '@/pages/PublicPlace/PublicPlacePage'
@@ -107,6 +110,7 @@ import type { LegalDocumentType } from '@/types/legal'
 import type { Notification } from '@/types/notification'
 import type { RecordSummary } from '@/types/record'
 import type { Me } from '@/types/me'
+import { WITHDRAWN_NOTICE } from '@/utils/withdrawError'
 import { CARD_PAGE_ENTER, PAGE_RECEDE } from '@/utils/cardTransition'
 import { todayInSeoul } from '@/utils/calendar'
 import { formatDate } from '@/utils/formatDate'
@@ -896,6 +900,29 @@ function MyRoute({ auth }: { auth: Auth }) {
     navigate(LOGIN_PATH, { replace: true })
   }
 
+  // 회원탈퇴: 진행 중인 드라이브가 있으면 서버가 막으므로(409) 카카오 본인 확인 전에 먼저 알린다.
+  // 실서버는 카카오 본인 확인 화면으로 이동하고, 돌아오면 OAuthCallbackRoute가 탈퇴를 마무리한다
+  const location = useLocation()
+  const withdrawError = (location.state as { withdrawError?: string } | null)?.withdrawError ?? null
+  const handleWithdraw = async (): Promise<WithdrawOutcome> => {
+    try {
+      const status = (await getActiveDrive()).data.drive?.status
+      if (status === 'PREPARING' || status === 'ACTIVE' || status === 'PAUSED') return 'activeDrive'
+    } catch {
+      // 확인하지 못하면 서버가 탈퇴 요청에서 다시 막는다
+    }
+    try {
+      const outcome = await withdraw(`${window.location.origin}/oauth/callback`)
+      if (outcome === 'withdrawn') {
+        await auth.signOut()
+        navigate(LOGIN_PATH, { replace: true, state: { notice: WITHDRAWN_NOTICE } })
+      }
+      return outcome
+    } catch {
+      return 'failed'
+    }
+  }
+
   return (
     <MyPage
       status={status}
@@ -905,6 +932,9 @@ function MyRoute({ auth }: { auth: Auth }) {
       onMenuClick={handleMenuClick}
       onLogout={() => void handleLogout()}
       onTabChange={goTab}
+      onWithdraw={handleWithdraw}
+      withdrawError={withdrawError}
+      onWithdrawErrorShown={() => navigate(location.pathname, { replace: true, state: null })}
       installMode={pwa.mode}
       onInstall={pwa.install}
     />

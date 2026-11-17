@@ -152,3 +152,20 @@ $top-inset: max(var(--safe-top), 12px);
   flex: 1 1 auto;
   min-width: 0;
 }
+
+// 회원탈퇴: 메뉴 묶음 밖 맨 아래의 작은 회색 글자 버튼 (Figma 시안 없음)
+.withdraw {
+  align-self: flex-end;
+  margin-top: -12px;
+  padding: 6px 4px;
+  @include typo('caption');
+  color: color('gray-400');
+  text-decoration: underline;
+  text-underline-offset: 2px;
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}

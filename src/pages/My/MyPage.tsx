@@ -3,11 +3,13 @@ import chevronIcon from '@/assets/icons/chevron-gray.svg'
 import selfieImage from '@/assets/images/my/couple-selfie.webp'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
 import BottomNavBar from '@/components/BottomNavBar/BottomNavBar'
+import Toast from '@/components/Toast/Toast'
 import type { Couple } from '@/types/couple'
 import type { InstallMode } from '@/utils/pwaInstall'
 import InstallGuideSheet from './InstallGuideSheet'
 import LogoutSheet from './LogoutSheet'
 import styles from './MyPage.module.scss'
+import WithdrawSheet, { type WithdrawOutcome } from './WithdrawSheet'
 
 export type MyMenu = 'favorites' | 'playlists' | 'stories' | 'privacy' | 'terms' | 'openSource' | 'faq'
 
@@ -42,6 +44,11 @@ interface MyPageProps {
   // 로그아웃 확인 시트에서 '로그아웃'을 눌렀을 때
   onLogout: () => void
   onTabChange: (tab: NavTab) => void
+  // 회원탈퇴: 안내 시트에서 확인하면 카카오 본인 확인을 시작한다
+  onWithdraw: () => Promise<WithdrawOutcome>
+  // 본인 확인 후 탈퇴하지 못하고 돌아왔을 때의 이유 (한 번 알려 준다)
+  withdrawError?: string | null
+  onWithdrawErrorShown?: () => void
   // 앱 설치(PWA). null이면 이미 앱으로 실행 중이라 메뉴를 숨긴다
   installMode?: InstallMode
   // 브라우저 설치 창 띄우기 (installMode가 'prompt'일 때)
@@ -56,9 +63,13 @@ function MyPage({
   onMenuClick,
   onLogout,
   onTabChange,
+  onWithdraw,
+  withdrawError = null,
+  onWithdrawErrorShown,
   installMode = null,
   onInstall,
 }: MyPageProps) {
+  const [withdrawOpen, setWithdrawOpen] = useState(false)
   const [logoutOpen, setLogoutOpen] = useState(false)
   const [installGuide, setInstallGuide] = useState<'ios' | 'manual' | null>(null)
 
@@ -120,11 +131,20 @@ function MyPage({
             </li>
           )}
         </ul>
+
+        {/* 자주 쓰지 않고 되돌릴 수 없는 동작이라 메뉴 묶음 밖 맨 아래에 작은 글자로 둔다 */}
+        <button type="button" className={styles.withdraw} onClick={() => setWithdrawOpen(true)}>
+          회원탈퇴
+        </button>
       </main>
 
       <BottomNavBar active="my" onChange={onTabChange} />
 
       {installGuide && <InstallGuideSheet mode={installGuide} onClose={() => setInstallGuide(null)} />}
+
+      {withdrawOpen && <WithdrawSheet onWithdraw={onWithdraw} onClose={() => setWithdrawOpen(false)} />}
+
+      {withdrawError && <Toast message={withdrawError} duration={4000} onDone={() => onWithdrawErrorShown?.()} />}
 
       {logoutOpen && (
         <LogoutSheet

@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useRef, useState, ViewTransition } from 'react'
 import { Navigate, Outlet, useLocation, useNavigate, useOutletContext, useSearchParams } from 'react-router'
-import { completeSocialLogin, login } from '@/api/auth'
+import { clearPendingAuth, completeReauth, completeSocialLogin, deleteAccount, login, pendingAuthPurpose } from '@/api/auth'
 import type { Auth } from '@/hooks/useAuth'
 import useOnboarding, { type Onboarding } from '@/hooks/useOnboarding'
 import LoginPage from '@/pages/Login/LoginPage'
@@ -11,8 +11,9 @@ import NameStepPage from '@/pages/Onboarding/NameStepPage'
 import WelcomePage from '@/pages/Onboarding/WelcomePage'
 import type { ConsentType } from '@/types/auth'
 import type { Me } from '@/types/me'
-import { LOGIN_PATH, ONBOARDING_PATHS } from './paths'
+import { LOGIN_PATH, MY_PATH, ONBOARDING_PATHS } from './paths'
 import { LOGIN_ERROR, loginErrorMessage } from '@/utils/loginError'
+import { WITHDRAW_CANCELLED, WITHDRAWN_NOTICE, withdrawErrorMessage } from '@/utils/withdrawError'
 
 const INVITE_PATH = '/couple/invite'
 
@@ -53,6 +54,8 @@ export function LoginRoute({ auth }: AuthRouteProps) {
   const [status, setStatus] = useState<'idle' | 'loading'>('idle')
   // 카카오 로그인 화면에서 실패하고 돌아온 경우 (OAuthCallbackRoute가 넘긴다)
   const [error, setError] = useState<string | null>((location.state as { error?: string } | null)?.error ?? null)
+  // 탈퇴를 마치고 온 경우 (OAuthCallbackRoute가 넘긴다)
+  const notice = (location.state as { notice?: string } | null)?.notice ?? null
 
   if (auth.status === 'signedIn' && status === 'idle') {
     return <Navigate to={auth.user ? homeOf(auth.user) : '/'} replace />
@@ -73,7 +76,7 @@ export function LoginRoute({ auth }: AuthRouteProps) {
     }
   }
 
-  return <LoginPage status={status} error={error} onKakaoLogin={() => void handleLogin()} />
+  return <LoginPage status={status} error={error} notice={notice} onKakaoLogin={() => void handleLogin()} />
 }
 
 // 카카오 로그인 화면에서 돌아오는 주소 (redirectUri). 코드를 서비스 토큰으로 바꾸고 다음 화면으로 보낸다
@@ -89,6 +92,24 @@ export function OAuthCallbackRoute({ auth }: AuthRouteProps) {
 
     const code = params.get('code')
     const state = params.get('state')
+
+    // 회원 탈퇴 전 본인 재인증에서 돌아왔으면 로그인이 아니라 탈퇴를 마무리한다 (같은 콜백 주소)
+    if (pendingAuthPurpose() === 'REAUTH') {
+      if (!code || !state) {
+        clearPendingAuth()
+        navigate(MY_PATH, { replace: true, state: { withdrawError: WITHDRAW_CANCELLED } })
+        return
+      }
+      completeReauth({ code, state })
+        .then(deleteAccount)
+        .then(async () => {
+          await auth.signOut()
+          navigate(LOGIN_PATH, { replace: true, state: { notice: WITHDRAWN_NOTICE } })
+        })
+        .catch((error: unknown) => navigate(MY_PATH, { replace: true, state: { withdrawError: withdrawErrorMessage(error) } }))
+      return
+    }
+
     if (!code || !state) {
       navigate(LOGIN_PATH, { replace: true, state: { error: LOGIN_ERROR } })
       return
