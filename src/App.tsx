@@ -276,6 +276,9 @@ function DriveRoute({ myUserId }: { myUserId: string }) {
     onReceipt: (receipt) => sync(receipt.drive),
   })
   const restAreas = useDriveRestAreas(drive?.id ?? null, drive?.routeId ?? null, driving)
+  // TODO: 백엔드는 진행 방향 정보가 있는 휴게소만 주행 경로에 매칭한다. 비어 있으면 미리보기처럼 경로 근처 휴게소로 대신 보여 준다
+  // (반대 방향 휴게소가 섞일 수 있어 지도 표시에만 쓰고 접근 알림에는 쓰지 않는다)
+  const nearbyRestAreas = useRouteRestAreas(restAreas.length === 0 ? map.polyline : null)
   const { alert: restAreaAlert, dismiss: dismissRestAreaAlert } = useRestAreaAlert(restAreas, map.current, driving)
   const restAreaDetail = useRestAreaDetail()
   const [arrivedDriveId, setArrivedDriveId] = useState<string | null>(null)
@@ -320,7 +323,7 @@ function DriveRoute({ myUserId }: { myUserId: string }) {
         routeDurationSeconds={map.routeDurationSeconds}
         origin={map.origin}
         destination={map.destination}
-        restAreas={restAreas}
+        restAreas={restAreas.length > 0 ? restAreas : nearbyRestAreas}
         onRestAreaClick={(restAreaId) => void restAreaDetail.open(restAreaId)}
         restAreaAlert={restAreaAlert && { name: restAreaAlert.restArea.name, meters: restAreaAlert.meters }}
         onRestAreaAlertClose={() => restAreaAlert && dismissRestAreaAlert(restAreaAlert.restArea.id)}

@@ -64,6 +64,7 @@ function useDriveMap(routeId: string | null) {
     current: position?.coordinate ?? null,
     accuracyMeters: position?.accuracyMeters ?? null,
     path,
+    polyline: loaded?.polyline ?? null,
     origin: loaded?.origin.coordinate ?? null,
     destination: loaded?.destination.coordinate ?? null,
     routeDurationSeconds: loaded?.durationSeconds ?? null,

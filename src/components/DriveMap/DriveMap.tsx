@@ -79,13 +79,22 @@ function KakaoDriveMap({
     if (map && follow) map.setLevel(FOLLOW_LEVEL)
   }, [map, follow])
 
+  // 지도를 직접 끌면 따라가기를 멈추고, 현재 위치 버튼(locateKey)을 누르면 다시 따라간다
+  const [following, setFollowing] = useState(true)
+  const [prevLocateKey, setPrevLocateKey] = useState(locateKey)
+  if (locateKey !== prevLocateKey) {
+    setPrevLocateKey(locateKey)
+    setFollowing(true)
+  }
+  const tracking = follow && following
+
   const lat = current?.latitude
   const lng = current?.longitude
   useEffect(() => {
     if (!map || lat === undefined || lng === undefined) return
-    if (hasPath && locateKey === 0 && !follow) return
+    if (follow ? !tracking : hasPath && locateKey === 0) return
     map.panTo(new kakao.maps.LatLng(lat, lng))
-  }, [map, lat, lng, hasPath, locateKey, follow])
+  }, [map, lat, lng, hasPath, locateKey, follow, tracking])
 
   if (error) return <div className={styles.fallback}>지도를 불러오지 못했어요.</div>
   if (loading) return <div className={styles.map} aria-busy="true" />
@@ -99,6 +108,7 @@ function KakaoDriveMap({
       zoomable={!compact}
       disableDoubleClickZoom={compact}
       onCreate={setMap}
+      onDragStart={() => follow && setFollowing(false)}
     >
       {hasPath &&
         (compact ? COMPACT_ROUTE_LINES : ROUTE_LINES).map((line) => (
