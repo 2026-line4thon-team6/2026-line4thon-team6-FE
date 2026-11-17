@@ -976,15 +976,27 @@ describe('드라이브 주행 · 마치기', () => {
     expect(screen.queryByText('기록이 중단되었어요.')).not.toBeInTheDocument()
   })
 
-  it('나가기 → 드라이브 종료를 누르면 도착 팝업 없이 홈으로 간다', async () => {
+  // Figma 1046:10305: 마치기 팝업은 '기록하러 가기'(카드 작성) · '기록하지 않고 나가기'(카드 폐기 후 홈)로 나뉜다
+  it('나가기 → 기록하지 않고 나가기를 누르면 도착 팝업 없이 홈으로 간다', async () => {
     const user = await startDriving()
 
     await user.click(screen.getByRole('button', { name: '드라이브 마치기' }))
     const confirm = await screen.findByRole('dialog', { name: '드라이브를 마치시겠어요?' })
-    await user.click(within(confirm).getByRole('button', { name: '드라이브 종료' }))
+    await user.click(within(confirm).getByRole('button', { name: '기록하지 않고 나가기' }))
 
     expect(await screen.findByRole('button', { name: '드라이브 시작하기' })).toBeInTheDocument()
     expect(screen.queryByRole('dialog', { name: /목적지에 도착했어요!/ })).not.toBeInTheDocument()
+  })
+
+  it('나가기 → 기록하러 가기를 누르면 드라이브를 마치고 그 드라이브의 카드 작성 화면으로 간다', async () => {
+    const user = await startDriving()
+
+    await user.click(screen.getByRole('button', { name: '드라이브 마치기' }))
+    const confirm = await screen.findByRole('dialog', { name: '드라이브를 마치시겠어요?' })
+    await user.click(within(confirm).getByRole('button', { name: '기록하러 가기' }))
+
+    expect(await screen.findByText('작성 기간이 지났거나 작성할 수 없는 카드예요.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '드라이브 시작하기' })).not.toBeInTheDocument()
   })
 
   it('주행 중 경로 탐색을 누르면 정해 둔 목적지로 검색한 결과를 보여 준다', async () => {
@@ -1259,11 +1271,11 @@ describe('드라이브 주행 · 마치기', () => {
     expect(await screen.findByRole('button', { name: /라디오\s*재생 중/ })).toBeInTheDocument()
   })
 
-  it('드라이브 마치기 팝업에서 경로 수정을 누르면 경로 설정 화면으로 간다', async () => {
+  it('드라이브 마치기 팝업에서 경로 수정하기를 누르면 경로 설정 화면으로 간다', async () => {
     const user = await startDriving()
 
     await user.click(screen.getByRole('button', { name: '드라이브 마치기' }))
-    await user.click(await screen.findByRole('button', { name: '경로 수정' }))
+    await user.click(await screen.findByRole('button', { name: '경로 수정하기' }))
 
     expect(await screen.findByRole('heading', { level: 1, name: '경로 설정' })).toBeInTheDocument()
   })
