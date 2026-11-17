@@ -21,6 +21,7 @@ interface RouteSettingPageProps {
   route: Route | null
   routeStatus: 'idle' | 'loading' | 'error'
   restAreas?: { id: string; name: string; coordinate: Coordinate }[]
+  onRestAreaClick?: (restAreaId: string) => void
   confirming?: boolean
   onQueryChange: (value: string) => void
   onSearch: (keyword: string) => void
@@ -49,6 +50,7 @@ function RouteSettingPage({
   route,
   routeStatus,
   restAreas = [],
+  onRestAreaClick,
   confirming = false,
   onQueryChange,
   onSearch,
@@ -101,6 +103,7 @@ function RouteSettingPage({
               origin={route.origin.coordinate}
               destination={route.destination.coordinate}
               restAreas={restAreas}
+              onRestAreaClick={onRestAreaClick}
               fitPadding={FIT_PADDING}
             />
           </div>

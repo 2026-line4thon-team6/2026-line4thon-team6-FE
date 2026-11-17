@@ -595,6 +595,7 @@ function RouteSettingRoute() {
   const { destinationPlaceId, destinationName } = (location.state ?? {}) as DriveLocationState
   const routeSetting = useRouteSetting(destinationPlaceId, destinationName)
   const routeRestAreas = useRouteRestAreas(routeSetting.route?.polyline ?? null)
+  const restAreaDetail = useRestAreaDetail()
   const [confirming, setConfirming] = useState(false)
 
   if (status === 'empty') return <Navigate to="/" replace />
@@ -612,24 +613,28 @@ function RouteSettingRoute() {
   }
 
   return (
-    <RouteSettingPage
-      originAddress={routeSetting.origin?.address || null}
-      locationUnavailable={routeSetting.locationStatus === 'unavailable'}
-      query={routeSetting.query}
-      history={routeSetting.history}
-      results={routeSetting.results}
-      route={routeSetting.route}
-      routeStatus={routeSetting.routeStatus}
-      restAreas={routeRestAreas}
-      confirming={confirming}
-      onQueryChange={routeSetting.changeQuery}
-      onSearch={routeSetting.submitSearch}
-      onRecentSelect={routeSetting.selectRecent}
-      onRecentDelete={routeSetting.deleteRecent}
-      onResultSelect={routeSetting.selectPlace}
-      onConfirm={() => void handleConfirm()}
-      onClose={backToDrive}
-    />
+    <>
+      <RouteSettingPage
+        originAddress={routeSetting.origin?.address || null}
+        locationUnavailable={routeSetting.locationStatus === 'unavailable'}
+        query={routeSetting.query}
+        history={routeSetting.history}
+        results={routeSetting.results}
+        route={routeSetting.route}
+        routeStatus={routeSetting.routeStatus}
+        restAreas={routeRestAreas}
+        onRestAreaClick={(restAreaId) => void restAreaDetail.open(restAreaId)}
+        confirming={confirming}
+        onQueryChange={routeSetting.changeQuery}
+        onSearch={routeSetting.submitSearch}
+        onRecentSelect={routeSetting.selectRecent}
+        onRecentDelete={routeSetting.deleteRecent}
+        onResultSelect={routeSetting.selectPlace}
+        onConfirm={() => void handleConfirm()}
+        onClose={backToDrive}
+      />
+      {restAreaDetail.detail && <RestAreaDetailModal detail={restAreaDetail.detail} onClose={restAreaDetail.close} />}
+    </>
   )
 }
 
