@@ -77,39 +77,44 @@ $thumb-scale: calc(86 / 269);
   @include typo('body-m-15');
 }
 
-.link {
+.imageActions {
   display: flex;
+  gap: 6px;
+  margin-top: 16px;
+}
+
+// 이미지 복사 · 저장: 예전 링크 상자(연한 배경)와 같은 톤의 두 버튼
+.imageAction {
+  display: flex;
+  flex: 1;
   align-items: center;
-  justify-content: space-between;
-  height: 30px;
-  margin-top: 20px;
-  padding-left: 12px;
-  border-radius: 5px;
-  background-color: color('divider');
-}
-
-.url {
-  min-width: 0;
-  overflow: hidden;
-  color: color('gray-600');
-  text-overflow: ellipsis;
+  justify-content: center;
+  height: 34px;
+  padding-right: 8px;
+  border-radius: 8px;
+  @include typo('caption-bold');
+  color: color('gray-800');
   white-space: nowrap;
-  @include typo('caption');
-}
+  background-color: color('divider');
 
-.copy {
-  flex-shrink: 0;
-  // 아이콘(34 x 35)이 링크 상자(30px)보다 커서 위아래로 살짝 넘친다
-  margin: -3px 0 -2px;
+  img {
+    flex-shrink: 0;
+    width: 28px;
+    height: 29px;
+  }
+
+  &:active {
+    background-color: color('coral-2');
+  }
 
   &:disabled {
     cursor: default;
-    opacity: 0.4;
+    opacity: 0.5;
   }
 
   &:focus-visible {
     outline: 2px solid color('coral-pressed');
-    outline-offset: -4px;
+    outline-offset: 2px;
   }
 }
 

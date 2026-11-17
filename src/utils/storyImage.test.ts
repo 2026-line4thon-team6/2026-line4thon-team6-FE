@@ -56,6 +56,32 @@ afterEach(() => {
   canvas = null
 })
 
+// 기록 지도 공유: 지도 + 카드가 보이는 기록 지도 화면처럼 그린다 (카카오 지도는 캡처할 수 없어 Figma 지도 그림을 쓴다)
+describe('기록 지도 화면처럼 그리기 (header)', () => {
+  it('맨 위에 앱과 같은 헤더(총 N번 · 우리 어디까지 가봤지? · 붕붕이)를 그리고, 카드는 헤더 아래 가운데에 그린다', async () => {
+    await createStoryImage({ photoUrl: '/photo.webp', title: '바다 드라이브', date: '2026년 11월 3일', header: { totalCount: 12 } })
+
+    const texts = context.calls.filter((call) => call.name === 'fillText')
+    const count = texts.find((call) => call.args[0] === '총 12번의 드라이브를 함께했어요')
+    const title = texts.find((call) => call.args[0] === '우리 어디까지 가봤지?')
+    const cardTitle = texts.find((call) => call.args[0] === '바다 드라이브')
+    expect(count).toBeDefined()
+    expect(title).toBeDefined()
+    // 헤더 글자가 카드보다 위에 있다
+    expect(title!.args[2] as number).toBeLessThan(cardTitle!.args[2] as number)
+    // 지도 1 + 붕붕이 1 + 카드 사진 1
+    expect(context.calls.filter((call) => call.name === 'drawImage')).toHaveLength(3)
+  })
+
+  it('전체 기록 수를 모르면 첫 줄 없이 제목만 그린다', async () => {
+    await createStoryImage({ photoUrl: null, title: '드라이브', date: '', header: { totalCount: null } })
+
+    const texts = context.calls.filter((call) => call.name === 'fillText').map((call) => call.args[0])
+    expect(texts).toContain('우리 어디까지 가봤지?')
+    expect(texts.some((text) => String(text).startsWith('총 '))).toBe(false)
+  })
+})
+
 describe('createStoryImage', () => {
   it('1080 × 1920 스토리 크기에 사진 · 제목 · 날짜가 들어간 폴라로이드를 그려 PNG로 돌려준다', async () => {
     const image = await createStoryImage({ photoUrl: '/photo.webp', title: '우리의 첫 바다 드라이브', date: '2026년 11월 3일' })

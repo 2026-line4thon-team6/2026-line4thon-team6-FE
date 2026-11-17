@@ -80,3 +80,38 @@ export async function shareImage(image: Blob, { fileName, title }: { fileName: s
     return error instanceof DOMException && error.name === 'AbortError' ? 'cancelled' : 'unsupported'
   }
 }
+
+// 이미지를 클립보드에 PNG로 넣는다 (기록 공유 시트의 '이미지 복사').
+// 아이폰 사파리는 누른 순간에 클립보드를 써야 해서, 만들고 있는 이미지(Promise)를 기다리지 않고 바로 넘긴다.
+// 이미지 복사를 지원하지 않는 브라우저면 이미지를 만들지 않고 거절한다 (부르는 쪽이 링크 복사로 바꾼다)
+export async function copyImage(createImage: () => Promise<Blob>): Promise<void> {
+  if (typeof ClipboardItem === 'undefined' || !navigator.clipboard?.write) throw new Error('이미지 복사를 지원하지 않아요.')
+  await navigator.clipboard.write([new ClipboardItem({ 'image/png': createImage() })])
+}
+
+export type ImageSaveResult = 'shared' | 'downloaded' | 'cancelled'
+
+// 이미지를 저장한다 (기록 공유 시트의 '이미지 저장').
+// 휴대폰은 파일을 바로 사진첩에 넣을 수 없어 공유 시트를 열고(이미지 저장 선택), 그 밖에는 PNG 파일로 내려받는다
+export async function saveImage(image: Blob, fileName: string): Promise<ImageSaveResult> {
+  const file = new File([image], fileName, { type: image.type || 'image/png' })
+  const touch = window.matchMedia?.('(pointer: coarse)').matches ?? false
+  if (touch && navigator.share && navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file] })
+      return 'shared'
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return 'cancelled'
+      // 공유 시트를 열지 못하면 내려받기로 바꾼다
+    }
+  }
+  const url = URL.createObjectURL(image)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = fileName
+  document.body.append(anchor)
+  anchor.click()
+  anchor.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+  return 'downloaded'
+}

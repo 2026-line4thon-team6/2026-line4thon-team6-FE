@@ -115,8 +115,8 @@ import { CARD_PAGE_ENTER, PAGE_RECEDE } from '@/utils/cardTransition'
 import { todayInSeoul } from '@/utils/calendar'
 import { formatDate } from '@/utils/formatDate'
 import { distanceMeters } from '@/utils/location'
-import { copyText, type ShareChannel, shareInviteCode, type ShareLink, shareTo } from '@/utils/share'
-import { shareStory } from '@/utils/storyImage'
+import { copyImage, copyText, saveImage, type ShareChannel, shareInviteCode, type ShareLink, shareTo } from '@/utils/share'
+import { createStoryImage, shareStory, type StoryContent } from '@/utils/storyImage'
 
 // 화면 주소
 const TAB_PATHS: Partial<Record<NavTab, string>> = {
@@ -751,20 +751,36 @@ function RecordMapRoute({ pendingCards, pendingReceivedAt, onEnter }: RecordMapR
       .catch(() => update({ status: 'error' }))
   }
 
-  // 인스타그램은 카드를 스토리 이미지(기록 지도 배경 + 카드)로 만들어 넘기고, 이미지 공유를 지원하지 않는 기기에서는 링크로 공유한다
+  // 모든 채널에서 '지도 + 카드'가 보이는 기록 지도 화면 같은 이미지를 만들어 기기 공유 창으로 넘긴다.
+  // (커플 전용 링크는 연인 말고는 열 수 없다. 카카오 지도는 캡처할 수 없어 지도 그림 위에 실제 위치의 사진 마커를 그린다)
+  // 이미지 공유를 지원하지 않는 기기(데스크톱 등)에서는 지금처럼 링크로 공유한다
+  const storyOf = (card: RecordSummary): StoryContent => ({
+    photoUrl: card.thumbnailUrl,
+    title: card.title,
+    date: formatDate(card.driveDate),
+    markers: map.markers.map(({ coordinate, latestCard }) => ({ ...coordinate, photoUrl: latestCard.thumbnailUrl })),
+    header: { totalCount: list.totalCount },
+  })
+
   const handleShareChannel = async (card: RecordSummary, channel: ShareChannel, url: string) => {
-    if (channel === 'instagram') {
-      const result = await shareStory({
-        photoUrl: card.thumbnailUrl,
-        title: card.title,
-        date: formatDate(card.driveDate),
-        // 스토리 배경에 지금 기록 지도의 사진 마커를 함께 그린다
-        markers: map.markers.map(({ coordinate, latestCard }) => ({ ...coordinate, photoUrl: latestCard.thumbnailUrl })),
-      })
-      if (result !== 'unsupported') return
-    }
+    const result = await shareStory(storyOf(card))
+    if (result !== 'unsupported') return
     await shareTo(channel, { url, title: card.title })
   }
+
+  // 링크 칸 자리의 '이미지 복사': 같은 공유 이미지를 클립보드에 넣는다. 이미지 복사를 지원하지 않으면 링크를 복사한다
+  const handleCopyImage = async (card: RecordSummary, link: ShareLink): Promise<'image' | 'link'> => {
+    try {
+      await copyImage(() => createStoryImage(storyOf(card)))
+      return 'image'
+    } catch (error) {
+      if (link.status !== 'ready') throw error
+      await copyText(link.url)
+      return 'link'
+    }
+  }
+
+  const handleSaveImage = async (card: RecordSummary) => saveImage(await createStoryImage(storyOf(card)), 'bbus-drive.png')
 
   // 기능명세서 9️⃣: 같은 날짜에 기록이 여러 개면 목록형으로 나열한다. 하나면 보던 화면 그대로 둔다
   const handleDateSelect = (nextDate: string, count: number) => {
@@ -808,7 +824,8 @@ function RecordMapRoute({ pendingCards, pendingReceivedAt, onEnter }: RecordMapR
           card={sharing.card}
           link={sharing.link}
           onClose={() => setSharing(null)}
-          onCopyLink={copyText}
+          onCopyImage={() => handleCopyImage(sharing.card, sharing.link)}
+          onSaveImage={() => handleSaveImage(sharing.card)}
           onShareChannel={(channel, url) => void handleShareChannel(sharing.card, channel, url)}
         />
       )}

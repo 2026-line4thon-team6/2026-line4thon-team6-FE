@@ -2,6 +2,7 @@ import markerDotIcon from '@/assets/icons/record-marker-dot.svg'
 import markerFrameIcon from '@/assets/icons/record-marker-frame.svg'
 import mapImageUrl from '@/assets/images/record-story-map.webp'
 import emptyPhotoUrl from '@/assets/images/card/photo-empty.webp'
+import mascotImageUrl from '@/assets/images/record-map-mascot.webp'
 import { type ImageShareResult, shareImage } from './share'
 
 // 인스타그램 스토리용 드라이브 기록 카드 이미지 (Figma 284:15555).
@@ -28,6 +29,8 @@ const toMapImage = (latitude: number, longitude: number) => ({
 // 사진 마커 (RecordMarker와 같은 모양): 말풍선 54 × 61, 사진 46px, 좌표는 말풍선 아래 점(27, 66)
 const MARKER = { width: 54, anchorX: 27, anchorY: 66, photo: 46, photoInset: 4, photoRadius: 8, shadow: 20, dotTop: 61 }
 const BACKGROUND_BLUR = 1.5 * SCALE
+// 기록 지도 헤더 (RecordMapPage .header): 좌우 25 · 17px, 위 24px, 제목 아래 20px, 아래 모서리 30px, 붕붕이 117 × 78 (아래로 9px 걸침)
+const HEADER = { left: 25, right: 17, top: 24, gap: 4, bottom: 20, radius: 30, countSize: 16, titleSize: 24, mascotWidth: 117, mascotHeight: 78, mascotOverhang: 9 }
 const EMPTY_BACKGROUND = '#faeeed' // color('divider')
 
 export interface StoryMarker {
@@ -36,11 +39,13 @@ export interface StoryMarker {
   photoUrl: string | null // 사진이 없는 기록은 null → 기본 일러스트
 }
 
-interface StoryContent {
+export interface StoryContent {
   photoUrl: string | null // 사진이 없는 기록은 null → 기본 일러스트 (D15)
   title: string
   date: string // 화면용 날짜 (예: 2026년 11월 3일)
   markers?: StoryMarker[] // 배경 지도에 놓을 기록 사진 마커
+  // 있으면 기록 지도 화면처럼 맨 위에 헤더를 그린다 (총 N번 · 우리 어디까지 가봤지? · 붕붕이). 기록 수를 모르면 null
+  header?: { totalCount: number | null }
 }
 
 function loadImage(url: string) {
@@ -145,7 +150,52 @@ async function drawBackground(ctx: CanvasRenderingContext2D, markers: StoryMarke
   ctx.filter = 'none'
 }
 
-export async function createStoryImage({ photoUrl, title, date, markers = [] }: StoryContent): Promise<Blob> {
+// 기록 지도 헤더를 그리고 헤더 아래 끝(y)을 돌려준다
+async function drawHeader(ctx: CanvasRenderingContext2D, totalCount: number | null): Promise<number> {
+  const at = (value: number) => value * SCALE
+  const countHeight = totalCount === null ? 0 : at(HEADER.countSize * 1.5) + at(HEADER.gap)
+  const titleHeight = at(HEADER.titleSize * 1.4)
+  const height = at(HEADER.top) + countHeight + titleHeight + at(HEADER.bottom)
+
+  // 배경 (코랄 흰색, 아래 모서리 둥글게, 그림자 0 1px 10px 10%)
+  ctx.save()
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.1)'
+  ctx.shadowBlur = at(10)
+  ctx.shadowOffsetY = at(1)
+  ctx.fillStyle = '#fffbfb'
+  ctx.beginPath()
+  ctx.roundRect(0, 0, WIDTH, height, [0, 0, at(HEADER.radius), at(HEADER.radius)])
+  ctx.fill()
+  ctx.restore()
+
+  ctx.textBaseline = 'top'
+  let y = at(HEADER.top)
+  if (totalCount !== null) {
+    // '총 N번…'은 앱처럼 코랄 → 빨강 그라데이션 글자
+    const text = `총 ${totalCount}번의 드라이브를 함께했어요`
+    ctx.font = `500 ${at(HEADER.countSize)}px ${FONT}`
+    const width = ctx.measureText(text).width
+    const gradient = ctx.createLinearGradient(at(HEADER.left), y, at(HEADER.left) + width, y + at(HEADER.countSize))
+    gradient.addColorStop(0, '#ffaa95')
+    gradient.addColorStop(1, '#ff1d46')
+    ctx.fillStyle = gradient
+    ctx.fillText(text, at(HEADER.left), y + at(HEADER.countSize * 0.25))
+    y += countHeight
+  }
+  ctx.fillStyle = '#492515' // color('brown')
+  ctx.font = `600 ${at(HEADER.titleSize)}px ${FONT}`
+  ctx.fillText('우리 어디까지 가봤지?', at(HEADER.left), y + at(HEADER.titleSize * 0.2))
+
+  const mascot = await loadPhoto(mascotImageUrl)
+  if (mascot) {
+    const w = at(HEADER.mascotWidth)
+    const h = at(HEADER.mascotHeight)
+    ctx.drawImage(mascot, WIDTH - at(HEADER.right) - w, height + at(HEADER.mascotOverhang) - h, w, h)
+  }
+  return height + at(HEADER.mascotOverhang)
+}
+
+export async function createStoryImage({ photoUrl, title, date, markers = [], header }: StoryContent): Promise<Blob> {
   const canvas = document.createElement('canvas')
   canvas.width = WIDTH
   canvas.height = HEIGHT
@@ -160,10 +210,11 @@ export async function createStoryImage({ photoUrl, title, date, markers = [] }: 
   ])
 
   await drawBackground(ctx, markers, empty)
+  const headerBottom = header ? await drawHeader(ctx, header.totalCount) : 0
 
-  // 카드 (그림자 0 0 10px 20%)
+  // 카드 (그림자 0 0 10px 20%). 헤더가 있으면 헤더 아래 남은 영역의 가운데에 둔다
   const cardX = (WIDTH - CARD.width) / 2
-  const cardY = (HEIGHT - CARD.height) / 2
+  const cardY = headerBottom + (HEIGHT - headerBottom - CARD.height) / 2
   ctx.save()
   ctx.shadowColor = 'rgba(0, 0, 0, 0.2)'
   ctx.shadowBlur = 10 * SCALE
