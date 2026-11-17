@@ -16,7 +16,9 @@ import SendToPartnerModal, { type SendStep } from './SendToPartnerModal'
 import ShareSheet, { type ShareLink } from './ShareSheet'
 
 // 값을 불러오지 못했을 때의 표시
-const ROUTE_FIT_PADDING: [number, number, number, number] = [36, 40, 12, 40]
+// 경로 미리보기 여백 [위, 오른쪽, 아래, 왼쪽]. 출발지 · 도착지 말풍선(점 위 약 49px, 폭 약 67px)과
+// 도착지 핀(점 아래 약 11px)이 잘리지 않게 둔다
+const ROUTE_FIT_PADDING: [number, number, number, number] = [56, 40, 24, 40]
 
 interface PlaceDetailPageProps {
   status: 'loading' | 'ready' | 'error'
