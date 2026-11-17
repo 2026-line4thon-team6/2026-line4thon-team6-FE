@@ -70,6 +70,30 @@ export function fetchDriveCard(driveId: string): Promise<ApiResponse<Card>> {
   return apiFetch<Card>(`/drives/${encodeURIComponent(driveId)}/card`)
 }
 
+// 미작성 카드 목록을 열 때 미리 받아 둔 카드. 작성 화면이 불러오는 중 화면 없이 바로 내용과 함께 열리게 한다.
+// 사진 링크(10분 서명 URL)가 낡지 않도록 짧게만 쓰고, 화면은 열리자마자 최신 카드를 다시 받는다
+const PREFETCH_MAX_AGE_MS = 60_000
+const prefetched = new Map<string, { card: Card; at: number }>()
+
+export async function prefetchDriveCard(driveId: string): Promise<void> {
+  try {
+    const { data } = await fetchDriveCard(driveId)
+    prefetched.set(driveId, { card: data, at: Date.now() })
+  } catch {
+    prefetched.delete(driveId)
+  }
+}
+
+export function peekDriveCard(driveId: string): Card | null {
+  const entry = prefetched.get(driveId)
+  if (!entry || Date.now() - entry.at > PREFETCH_MAX_AGE_MS) return null
+  return structuredClone(entry.card)
+}
+
+export function clearDriveCardCache() {
+  prefetched.clear()
+}
+
 // PATCH /cards/{cardId}/draft — 제목 · 사진 순서 임시저장. photoIds는 전체 순서이고 첫 사진이 대표다
 export function saveCardDraft(
   cardId: string,

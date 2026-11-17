@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, ViewTransition } from 'react'
 import chevronIcon from '@/assets/icons/record-chevron.svg'
 import trashIcon from '@/assets/icons/trash.svg'
 import BottomSheet from '@/components/BottomSheet/BottomSheet'
 import { DELETE_CARD_ERRORS, type DeleteOutcome } from '@/hooks/useCardDetail'
 import type { PendingCardItem } from '@/hooks/usePendingCards'
 import DeleteCardModal from '@/pages/RecordDetail/DeleteCardModal'
+import { CARD_TITLE_SHARE, cardTitleTransitionName } from '@/utils/cardTransition'
 import { formatRemaining } from '@/utils/cardFormat'
 import styles from './PendingCardSheet.module.scss'
 
@@ -55,7 +56,10 @@ function PendingCardSheet({ cards, onSelect, onClose, onDiscard }: PendingCardSh
               <button type="button" className={styles.row} onClick={() => onSelect(card.driveId)}>
                 <span className={styles.text}>
                   <span className={styles.name}>
-                    <span className={styles.nameText}>{card.title}</span>
+                    {/* 누르면 이 이름이 카드 작성 화면의 제목 자리로 이어진다 (공유 요소 화면 전환) */}
+                    <ViewTransition name={cardTitleTransitionName(card.driveId)} share={CARD_TITLE_SHARE} default="none">
+                      <span className={styles.nameText}>{card.title}</span>
+                    </ViewTransition>
                     {card.writing && <span className={styles.badge}>작성 중</span>}
                   </span>
                   <span className={styles.meta}>

@@ -396,3 +396,20 @@ describe('카드 삭제', () => {
     )
   })
 })
+
+// 미작성 카드 목록에서 고른 카드는 이름을 알고 있어, 불러오는 동안에도 제목 자리에 먼저 그린다 (화면 전환이 끊기지 않게)
+describe('불러오는 중', () => {
+  it('목록에서 고른 카드 이름을 제목 자리에 먼저 보여 준다', () => {
+    renderPage({ status: 'loading', card: null, driveId: 'drv_1', pendingTitle: '바다 드라이브' })
+
+    expect(screen.getByText('바다 드라이브')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('카드를 불러오는 중이에요.')
+  })
+
+  it('이름을 모르면 불러오는 중 안내만 보여 준다', () => {
+    renderPage({ status: 'loading', card: null })
+
+    expect(screen.getByRole('status')).toHaveTextContent('카드를 불러오는 중이에요.')
+    expect(screen.queryByText('바다 드라이브')).not.toBeInTheDocument()
+  })
+})

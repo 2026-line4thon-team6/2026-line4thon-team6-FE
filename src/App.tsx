@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, ViewTransition } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 import { fetchCardShare } from '@/api/cards'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
@@ -27,6 +27,7 @@ import useGpsRecorder from '@/hooks/useGpsRecorder'
 import useDriveCard from '@/hooks/useDriveCard'
 import useNotifications from '@/hooks/useNotifications'
 import useHome from '@/hooks/useHome'
+import useGoCard, { type CardNavigationState } from '@/hooks/useGoCard'
 import usePendingCardDiscard from '@/hooks/usePendingCardDiscard'
 import usePendingCardPicker from '@/hooks/usePendingCardPicker'
 import usePendingCards from '@/hooks/usePendingCards'
@@ -106,6 +107,7 @@ import type { LegalDocumentType } from '@/types/legal'
 import type { Notification } from '@/types/notification'
 import type { RecordSummary } from '@/types/record'
 import type { Me } from '@/types/me'
+import { CARD_PAGE_ENTER, PAGE_RECEDE } from '@/utils/cardTransition'
 import { todayInSeoul } from '@/utils/calendar'
 import { formatDate } from '@/utils/formatDate'
 import { distanceMeters } from '@/utils/location'
@@ -669,7 +671,11 @@ function RecordMapRoute({ pendingCards, pendingReceivedAt, onEnter }: RecordMapR
   const navigate = useNavigate()
   const goTab = useTabNavigate()
   const pendingCard = usePendingCards(pendingCards, pendingReceivedAt)
-  const pendingPicker = usePendingCardPicker(pendingCard, (driveId) => navigate(cardPath(driveId)))
+  // 카드 작성 화면이 아래에서 올라오고, 누른 카드 이름이 제목 자리로 이어진다
+  const goCard = useGoCard()
+  const pendingPicker = usePendingCardPicker(pendingCard, (driveId) =>
+    goCard(driveId, pendingCard?.cards.find((card) => card.driveId === driveId)?.title),
+  )
   // 목록에서 카드를 지우면 홈 정보(미작성 카드 목록)를 다시 받는다
   const discardPending = usePendingCardDiscard(onEnter)
 
@@ -734,8 +740,9 @@ function RecordMapRoute({ pendingCards, pendingReceivedAt, onEnter }: RecordMapR
     if (list.status === 'error') list.retry()
   }
 
+  // 카드 작성 화면으로 갈 때는 이 화면이 살짝 물러나며 어두워진다
   return (
-    <>
+    <ViewTransition exit={PAGE_RECEDE} default="none">
       <RecordMapPage
         view={view}
         totalCount={list.totalCount}
@@ -784,7 +791,7 @@ function RecordMapRoute({ pendingCards, pendingReceivedAt, onEnter }: RecordMapR
           onDiscard={discardPending}
         />
       )}
-    </>
+    </ViewTransition>
   )
 }
 
@@ -1091,17 +1098,20 @@ function HomeRoute({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => onEnter(), [])
 
+  // 카드 작성 화면이 아래에서 올라오고, 목록에서 누른 카드 이름은 제목 자리로 이어진다
+  const goCardWithTransition = useGoCard()
   const goCard = (driveId: string) => {
     onPendingPromptSeen()
-    navigate(cardPath(driveId))
+    goCardWithTransition(driveId, summary?.cards.find((card) => card.driveId === driveId)?.title)
   }
   // 미작성 카드가 2개 이상이면 배너를 눌렀을 때 목록에서 고르게 한다
   const pendingPicker = usePendingCardPicker(summary, goCard)
   // 목록에서 카드를 지우면 홈 정보(미작성 카드 목록)를 다시 받는다
   const discardPending = usePendingCardDiscard(onEnter)
 
+  // 카드 작성 화면으로 갈 때는 이 화면이 살짝 물러나며 어두워진다
   return (
-    <>
+    <ViewTransition exit={PAGE_RECEDE} default="none">
       <HomePage
         timeOfDay={timeOfDay}
         home={home}
@@ -1156,7 +1166,7 @@ function HomeRoute({
           />
         )
       )}
-    </>
+    </ViewTransition>
   )
 }
 
@@ -1174,6 +1184,8 @@ function DriveCardRoute({ driveId, userId, myNickname, partnerNickname, myGender
   const goBack = useGoBack()
   // 카드를 지우면 들어온 화면(기록 지도 · 홈)으로 돌아간다. 주소로 바로 열었으면 기록 지도로 간다
   const goBackAfterDelete = useGoBack('/map')
+  // 미작성 카드 목록 · 배너에서 들어오면 카드 이름을 알고 있어, 불러오는 동안에도 제목을 먼저 그린다
+  const pendingTitle = (useLocation().state as CardNavigationState | null)?.cardTitle ?? null
   const { setMyText, save, saveDraft, retry, addPhotos, removePhoto, swapPhotos, remove, ...card } = useDriveCard(
     driveId,
     userId,
@@ -1197,21 +1209,26 @@ function DriveCardRoute({ driveId, userId, myNickname, partnerNickname, myGender
     return outcome
   }
 
+  // 미작성 카드 목록 · 배너에서 들어올 때는 아래에서 올라온다 (다른 화면에서 올 때는 전환 없음)
   return (
-    <DriveCardPage
-      {...card}
-      myNickname={myNickname}
-      partnerNickname={partnerNickname}
-      myGender={myGender}
-      onMyTextChange={setMyText}
-      onLeave={() => void handleLeave()}
-      onRetry={retry}
-      onAddPhotos={(files) => void addPhotos(files)}
-      onRemovePhoto={(mediaId) => void removePhoto(mediaId)}
-      onSwapPhotos={() => void swapPhotos()}
-      onSave={() => void handleSave()}
-      onDelete={handleDelete}
-    />
+    <ViewTransition enter={CARD_PAGE_ENTER} default="none">
+      <DriveCardPage
+        {...card}
+        driveId={driveId}
+        pendingTitle={pendingTitle}
+        myNickname={myNickname}
+        partnerNickname={partnerNickname}
+        myGender={myGender}
+        onMyTextChange={setMyText}
+        onLeave={() => void handleLeave()}
+        onRetry={retry}
+        onAddPhotos={(files) => void addPhotos(files)}
+        onRemovePhoto={(mediaId) => void removePhoto(mediaId)}
+        onSwapPhotos={() => void swapPhotos()}
+        onSave={() => void handleSave()}
+        onDelete={handleDelete}
+      />
+    </ViewTransition>
   )
 }
 

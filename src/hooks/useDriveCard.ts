@@ -5,6 +5,7 @@ import {
   discardCard,
   discardUploadedPhoto,
   fetchDriveCard,
+  peekDriveCard,
   saveCardDraft,
   saveMyReflection,
   uploadCardPhoto,
@@ -47,16 +48,20 @@ export const isCardEditable = (card: Card, now = Date.now()) => card.canEdit && 
 // 드라이브 카드 작성 화면의 데이터와 동작 (불러오기 · 사진 추가/삭제/순서 변경 · 소감 · 저장)
 // 드라이브가 바뀌면 부모에서 key={driveId}로 새로 마운트한다
 function useDriveCard(driveId: string, myUserId: string) {
-  const [state, setState] = useState<State>({ status: 'loading', card: null })
+  // 미작성 카드 목록에서 미리 받아 둔 카드가 있으면 불러오는 중 없이 바로 그 카드로 시작한다 (뒤에서 최신 카드로 바꾼다)
+  const [initial] = useState(() => peekDriveCard(driveId))
+  const [state, setState] = useState<State>(() =>
+    initial ? { status: 'ready', card: initial } : { status: 'loading', card: null },
+  )
   const [attempt, setAttempt] = useState(0)
-  const [myText, setMyTextState] = useState('')
+  const [myText, setMyTextState] = useState(() => (initial ? (findMine(initial, myUserId)?.text ?? '') : ''))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // 연속된 요청에서 최신 버전을 쓰기 위해 화면 상태와 별도로 들고 있는다
-  const cardRef = useRef<Card | null>(null)
+  const cardRef = useRef<Card | null>(initial)
   const completeKey = useRef<string | null>(null)
   // 타이머 · 화면 이탈 이벤트에서 지금 입력된 소감을 읽기 위해 들고 있는다
-  const textRef = useRef('')
+  const textRef = useRef(initial ? (findMine(initial, myUserId)?.text ?? '') : '')
   // 진행 중인 소감 초안 저장. 소감 버전이 꼬이지 않게 다음 저장은 앞의 저장이 끝난 뒤에 보낸다
   const draftTask = useRef<Promise<void>>(Promise.resolve())
   // 저장하기가 소감을 제출하는 동안에는 초안 저장을 보내지 않는다 (같은 버전으로 겹쳐 충돌하지 않게)
@@ -75,6 +80,9 @@ function useDriveCard(driveId: string, myUserId: string) {
         if (ignore) return
         cardRef.current = data
         setState({ status: 'ready', card: data })
+        // 미리 받아 둔 카드로 먼저 열려 그사이 소감을 쓰기 시작했으면, 쓰던 글은 덮지 않는다
+        const typed = initial !== null && textRef.current !== (findMine(initial, myUserId)?.text ?? '')
+        if (typed) return
         textRef.current = findMine(data, myUserId)?.text ?? ''
         setMyTextState(textRef.current)
       })
@@ -87,7 +95,7 @@ function useDriveCard(driveId: string, myUserId: string) {
     return () => {
       ignore = true
     }
-  }, [driveId, myUserId, attempt])
+  }, [driveId, myUserId, attempt, initial])
 
   // 사진 링크(10분 서명 URL)가 만료되기 전에 새 링크만 받아 바꾼다.
   // 쓰는 중인 내용을 덮지 않도록 카드 버전이 그대로면 사진 목록을, 상대가 바꿔 버전이 다르면

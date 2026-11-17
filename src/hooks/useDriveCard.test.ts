@@ -477,3 +477,21 @@ describe('미작성 카드 폐기', () => {
     expect(outcome).toBe('deleted')
   })
 })
+
+// 미작성 카드 목록을 열 때 카드를 미리 받아 두면, 작성 화면이 불러오는 중 화면 없이 바로 내용과 함께 올라온다
+describe('미리 받아 둔 카드', () => {
+  it('미리 받아 둔 카드가 있으면 불러오는 중 없이 바로 그 카드로 시작하고, 뒤에서 최신 카드로 바꾼다', async () => {
+    const { data } = await mockFetchDriveCard(MOCK_CARD_DRIVE_ID)
+    await cardsApi.prefetchDriveCard(MOCK_CARD_DRIVE_ID)
+    const fresh = { ...data, title: '서버에서 바뀐 제목' }
+    const fetch = vi.spyOn(cardsApi, 'fetchDriveCard').mockResolvedValue({ data: fresh, meta: { requestId: 'r', serverTime: '' } })
+
+    const { result } = renderHook(() => useDriveCard(MOCK_CARD_DRIVE_ID, MOCK_ME_ID))
+
+    expect(result.current.status).toBe('ready')
+    expect(result.current.card?.title).toBe(data.title)
+    await waitFor(() => expect(result.current.card?.title).toBe('서버에서 바뀐 제목'))
+    expect(fetch).toHaveBeenCalled()
+    cardsApi.clearDriveCardCache()
+  })
+})
