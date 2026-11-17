@@ -44,13 +44,13 @@ describe('fetchRecommendations', () => {
     expect(new URL(fetchMock.mock.calls[0][0] as string).search).toBe('?category=SEA')
   })
 
-  it('백엔드가 없으면 백엔드 카탈로그와 같은 id의 목 장소 3곳을 돌려준다', async () => {
+  it('백엔드가 없으면 백엔드 카탈로그와 같은 id의 바다 목 장소를 돌려준다', async () => {
     const { fetchRecommendations } = await loadWithMock()
 
     const { data } = await fetchRecommendations('SEA')
 
     expect(data.category).toBe('SEA')
-    expect(data.items.map((place) => place.id)).toEqual(['plc_oido', 'plc_heonhwaro', 'plc_eurwangni'])
+    expect(data.items.map((place) => place.id)).toEqual(['plc_daecheon', 'plc_oido', 'plc_heonhwaro', 'plc_eurwangni'])
   })
 
   it('목 서버에서 찜을 바꾸면 추천 목록에도 반영된다', async () => {
