@@ -11,7 +11,7 @@ import type {
 import { mockApiError, paginate } from './utils'
 
 // 백엔드 연동 전(VITE_API_BASE_URL 미설정)에 쓰는 장소 목 응답.
-// 백엔드 추천 카탈로그(HardcodedPlaceCatalog)와 같은 15곳 · 같은 id. 카테고리마다 3곳 (Figma Home_Components 카드)
+// 백엔드 추천 카탈로그(places 시드)와 같은 16곳 · 같은 id. 카테고리마다 3곳, 바다는 대천을 맨 앞에 더해 4곳 (Figma Home_Components 카드)
 const place = (
   id: string,
   name: string,
@@ -36,6 +36,7 @@ const place = (
 })
 
 export const MOCK_PLACES: PlaceSummary[] = [
+  place('plc_daecheon', '보령 대천 해수욕장', '충남 보령시', 150, ['바다', '머드'], 'SEA', false, 'daecheon'),
   place('plc_oido', '시흥 오이도', '경기 시흥시', 60, ['일몰', '해안도로'], 'SEA', true, 'oido'),
   place('plc_heonhwaro', '강릉 헌화로', '강원 강릉시', 180, ['바다', '해안도로'], 'SEA', false, 'heonhwaro'),
   place('plc_eurwangni', '인천 을왕리 해수욕장', '인천 영종구', 70, ['바다', '노을'], 'SEA', false, 'eurwangni'),
