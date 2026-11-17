@@ -230,7 +230,15 @@ function PlaceDetailRoute({ placeId, couple, mascotName, myUserId, onFavoriteCha
         onBack={goBack}
         onRetry={retry}
         onFavoriteToggle={handleFavoriteToggle}
-        onStartDrive={() => void drive.start(placeId)}
+        // 이름만 정하면 이 장소로 바로 경로 안내를 시작한다
+        onStartDrive={() =>
+          void drive.start(
+            placeId,
+            detail
+              ? { placeId: detail.place.id, name: detail.place.name, address: detail.place.address, coordinate: detail.place.coordinate }
+              : undefined,
+          )
+        }
         getShareUrl={getShareUrl}
         onCopyLink={(url) => void copyText(url)}
         onShareChannel={(channel, url) => void shareTo(channel, { url, title: detail?.place.name ?? '' })}
