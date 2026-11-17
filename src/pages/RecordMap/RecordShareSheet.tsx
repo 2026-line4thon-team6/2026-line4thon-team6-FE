@@ -18,7 +18,7 @@ interface RecordShareSheetProps {
   onShareChannel: (channel: ShareChannel, url: string) => void
 }
 
-// 기록 지도 미리보기 카드의 공유 바텀시트 (Figma 284:15197). 인스타그램은 카드를 스토리 이미지로 넘긴다
+// 기록 지도 미리보기 카드의 공유 바텀시트 (Figma 284:15197). 채널을 고르면 '지도 + 카드' 이미지를 기기 공유 창으로 넘긴다 (지원하지 않으면 링크)
 function RecordShareSheet({ card, link, onClose, onCopyLink, onShareChannel }: RecordShareSheetProps) {
   const url = link.status === 'ready' ? link.url : null
   const [toast, setToast] = useState<string | null>(null)

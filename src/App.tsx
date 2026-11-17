@@ -746,18 +746,18 @@ function RecordMapRoute({ pendingCards, pendingReceivedAt, onEnter }: RecordMapR
       .catch(() => update({ status: 'error' }))
   }
 
-  // 인스타그램은 카드를 스토리 이미지(기록 지도 배경 + 카드)로 만들어 넘기고, 이미지 공유를 지원하지 않는 기기에서는 링크로 공유한다
+  // 모든 채널에서 '지도 + 카드'가 보이는 기록 지도 화면 같은 이미지를 만들어 기기 공유 창으로 넘긴다.
+  // (커플 전용 링크는 연인 말고는 열 수 없다. 카카오 지도는 캡처할 수 없어 지도 그림 위에 실제 위치의 사진 마커를 그린다)
+  // 이미지 공유를 지원하지 않는 기기(데스크톱 등)에서는 지금처럼 링크로 공유한다
   const handleShareChannel = async (card: RecordSummary, channel: ShareChannel, url: string) => {
-    if (channel === 'instagram') {
-      const result = await shareStory({
-        photoUrl: card.thumbnailUrl,
-        title: card.title,
-        date: formatDate(card.driveDate),
-        // 스토리 배경에 지금 기록 지도의 사진 마커를 함께 그린다
-        markers: map.markers.map(({ coordinate, latestCard }) => ({ ...coordinate, photoUrl: latestCard.thumbnailUrl })),
-      })
-      if (result !== 'unsupported') return
-    }
+    const result = await shareStory({
+      photoUrl: card.thumbnailUrl,
+      title: card.title,
+      date: formatDate(card.driveDate),
+      markers: map.markers.map(({ coordinate, latestCard }) => ({ ...coordinate, photoUrl: latestCard.thumbnailUrl })),
+      header: { totalCount: list.totalCount },
+    })
+    if (result !== 'unsupported') return
     await shareTo(channel, { url, title: card.title })
   }
 
