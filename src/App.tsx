@@ -244,7 +244,7 @@ const NEAR_DESTINATION_METERS = 300
 function DriveRoute({ myUserId }: { myUserId: string }) {
   const navigate = useNavigate()
   const location = useLocation()
-  const { status, drive, rename, pause, resume, end, sync } = useDrive()
+  const { status, drive, rename, pause, resume, end, cancel, sync } = useDrive()
   const { playing: radioPlaying } = useRadioPlayer()
   const drivePlaylist = useDrivePlaylist(drive)
   const map = useDriveMap(drive?.routeId ?? null)
@@ -288,6 +288,7 @@ function DriveRoute({ myUserId }: { myUserId: string }) {
         drive={drive}
         currentCoordinate={map.current}
         routePath={map.path}
+        routeDurationSeconds={map.routeDurationSeconds}
         origin={map.origin}
         destination={map.destination}
         restAreas={restAreas}
@@ -305,6 +306,11 @@ function DriveRoute({ myUserId }: { myUserId: string }) {
         onPause={() => void pause()}
         onResume={() => void resume()}
         onEnd={handleEnd}
+        onCancel={async () => {
+          const cancelled = await cancel()
+          if (cancelled) navigate('/', { replace: true })
+          return cancelled
+        }}
         locationDenied={map.locationDenied}
         onLocationRetry={map.retryLocation}
         // TODO: 게임 화면 연결
@@ -587,7 +593,7 @@ function RadioStoriesDrawerRoute({
   )
 }
 
-function RouteSettingRoute() {
+function RouteSettingRoute({ partnerNickname }: { partnerNickname: string | null }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { status, drive, setRoute, start } = useDrive()
@@ -595,6 +601,7 @@ function RouteSettingRoute() {
   const routeSetting = useRouteSetting(destinationPlaceId, destinationName)
   const routeRestAreas = useRouteRestAreas(routeSetting.route?.polyline ?? null)
   const [confirming, setConfirming] = useState(false)
+  const [toast, setToast] = useState<string | null>(null)
 
   if (status === 'empty') return <Navigate to="/" replace />
 
@@ -604,31 +611,42 @@ function RouteSettingRoute() {
     if (!routeSetting.route) return
     setConfirming(true)
     const saved = await setRoute(routeSetting.route.id)
-    if (saved && drive?.status === 'PREPARING') await start()
+    // 출발까지 성공해야 드라이브 화면으로 돌아간다. 실패하면 경로 설정 화면에 남아 이유를 알린다
+    const started = saved && drive?.status === 'PREPARING' ? await start() : 'started'
     setConfirming(false)
-    // TODO: 실패 토스트
-    if (saved) backToDrive()
+    if (!saved) return setToast('경로를 저장하지 못했어요. 다시 시도해 주세요.')
+    if (started === 'started') return backToDrive()
+    setToast(
+      started === 'RECORDER_ONLY'
+        ? `드라이브를 만든 ${partnerNickname ?? '연인'}님만 출발할 수 있어요.`
+        : started === 'NO_LOCATION'
+          ? '현재 위치를 확인할 수 없어 출발하지 못했어요.'
+          : '출발하지 못했어요. 다시 시도해 주세요.',
+    )
   }
 
   return (
-    <RouteSettingPage
-      originAddress={routeSetting.origin?.address || null}
-      locationUnavailable={routeSetting.locationStatus === 'unavailable'}
-      query={routeSetting.query}
-      history={routeSetting.history}
-      results={routeSetting.results}
-      route={routeSetting.route}
-      routeStatus={routeSetting.routeStatus}
-      restAreas={routeRestAreas}
-      confirming={confirming}
-      onQueryChange={routeSetting.changeQuery}
-      onSearch={routeSetting.submitSearch}
-      onRecentSelect={routeSetting.selectRecent}
-      onRecentDelete={routeSetting.deleteRecent}
-      onResultSelect={routeSetting.selectPlace}
-      onConfirm={() => void handleConfirm()}
-      onClose={backToDrive}
-    />
+    <>
+      <RouteSettingPage
+        originAddress={routeSetting.origin?.address || null}
+        locationUnavailable={routeSetting.locationStatus === 'unavailable'}
+        query={routeSetting.query}
+        history={routeSetting.history}
+        results={routeSetting.results}
+        route={routeSetting.route}
+        routeStatus={routeSetting.routeStatus}
+        restAreas={routeRestAreas}
+        confirming={confirming}
+        onQueryChange={routeSetting.changeQuery}
+        onSearch={routeSetting.submitSearch}
+        onRecentSelect={routeSetting.selectRecent}
+        onRecentDelete={routeSetting.deleteRecent}
+        onResultSelect={routeSetting.selectPlace}
+        onConfirm={() => void handleConfirm()}
+        onClose={backToDrive}
+      />
+      {toast && <Toast message={toast} onDone={() => setToast(null)} />}
+    </>
   )
 }
 
@@ -1241,7 +1259,7 @@ function App() {
           />
           <Route path="/notifications" element={<NotificationsRoute onRead={handleNotificationRead} />} />
           <Route path="/drive" element={<DriveRoute myUserId={me.id} />} />
-          <Route path="/drive/route" element={<RouteSettingRoute />} />
+          <Route path="/drive/route" element={<RouteSettingRoute partnerNickname={partnerNickname} />} />
           <Route path="/drive/playlist" element={<DjPlaylistRoute />} />
           <Route path="/drive/radio" element={<DriveRadioRoute />} />
           <Route
