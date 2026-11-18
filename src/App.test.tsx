@@ -20,9 +20,9 @@ import { mockGetPlaylist, resetMockDjPlaylists } from '@/mocks/djPlaylists'
 import { resetMockRadio } from '@/mocks/radio'
 import { resetMockGames } from '@/mocks/games'
 import { resetMockJobs, setMockGenerateMs } from '@/mocks/jobs'
-import { mockGetActiveDrive, resetMockDrives } from '@/mocks/drives'
+import { mockGetActiveDrive, mockPrepareDrive, resetMockDrives } from '@/mocks/drives'
 import { resetMockStamps } from '@/mocks/restAreas'
-import { resetMockRoutes } from '@/mocks/routes'
+import { mockCreateRoute, resetMockRoutes } from '@/mocks/routes'
 import { resetMockNotifications } from '@/mocks/notifications'
 import { resetMockSearchHistory } from '@/mocks/search'
 import { resetMockRecordDeletions } from './mocks/records'
@@ -758,6 +758,40 @@ describe('기록 지도 → 기록 공유', () => {
     await user.click(within(sheet).getByRole('button', { name: '이미지 복사' }))
     expect(await navigator.clipboard.readText()).toBe('https://bunbungus.app/cards/crd_01')
     expect(await screen.findByText('이미지를 복사할 수 없어 링크를 복사했어요.')).toBeInTheDocument()
+  })
+})
+
+// 백엔드 GET /home: 홈 교통 카드는 경로를 정하기 전에는 --, 정한 뒤에는 그 경로 응답의 trafficSummary
+describe('홈 교통 상황 카드', () => {
+  beforeEach(() => {
+    resetMockDrives()
+    resetMockRoutes()
+  })
+
+  const trafficCard = async () => (await screen.findByText('교통 상황')).parentElement!
+
+  it('준비 중인 드라이브에 경로가 담겨 있으면 그 경로의 교통 상태를 보여준다', async () => {
+    const point = (name: string, latitude: number, longitude: number) => ({
+      placeId: null,
+      name,
+      address: name,
+      coordinate: { latitude, longitude },
+    })
+    const { data: route } = await mockCreateRoute({ origin: point('서울', 37.5665, 126.978), destination: point('오이도', 37.345, 126.688) })
+    await mockPrepareDrive(
+      { title: '바다 드라이브', driverUserId: 'usr_1', passengerUserId: 'usr_2', recorderUserId: 'usr_1', routeId: route.id },
+      { coupleId: 'cpl_1' },
+    )
+
+    renderApp()
+
+    await waitFor(async () => expect(await trafficCard()).toHaveTextContent('원활'))
+  })
+
+  it('선택한 경로가 없으면 --로 둔다', async () => {
+    renderApp()
+
+    expect(await trafficCard()).toHaveTextContent('--')
   })
 })
 

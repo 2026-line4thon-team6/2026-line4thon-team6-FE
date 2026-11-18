@@ -19,6 +19,7 @@ import useCardDetail from '@/hooks/useCardDetail'
 import { arrangeGenres, arrangeMoods, arrangeWeathers } from '@/utils/playlistKeywords'
 import useDrive from '@/hooks/useDrive'
 import useActiveDrive from '@/hooks/useActiveDrive'
+import useRouteTraffic from '@/hooks/useRouteTraffic'
 import useArrival from '@/hooks/useArrival'
 import useDriveRestAreas from '@/hooks/useDriveRestAreas'
 import usePlaylistGeneration from '@/hooks/usePlaylistGeneration'
@@ -1176,6 +1177,8 @@ function HomeRoute({
   const summary = usePendingCards(pendingCards, pendingReceivedAt)
   const drive = useStartDrive(myUserId)
   const activeDrive = useActiveDrive()
+  // 백엔드 GET /home: 홈 교통 카드는 목적지(경로)를 정하기 전에는 --, 정한 뒤에는 그 경로 응답의 trafficSummary를 쓴다
+  const traffic = useRouteTraffic(activeDrive.routeId)
   const timeOfDay = useTimeOfDay()
 
   // 처음 마운트 때만 부른다 (onEnter는 렌더마다 새 함수라 의존성에 넣지 않는다)
@@ -1198,14 +1201,14 @@ function HomeRoute({
     <ViewTransition exit={PAGE_RECEDE} default="none">
       <HomePage
         timeOfDay={timeOfDay}
-        home={home}
+        home={{ ...home, context: { ...home.context, traffic } }}
         category={category}
         places={places}
         onCategoryChange={onCategoryChange}
         carConnected
         pendingCard={summary}
-        activeDrive={activeDrive !== 'none'}
-        activeDrivePreparing={activeDrive === 'preparing'}
+        activeDrive={activeDrive.state !== 'none'}
+        activeDrivePreparing={activeDrive.state === 'preparing'}
         onActiveDriveClick={() => navigate('/drive')}
         onNotificationClick={() => navigate('/notifications')}
         onSpotClick={(id) => navigate(`/places/${id}`)}
