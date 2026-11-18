@@ -42,6 +42,7 @@ export async function mockCreateRoute({
     estimatedArrivalAt: new Date(now + durationSeconds * 1000).toISOString(),
     expiresAt: new Date(now + EXPIRES_IN_MS).toISOString(),
     provider: 'KAKAO',
+    trafficSummary: { status: 'SMOOTH', congestedDistanceMeters: 0 },
     warnings: [],
   }
   store.set(route.id, route)

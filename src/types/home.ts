@@ -15,7 +15,8 @@ export interface HomeResponse {
 }
 
 // 반경 5km 날씨 · 교통 · 테마. 좌표를 안 보내거나 조회에 실패하면 값이 null
-// traffic · recommendedTheme 은 아직 백엔드가 채우지 않는다 (항상 null)
+// recommendedTheme 은 아직 백엔드가 채우지 않는다 (항상 null).
+// traffic · trafficAvailable 은 호환용이라 쓰지 않는다. 홈 교통 카드는 선택한 경로의 trafficSummary를 쓴다 (useRouteTraffic)
 export interface HomeContextResponse {
   weather: string | null // 맑음 · 구름 많음 · 흐림 · 비 · 비/눈 · 눈 · 빗방울 · 빗방울/눈날림 · 눈날림
   temperatureC: number | null
