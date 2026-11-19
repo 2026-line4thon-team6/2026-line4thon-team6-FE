@@ -1,7 +1,8 @@
-import { useEffect, useState, ViewTransition } from 'react'
+import { useCallback, useEffect, useState, ViewTransition } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 import { withdraw } from '@/api/auth'
 import { fetchCardShare } from '@/api/cards'
+import { fetchRecordGroup } from '@/api/records'
 import { getActiveDrive } from '@/api/drives'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
 import useAuth, { type Auth } from '@/hooks/useAuth'
@@ -109,7 +110,7 @@ import type { HomeSummary } from '@/types/home'
 import type { PlaceCategory, PlaceSummary } from '@/types/place'
 import type { LegalDocumentType } from '@/types/legal'
 import type { Notification } from '@/types/notification'
-import type { RecordSummary } from '@/types/record'
+import type { RecordMapMarker, RecordSummary } from '@/types/record'
 import type { Me } from '@/types/me'
 import { reflectionCharacters } from '@/utils/character'
 import { WITHDRAWN_NOTICE } from '@/utils/withdrawError'
@@ -733,6 +734,11 @@ function RecordMapRoute({ pendingCards, pendingReceivedAt, onEnter }: RecordMapR
   // 공유 중인 기록 카드와 그 카드의 커플 전용 링크
   const [sharing, setSharing] = useState<{ card: RecordSummary; link: ShareLink } | null>(null)
   const filter = date ? { date } : { q: query }
+  // 미리보기에서 넘겨 볼 같은 장소의 기록은 지도와 같은 검색 조건으로 모은다
+  const loadGroup = useCallback(
+    (marker: RecordMapMarker) => fetchRecordGroup(marker, date ? { date } : { q: query }),
+    [date, query],
+  )
   const map = useRecordMap(filter)
   const list = useRecords(filter)
 
@@ -822,6 +828,7 @@ function RecordMapRoute({ pendingCards, pendingReceivedAt, onEnter }: RecordMapR
         onDateClear={() => updateFilter({ date: null })}
         onCardClick={(card) => navigate(`/cards/${encodeURIComponent(card.cardId)}`)}
         onShare={handleShare}
+        loadGroup={loadGroup}
         pendingCard={pendingCard}
         onPendingCardClick={pendingPicker.open}
       />
