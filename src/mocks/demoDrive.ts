@@ -1,18 +1,16 @@
 import type { Drive } from '@/types/drive'
 import type { Coordinate, Route } from '@/types/route'
 import type { Position } from '@/utils/location'
-import { decodePolyline } from '@/utils/polyline'
+import ANMOK_ROUTE from './anmokRoute.json'
 import { findActiveMockDrive, findMockDrive } from './drives'
 import { findMockRestAreaCoordinate, hasMockStamp } from './restAreas'
 import { findMockRoute } from './routes'
 import { ANMOK_BEACH, MOCK_CURRENT_COORDINATE } from './search'
-import { distanceBetween } from './utils'
+import { distanceBetween, encodePolyline } from './utils'
 
-// 시연용: 목적지를 강릉 안목해변으로 정하면 실제 도로 모양 경로가 잡히고, 출발하면 붕붕이가 경로를 따라 빠르게 달린다.
-// 강릉대관령휴게소에 닿으면 도장을 찍을 때까지(최대 3분) 멈춘다
+// 시연용
 
-// OSRM(OpenStreetMap)으로 받은 양재 → 횡성휴게소 → 안목해변 도로 경로 (점 수를 줄인 Google polyline)
-export const DEMO_POLYLINE = 'aaxcFk_jfWLr@bBOJfCeDb@}JuqAsLm]VwApj@}V|zBoyBfGyE|YqNxJsD`Hs@rFFfG~@vW~Gl]~AhM}@`RcJfM{KdDgExF{Jlf@{wAdIiR|DaHGqo@t@aQDeXxBiiAy@qLe@aCaUew@eA}G[oFBeEvByY|CqMfEcIbD}D~c@eb@bIqL~H}PhFwPfD_ShBqRrCmLhGySv]{_AlC}JrB{N|@kPm@q{@`@yVfBaNdDcMnDkIfL{SlBwErBoIz@qHdBqX`C_SnNqv@nCuTt@oNzBsw@nB_YtD_Y`CmMhk@ghCnAyIfD{]zAqI~CwLtEcMtP{ZzI}SxE_RfEa[jAs]rAkRCiCa@mBmAgBcIyDcCqCkA_E_@eG_@g[tAgjCOmMmEo}@}Cc\\oXmkBoC}ZByPdCyp@hBaXtBeq@l@e^wBymCQyv@|OivDjA}a@]_zAiBs[iDwZm@oUDuJr@eNxE_d@ZuLIqHkEae@cUqnBkTapAgA}Lm@sSPsVzAgT~G{r@d@}RWmOaEscAmBac@aAyKiAyImGwZ{g@}nAci@oiB}AoHgA}IoAw\\R{QxCkh@~GguCcAaTuH{a@oA_Kq@qMAmJjAqPz\\g{Bz@aKVgLScJw@aL_AoGsKcf@iBeP_@}On@u_BY_\\}AkQiPe~@cAeNE}PbA_QxEsb@fIgm@tZqwAvXufA`CeMzA_Nz@wQJqJGgJ_AiRsDcYgM}r@mC}QyA_UOwV`@yMtA_QbDkSrD{N|a@soAjC}K|@qGt@qMMqPcBiPsEgVqAwJiA}PYgNJgLr@}M~I_t@z@mMJ{L{AwEaCeB}PcDmq@iTcHmFaGoJiDuLcAaMFeHj@cJbBsNfAqClBsA|Pe@PmHai@gMcPsJu\\sX}PuIgNsB}]_DoViHeG_E_JgKeC_FaG{SaCgFsGiIeHyEgT_KkIoB{Oi@wSzB_Ob@_GWaSoD}D@oi@~CcDzAcCvBeG~KmBnBuGhB_EQwHkCaJsH_H}DmWwGiMmIyQcAiC_Ds@qBsBqJyJcZuHu^wR}hA[sDG}JnHq`BK}Ns@mJyG}_@NsFpDyMaByKl@iElA}@vEA`EqArOmKz]kN~OeLdGsH~Q{c@hFgFfRaMtB{B`MkVdTs[tDuBhMuCtIiEdFqElJoLlARzKzP`SvQz@nCi@zC_AZy@Si@_AGsB`Dmd@pAwJjSsz@vDgL`Ns\\hAcEfAkLUeKq@cFeAsDgD{GwDcE}EsCcFsAsFUgQ|BqECaG_AoFwCaf@m^aKoE{IoA}LTuGtAePrHyHr@aEa@oDkAkEmDyCgFqCsJs@mGE{Kh@kGnDeOdHcUlCoGxEgGtJ_JbD}EhB_FbImm@ZwHEmKc@eIy@aFyGoVaDcJuEaKmEcHaNyNo\\_Ui[sc@sBeEiB{FqAcHcCgVmAcG}B}GkF{IsQuRgFoHqCwHwBgPQ_r@oD_`@c@aT}@gM}@aHaCeLwHoUsBiKw@kMJuYWeGw@qGsRwv@{GgQuByE{DoFqQwNmDyDiK{S_EiGaG}EeOyI}HsHiW}b@yCuGeDeKsL}k@_AyKe@{d@c@_Iy@cGoAyFcPwe@_GuKw`Dw|EmImNaDuHsCyKoAiIsHuv@wCmUyQun@aBoKo@}HK{TbBij@fA{RtEkk@TgIa@wNcAyH{A}GyCwHwF{IqpAw~A_JoOoJyRcZaf@{IkImS_KgF}DuAkBsEyH_HmSmEyHqFgF}GqDm]gG{F_C{GkFiEeGqOsZyAiH]yGf@}JhDeQxAqNfFqjAPkJ[aJmAaJmBmH_GgLcJqIuKqEcPiCaJiCm\\mTwGwGaEiGaSq_@oDuIkBkJ}@cPy@mHuBoJoCeH{D{G_FgGyi@ug@cEuG_EiL_A{Ew@gJib@{sGeByRwAiIaBoHgDoK}LqZcLk^cDcOeOg{@{C{MmE{KgNgUuFgLiX}eAoEiUoEee@iH{e@_AyNiDyz@yAgOaPej@oJup@cCoMuGcQ{Zog@sEcJcDyKqAoIe@mG?sQd@mGhBiKpBcHdCuFlSaYpC}FlEoOtAaLRqEA{OsEulBv@iXrDeXtDwN~FcOlu@wuAnFwLbHyU~DoVbBgXJsV_@cK}Dub@a@kJH}IjAuVC_Hs@oI{BqJoDiIuC{DyDsDsH}D}JcBae@Pms@jAiPpAmQdEu_@tSoKdBcJOkGgAuEkBqFuDkO}OeFsCqF_BuGm@iHRmR`FcGx@{HA{GuAkImEo`@_^uD_CiGyBwGy@oGDcSzDsG^qFWaH_BmIyE{EgFiMcWaKyMsKiHaY{KkPoNqDmF{DkIwEsOoEyWyC_IwE_IwJ}Jgh@a\\mDmDaEkGyDiKsAwG{@yLE{Jr@{]h@{Gl@uCtC_IrCkEtE}D`HkC|UoFri@gItKg@fMHhEjBjDrDdD_@z@qBTuB`Cyc@|AuFp|@mp@rCcE^uEQ_BoA}AsBS{Ff@gE]mPeHaFiEuCiHsAoOz@}VyGe{@L{Ak@_AcBmNUiNuAiSIyGiEeRkTcOuNwWsEgKm@SqY}_@_`@ac@uYiy@wQqb@eGwUyBcGE_AdAwIjCmKr@sFA{E`BuVi@{TvFuMcEpA_@]fBiFbBoB'
+export const DEMO_POLYLINE = encodePolyline(ANMOK_ROUTE)
 export const DEMO_ROUTE_DISTANCE_METERS = 219_554
 export const DEMO_ROUTE_DURATION_SECONDS = 11_454
 export const DEMO_STOP_REST_AREA_ID = 'rest_mock_11'
@@ -26,7 +24,7 @@ const SLOWDOWN = 0.25
 const STOP_WAIT_MS = 3 * 60 * 1000
 const DISPLAY_SPEED = 27
 
-const POINTS = decodePolyline(DEMO_POLYLINE)
+const POINTS: Coordinate[] = ANMOK_ROUTE
 const ALONG = POINTS.reduce<number[]>(
   (sum, point, index) => [...sum, index === 0 ? 0 : sum[index - 1] + distanceBetween(POINTS[index - 1], point)],
   [],
