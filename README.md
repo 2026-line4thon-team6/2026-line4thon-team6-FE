@@ -259,7 +259,7 @@
 
 </td>
 <td width="210" align="center"><img src="docs/images/record-map.webp" width="200" /></td>
-<td width="210" align="center"><img src="docs/images/record-preview.webp" width="200" /></td>
+<td width="210" align="center"><img src="docs/images/record-list.webp" width="200" /></td>
 </tr>
 </table>
 
