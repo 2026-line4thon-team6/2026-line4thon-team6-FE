@@ -91,8 +91,8 @@ function useStartDrive(myUserId: string) {
       const { data: prepared } = await prepareDrive(
         {
           title: title || undefined,
-          driverUserId: myUserId,
-          passengerUserId: partner.id,
+          driverUserId: partner.id,
+          passengerUserId: myUserId,
           recorderUserId: myUserId,
           routeId: routed?.routeId,
         },
