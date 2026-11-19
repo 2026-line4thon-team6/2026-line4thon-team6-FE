@@ -22,9 +22,9 @@ const TICK_MS = 300
 const MAX_SPEED = 3000
 const MIN_SPEED = 30
 const SLOWDOWN = 0.25
-// 출발하고 처음 35초는 실제처럼 천천히 달리고, 이어서 15초 동안 점점 빨라진다
-const SLOW_SECONDS = 35
-const SPEED_UP_SECONDS = 15
+// 출발하고 처음 10초는 실제처럼 천천히 달리고, 이어서 3초 만에 빨라진다
+const SLOW_SECONDS = 10
+const SPEED_UP_SECONDS = 3
 const SLOW_SPEED = 15
 const STOP_WAIT_MS = 3 * 60 * 1000
 const DISPLAY_SPEED = 27
