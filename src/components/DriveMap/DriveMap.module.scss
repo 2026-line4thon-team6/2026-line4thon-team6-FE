@@ -81,8 +81,9 @@
 }
 
 .car {
+  // 8방향 차 그림(180 × 156)을 기존 차 크기(53px 폭)에 맞춘다
   width: 53px;
-  height: 49px;
+  height: 46px;
   filter: drop-shadow(0 0 10px rgb(255 133 133 / 30%)) drop-shadow(0 3px 4px rgb(255 158 133 / 50%));
 }
 
