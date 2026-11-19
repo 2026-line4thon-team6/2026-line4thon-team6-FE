@@ -811,8 +811,8 @@ describe('드라이브 모드 진입', () => {
     const { data } = await mockGetActiveDrive()
     expect(data.drive).toMatchObject({
       coupleId: 'cpl_01',
-      driverUserId: 'usr_minjun',
-      passengerUserId: 'usr_minji',
+      driverUserId: 'usr_minji',
+      passengerUserId: 'usr_minjun',
       recorderUserId: 'usr_minjun',
     })
   })
