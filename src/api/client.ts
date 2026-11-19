@@ -4,7 +4,8 @@ import type { ApiErrorDetail, ApiErrorResponse, ApiResponse } from '@/types/api'
 // 값이 없거나 서버가 응답하지 않으면(USE_MOCK) 각 API 함수가 src/mocks 의 목 데이터로 응답한다
 const BASE_URL: string | undefined = import.meta.env.VITE_API_BASE_URL
 
-// 시연 영상용: 주소에 ?demo=1을 붙여 열면 그 탭은 실서버 대신 목 데이터로 동작한다 (?demo=0으로 끈다)
+// 시연 영상용: 주소에 ?demo=1을 붙여 열면 그 탭은 실서버로 동작하다가, 목적지를 강릉 안목해변으로 정한 드라이브만
+// 목 데이터(경로 · 붕붕이 이동 · 휴게소 · 도장 · 드라이브 카드)로 돌린다 (?demo=0으로 끈다)
 const DEMO_KEY = 'boongboong:demo'
 
 function readDemo() {
@@ -18,17 +19,20 @@ function readDemo() {
   }
 }
 
-const DEMO = typeof window !== 'undefined' && readDemo()
+export const DEMO = typeof window !== 'undefined' && readDemo()
+
+// 시연에서 목 데이터가 만든 id(drv_mock_1 · rest_mock_6 …)는 목 API로 보낸다
+export const isDemoId = (id: string | null | undefined) => DEMO && !!id && id.includes('_mock_')
 
 // let으로 내보내 detectBackend의 결과가 이 값을 가져다 쓰는 모든 모듈에 반영된다
-export let USE_MOCK = !BASE_URL || DEMO
+export let USE_MOCK = !BASE_URL
 
 const HEALTH_TIMEOUT_MS = 3000
 
 // 앱 시작 때 한 번 GET /health 로 서버가 떠 있는지 확인한다. 꺼져 있거나 늦으면 앱 전체를 목 데이터로 돌린다.
 // 요청마다 따로 대체하면 실서버 데이터와 목 데이터가 섞이므로 시작할 때 한 번만 정한다
 export async function detectBackend(): Promise<void> {
-  if (!BASE_URL || DEMO) return
+  if (!BASE_URL) return
 
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), HEALTH_TIMEOUT_MS)
