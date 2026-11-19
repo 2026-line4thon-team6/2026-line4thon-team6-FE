@@ -22,6 +22,10 @@ const TICK_MS = 300
 const MAX_SPEED = 3000
 const MIN_SPEED = 30
 const SLOWDOWN = 0.25
+// 출발하고 처음 20초는 실제처럼 천천히 달리고, 이어서 10초 동안 점점 빨라진다
+const SLOW_SECONDS = 20
+const SPEED_UP_SECONDS = 10
+const SLOW_SPEED = 15
 const STOP_WAIT_MS = 3 * 60 * 1000
 const DISPLAY_SPEED = 27
 
@@ -77,6 +81,7 @@ interface Progress {
   traveled: number
   stoppedAt: number | null
   released: boolean
+  drivingSeconds: number
 }
 
 let progress: Progress | null = null
@@ -93,7 +98,7 @@ export function demoTraveledMeters(driveId: string) {
 function advance(seconds: number) {
   const drive = findActiveMockDrive()
   if (!isDemoDrive(drive)) return false
-  if (progress?.driveId !== drive.id) progress = { driveId: drive.id, traveled: 0, stoppedAt: null, released: false }
+  if (progress?.driveId !== drive.id) progress = { driveId: drive.id, traveled: 0, stoppedAt: null, released: false, drivingSeconds: 0 }
   if (drive.status !== 'ACTIVE') return false
 
   stopAlong ??= alongDemoRoute(findMockRestAreaCoordinate(DEMO_STOP_REST_AREA_ID)) ?? TOTAL
@@ -103,8 +108,11 @@ function advance(seconds: number) {
     progress.released = true
   }
 
+  progress.drivingSeconds += seconds
+  const ramp = Math.min(1, Math.max(0, (progress.drivingSeconds - SLOW_SECONDS) / SPEED_UP_SECONDS))
+  const topSpeed = SLOW_SPEED + (MAX_SPEED - SLOW_SPEED) * ramp
   const target = progress.released ? TOTAL : stopAlong
-  const speed = Math.min(MAX_SPEED, Math.max(MIN_SPEED, (target - progress.traveled) * SLOWDOWN))
+  const speed = Math.min(topSpeed, Math.max(MIN_SPEED, (target - progress.traveled) * SLOWDOWN))
   progress.traveled = Math.min(target, progress.traveled + speed * seconds)
   return true
 }

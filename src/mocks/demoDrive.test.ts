@@ -52,7 +52,7 @@ describe('시연용 안목해변 드라이브 목', () => {
     expect(data.items.filter((area) => area.earned)).toHaveLength(3)
   })
 
-  it('휴게소에 닿기 전에는 도장을 찍을 수 없고, 강릉대관령휴게소에서 도장을 찍을 때까지 멈췄다가 안목해변까지 간다', async () => {
+  it('처음 20초는 천천히 달리고, 휴게소에 닿기 전에는 도장을 찍을 수 없고, 강릉대관령휴게소에서 도장을 찍을 때까지 멈췄다가 안목해변까지 간다', async () => {
     const { driveId } = await startDemoDrive()
     let position: Position | null = null
     const stop = mockWatchPosition((next) => {
@@ -62,7 +62,10 @@ describe('시연용 안목해변 드라이브 목', () => {
     const { data: early } = await claimStamp(driveId, { restAreaId: DEMO_STOP_REST_AREA_ID, method: 'GPS' }, options)
     expect(early).toMatchObject({ status: 'REJECTED', stamp: null })
 
-    await vi.advanceTimersByTimeAsync(120_000)
+    await vi.advanceTimersByTimeAsync(15_000)
+    expect(distanceBetween(position!.coordinate, MOCK_CURRENT_COORDINATE)).toBeLessThan(400)
+
+    await vi.advanceTimersByTimeAsync(150_000)
     expect(distanceBetween(position!.coordinate, DAEGWALLYEONG)).toBeLessThan(100)
 
     await claimStamp(driveId, { restAreaId: DEMO_STOP_REST_AREA_ID, method: 'GPS' }, options)
@@ -74,7 +77,7 @@ describe('시연용 안목해변 드라이브 목', () => {
   it('안목해변에 머물러도 자동 도착하지 않고, 나가기로 마치면 이동거리 · 주행시간 · 이번에 찍은 도장 수로 카드가 생긴다', async () => {
     const { driveId } = await startDemoDrive()
     const stop = mockWatchPosition(() => {})
-    await vi.advanceTimersByTimeAsync(120_000)
+    await vi.advanceTimersByTimeAsync(150_000)
     await claimStamp(driveId, { restAreaId: DEMO_STOP_REST_AREA_ID, method: 'GPS' }, options)
     stop()
 
