@@ -1,7 +1,8 @@
-import { useEffect, useState, ViewTransition } from 'react'
+import { useCallback, useEffect, useState, ViewTransition } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 import { withdraw } from '@/api/auth'
 import { fetchCardShare } from '@/api/cards'
+import { fetchRecordGroup } from '@/api/records'
 import { getActiveDrive } from '@/api/drives'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
 import useAppUpdate from '@/hooks/useAppUpdate'
@@ -30,6 +31,7 @@ import useDrivePlaylist from '@/hooks/useDrivePlaylist'
 import usePlaceRoute from '@/hooks/usePlaceRoute'
 import useGpsRecorder from '@/hooks/useGpsRecorder'
 import useDriveCard from '@/hooks/useDriveCard'
+import usePushNotifications from '@/hooks/usePushNotifications'
 import useNotifications from '@/hooks/useNotifications'
 import useHome from '@/hooks/useHome'
 import useGoCard, { type CardNavigationState } from '@/hooks/useGoCard'
@@ -111,7 +113,7 @@ import type { HomeSummary } from '@/types/home'
 import type { PlaceCategory, PlaceSummary } from '@/types/place'
 import type { LegalDocumentType } from '@/types/legal'
 import type { Notification } from '@/types/notification'
-import type { RecordSummary } from '@/types/record'
+import type { RecordMapMarker, RecordSummary } from '@/types/record'
 import type { Me } from '@/types/me'
 import { reflectionCharacters } from '@/utils/character'
 import { WITHDRAWN_NOTICE } from '@/utils/withdrawError'
@@ -175,6 +177,7 @@ function NotificationsRoute({ onRead }: NotificationsRouteProps) {
   const goBack = useGoBack()
   const goTab = useTabNavigate()
   const { markRead, retry, loadMore, ...list } = useNotifications()
+  const push = usePushNotifications()
 
   const handleClick = (notification: Notification) => {
     if (notification.readAt === null) {
@@ -197,6 +200,8 @@ function NotificationsRoute({ onRead }: NotificationsRouteProps) {
       onRetry={retry}
       onLoadMore={loadMore}
       onTabChange={goTab}
+      pushStatus={push.status}
+      onEnablePush={() => void push.enable()}
     />
   )
 }
@@ -735,6 +740,11 @@ function RecordMapRoute({ pendingCards, pendingReceivedAt, onEnter }: RecordMapR
   // 공유 중인 기록 카드와 그 카드의 커플 전용 링크
   const [sharing, setSharing] = useState<{ card: RecordSummary; link: ShareLink } | null>(null)
   const filter = date ? { date } : { q: query }
+  // 미리보기에서 넘겨 볼 같은 장소의 기록은 지도와 같은 검색 조건으로 모은다
+  const loadGroup = useCallback(
+    (marker: RecordMapMarker) => fetchRecordGroup(marker, date ? { date } : { q: query }),
+    [date, query],
+  )
   const map = useRecordMap(filter)
   const list = useRecords(filter)
 
@@ -824,6 +834,7 @@ function RecordMapRoute({ pendingCards, pendingReceivedAt, onEnter }: RecordMapR
         onDateClear={() => updateFilter({ date: null })}
         onCardClick={(card) => navigate(`/cards/${encodeURIComponent(card.cardId)}`)}
         onShare={handleShare}
+        loadGroup={loadGroup}
         pendingCard={pendingCard}
         onPendingCardClick={pendingPicker.open}
       />
@@ -1341,6 +1352,8 @@ function App() {
   const home = homeData.summary
   // 추천 장소는 홈을 떠났다 와도 다시 받지 않도록 App에 둔다. 상세 · 보관함의 찜 변경도 여기에 맞춘다
   const recommendations = useRecommendations(auth.status === 'signedIn' && auth.user !== null)
+  // 휴대폰 알림을 허용한 기기는 로그인할 때마다 이 계정의 기기로 다시 등록한다
+  usePushNotifications({ sync: auth.status === 'signedIn' && auth.user !== null })
   const [pendingPromptSeen, setPendingPromptSeen] = useState(false)
   const [locationNoticeSeen, setLocationNoticeSeen] = useState(false)
   // 로그인한 사용자(GET /me)를 먼저 쓰고, 없으면 홈 응답의 내 정보를 쓴다

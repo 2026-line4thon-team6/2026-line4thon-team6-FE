@@ -2,8 +2,10 @@ import type { NavTab } from '@/components/BottomNav/BottomNav'
 import BottomNavBar from '@/components/BottomNavBar/BottomNavBar'
 import GlassIconButton from '@/components/GlassIconButton/GlassIconButton'
 import type { Notification } from '@/types/notification'
+import type { PushStatus } from '@/hooks/usePushNotifications'
 import { daysBetween, formatRelativeTime } from '@/utils/relativeTime'
 import styles from './NotificationsPage.module.scss'
+import PushPrompt from './PushPrompt'
 
 // 이 일수 미만이면 '최근 7일', 그 이상은 '최근 30일' (30일이 지난 알림은 서버가 내려주지 않는다)
 const RECENT_DAYS = 7
@@ -23,6 +25,9 @@ interface NotificationsPageProps {
   onRetry: () => void
   onLoadMore: () => void
   onTabChange?: (tab: NavTab) => void
+  // 휴대폰 알림(Web Push) 켜기 안내. 없으면 보여 주지 않는다
+  pushStatus?: PushStatus
+  onEnablePush?: () => void
 }
 
 function NotificationsPage({
@@ -36,6 +41,8 @@ function NotificationsPage({
   onRetry,
   onLoadMore,
   onTabChange,
+  pushStatus,
+  onEnablePush,
 }: NotificationsPageProps) {
   const now = serverTime ?? new Date().toISOString()
   const groups = [
@@ -51,6 +58,8 @@ function NotificationsPage({
       </header>
 
       <main className={styles.content}>
+        {pushStatus && onEnablePush && <PushPrompt status={pushStatus} onEnable={onEnablePush} />}
+
         {status === 'loading' && (
           <p className={styles.message} role="status">
             알림을 불러오고 있어요.

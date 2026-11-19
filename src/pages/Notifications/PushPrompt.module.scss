@@ -1,0 +1,36 @@
+// 읽지 않은 알림 카드와 같은 바탕에 버튼을 오른쪽에 둔다
+.prompt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 14px 14px 16px;
+  border-radius: 10px;
+  background-color: color('divider');
+}
+
+.text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.title {
+  @include typo('body-m-medium');
+  color: color('black');
+  word-break: keep-all;
+}
+
+.body {
+  @include typo('body-s');
+  color: color('gray-600');
+  word-break: keep-all;
+}
+
+.button {
+  flex-shrink: 0;
+  width: auto;
+  padding: 0 14px;
+  white-space: nowrap;
+}

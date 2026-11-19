@@ -198,10 +198,10 @@ $gutter: 25px;
   }
 }
 
-// 사진은 최대 2장. 1장이면 전체 폭, 2장이면 218 : 118
+// 사진은 최대 2장. 1장이면 전체 폭, 2장이면 반반
 .photos {
   display: grid;
-  grid-template-columns: 218fr 118fr;
+  grid-template-columns: 1fr 1fr;
   // 행 높이를 214px로 묶는다. 없으면 행이 사진 원래 높이만큼 늘어나 아래 소감을 덮는다 (사진 1장일 때)
   grid-template-rows: 100%;
   gap: 4px;

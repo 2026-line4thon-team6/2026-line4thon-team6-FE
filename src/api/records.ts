@@ -1,6 +1,7 @@
 import { mockFetchRecordCalendar, mockFetchRecordMap, mockFetchRecords } from '@/mocks/records'
 import type { ApiResponse } from '@/types/api'
-import type { MapBounds, RecordCalendar, RecordMap, RecordPage } from '@/types/record'
+import type { MapBounds, RecordCalendar, RecordMap, RecordMapCard, RecordMapMarker, RecordPage } from '@/types/record'
+import { recordGroupKey } from '@/utils/recordGroupKey'
 import { apiFetch, USE_MOCK } from './client'
 
 export interface FetchRecordMapParams {
@@ -29,6 +30,28 @@ export function fetchRecords(params: FetchRecordsParams = {}): Promise<ApiRespon
   if (USE_MOCK) return mockFetchRecords(params)
 
   return apiFetch<RecordPage>(`/records${toQuery(params)}`)
+}
+
+// 한 마커(같은 목적지)에 모인 기록들 (최신순, 대표 카드가 맨 앞). 명세에 묶음 조회가 없어
+// 지도와 같은 검색 조건으로 GET /records 를 넘겨 가며 groupKey가 같은 기록을 모은다
+const GROUP_PAGE_LIMIT = 100
+const GROUP_MAX_PAGES = 10
+
+export async function fetchRecordGroup(
+  marker: RecordMapMarker,
+  filter: Pick<FetchRecordsParams, 'q' | 'date' | 'fromDate' | 'toDate'>,
+): Promise<RecordMapCard[]> {
+  const cards: RecordMapCard[] = []
+  let cursor: string | undefined
+  for (let pageCount = 0; pageCount < GROUP_MAX_PAGES; pageCount += 1) {
+    const { data } = await fetchRecords({ ...filter, cursor, limit: GROUP_PAGE_LIMIT })
+    cards.push(...data.items.filter((item) => recordGroupKey(item.destination) === marker.groupKey))
+    if (cards.length >= marker.recordCount || !data.hasMore || !data.nextCursor) break
+    cursor = data.nextCursor
+  }
+  // 대표 카드는 지도 응답 그대로 맨 앞에 둔다
+  const rest = cards.filter((item) => item.cardId !== marker.latestCard.cardId)
+  return [marker.latestCard, ...rest]
 }
 
 // GET /records/calendar — 그 달(YYYY-MM)에 기록이 있는 날짜와 개수

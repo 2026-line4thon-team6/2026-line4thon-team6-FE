@@ -152,4 +152,27 @@ describe('하단 네비바', () => {
 
     expect(onTabChange).toHaveBeenCalledWith('my')
   })
+  it('휴대폰 알림을 아직 켜지 않았으면 알림 켜기 안내를 보여 주고, 누르면 켜기를 요청한다', async () => {
+    const onEnablePush = vi.fn()
+    renderPage({ pushStatus: 'default', onEnablePush })
+
+    const prompt = screen.getByRole('region', { name: '휴대폰 알림' })
+    expect(prompt).toHaveTextContent('휴대폰으로 알림 받기')
+    await userEvent.click(screen.getByRole('button', { name: '알림 켜기' }))
+
+    expect(onEnablePush).toHaveBeenCalled()
+  })
+
+  it('홈 화면에 추가하지 않은 아이폰은 설치 방법을 안내한다 (켜기 버튼 없음)', () => {
+    renderPage({ pushStatus: 'needs-install', onEnablePush: vi.fn() })
+
+    expect(screen.getByRole('region', { name: '휴대폰 알림' })).toHaveTextContent('홈 화면에 추가하면')
+    expect(screen.queryByRole('button', { name: '알림 켜기' })).not.toBeInTheDocument()
+  })
+
+  it('이미 켰거나 받을 수 없는 브라우저면 안내하지 않는다', () => {
+    renderPage({ pushStatus: 'enabled', onEnablePush: vi.fn() })
+
+    expect(screen.queryByRole('region', { name: '휴대폰 알림' })).not.toBeInTheDocument()
+  })
 })

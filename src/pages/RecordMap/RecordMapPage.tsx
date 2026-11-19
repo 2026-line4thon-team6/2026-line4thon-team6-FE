@@ -39,6 +39,8 @@ interface RecordMapPageProps {
   // 미리보기 카드 · 목록의 기록을 누르면 기록 상세로, 공유 버튼을 누르면 공유로 이동한다
   onCardClick: (card: RecordSummary) => void
   onShare: (card: RecordSummary) => void
+  // 같은 장소에 모인 기록들을 불러온다. 미리보기에서 화살표로 넘겨 본다
+  loadGroup?: (marker: RecordMapMarker) => Promise<RecordSummary[]>
   onRetry: () => void
   // 연인과 연결되지 않아 기록을 볼 수 없을 때 '연인 초대하기'를 누르면
   onConnectRequired?: () => void
@@ -93,6 +95,7 @@ function RecordMapPage({
   onLoadMore,
   onCardClick,
   onShare,
+  loadGroup,
   onRetry,
   onConnectRequired,
   onTabChange,
@@ -101,7 +104,7 @@ function RecordMapPage({
 }: RecordMapPageProps) {
   const [query, setQuery] = useState(searchedQuery)
   // 사진 마커를 누르면 그 목적지의 최신 기록을 미리보기로 띄운다
-  const [preview, setPreview] = useState<RecordSummary | null>(null)
+  const [preview, setPreview] = useState<RecordMapMarker | null>(null)
   const status = view === 'map' ? mapStatus : listStatus
 
   // 날짜를 새로 고르면 입력하던 검색어를 비운다 (렌더링 중 초기화)
@@ -125,7 +128,7 @@ function RecordMapPage({
     <div className={[styles.page, view === 'list' && styles.listPage].filter(Boolean).join(' ')}>
       {view === 'map' && (
         <div className={styles.map}>
-          <RecordMapView markers={markers} onMarkerClick={(marker) => setPreview(marker.latestCard)} />
+          <RecordMapView markers={markers} onMarkerClick={setPreview} />
         </div>
       )}
 
@@ -232,7 +235,14 @@ function RecordMapPage({
       </div>
 
       {view === 'map' && preview && (
-        <RecordPreview card={preview} onOpen={onCardClick} onShare={onShare} onClose={() => setPreview(null)} />
+        <RecordPreview
+          key={preview.groupKey}
+          marker={preview}
+          onOpen={onCardClick}
+          onShare={onShare}
+          onClose={() => setPreview(null)}
+          loadGroup={loadGroup}
+        />
       )}
 
       <BottomNavBar active="map" onChange={onTabChange} />

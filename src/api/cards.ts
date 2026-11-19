@@ -9,10 +9,12 @@ import {
   mockSaveMyReflection,
   mockDiscardUploadedPhoto,
   mockUploadCardPhoto,
+  MOCK_ME_ID,
 } from '@/mocks/cards'
+import { findMockDrive } from '@/mocks/drives'
 import type { ApiResponse } from '@/types/api'
 import type { Card, CardDraftPatch, CardShare, Reflection, ReflectionPut } from '@/types/card'
-import { apiFetch, ApiError, USE_MOCK } from './client'
+import { apiFetch, ApiError, DEMO, isDemoId, USE_MOCK } from './client'
 
 export interface CoupleRequestOptions {
   // 현재 연결된 커플 id. 오래된 화면의 쓰기 요청을 서버가 걸러낸다
@@ -47,7 +49,7 @@ export async function deleteCard(card: Pick<Card, 'id' | 'coupleId' | 'version'>
 // POST /cards/{cardId}/discard — 둘 다 아무것도 쓰지 않은(UNWRITTEN) 카드를 기한 안에 폐기한다.
 // 누군가 쓰기 시작했으면 409 CARD_DRAFT_STARTED, 저장한 카드는 422 CARD_ALREADY_COMPLETED(기록 삭제로 지운다)
 export async function discardCard(card: Pick<Card, 'id' | 'coupleId' | 'version'>, idempotencyKey: string): Promise<void> {
-  if (USE_MOCK) return mockDiscardCard(card.id, { expectedVersion: card.version })
+  if (USE_MOCK || isDemoId(card.id)) return mockDiscardCard(card.id, { expectedVersion: card.version })
 
   await apiFetch(`${cardPath(card.id)}/discard`, {
     method: 'POST',
@@ -63,9 +65,25 @@ export function fetchCardShare(cardId: string): Promise<ApiResponse<CardShare>> 
   return apiFetch<CardShare>(`${cardPath(cardId)}/share`)
 }
 
+// 시연 카드(목)의 내 소감 작성자를 시연 드라이브를 시작한 실제 사용자로 바꿔 돌려준다 (화면은 실제 사용자 id로 내 소감을 찾는다)
+let demoCardOpen = false
+
+function asMine(reflection: Reflection, cardId: string): Reflection {
+  const me = findMockDrive(cardId.replace(/^crd_/, ''))?.recorderUserId
+  return me && reflection.author.id === MOCK_ME_ID ? { ...reflection, author: { ...reflection.author, id: me } } : reflection
+}
+
+const demoCard = async (request: Promise<ApiResponse<Card>>) => {
+  const response = await request
+  const card = response.data
+  return { ...response, data: { ...card, reflections: card.reflections.map((item) => asMine(item, card.id)) } }
+}
+
 // GET /drives/{driveId}/card — 종료한 드라이브의 카드 작성 데이터. 카드를 만들 수 없는 드라이브는 404 CARD_UNAVAILABLE
 export function fetchDriveCard(driveId: string): Promise<ApiResponse<Card>> {
   if (USE_MOCK) return mockFetchDriveCard(driveId)
+  demoCardOpen = isDemoId(driveId)
+  if (demoCardOpen) return demoCard(mockFetchDriveCard(driveId))
 
   return apiFetch<Card>(`/drives/${encodeURIComponent(driveId)}/card`)
 }
@@ -101,6 +119,7 @@ export function saveCardDraft(
   { coupleId }: CoupleRequestOptions,
 ): Promise<ApiResponse<Card>> {
   if (USE_MOCK) return mockSaveCardDraft(cardId, patch)
+  if (isDemoId(cardId)) return demoCard(mockSaveCardDraft(cardId, patch))
 
   return apiFetch<Card>(`${cardPath(cardId)}/draft`, {
     method: 'PATCH',
@@ -116,6 +135,7 @@ export function saveMyReflection(
   { coupleId }: CoupleRequestOptions,
 ): Promise<ApiResponse<Reflection>> {
   if (USE_MOCK) return mockSaveMyReflection(cardId, body)
+  if (isDemoId(cardId)) return mockSaveMyReflection(cardId, body).then((response) => ({ ...response, data: asMine(response.data, cardId) }))
 
   return apiFetch<Reflection>(`${cardPath(cardId)}/reflections/me`, {
     method: 'PUT',
@@ -131,6 +151,7 @@ export function completeCard(
   { coupleId, idempotencyKey }: IdempotentRequestOptions,
 ): Promise<ApiResponse<Card>> {
   if (USE_MOCK) return mockCompleteCard(cardId, { expectedVersion })
+  if (isDemoId(cardId)) return demoCard(mockCompleteCard(cardId, { expectedVersion }))
 
   return apiFetch<Card>(`${cardPath(cardId)}/complete`, {
     method: 'POST',
@@ -178,7 +199,7 @@ async function sha256Hex(file: Blob): Promise<string> {
 // → POST /media/{id}/complete 로 파일 해시를 보내 READY 상태로 만든다. READY가 아니면 카드에 붙일 때 MEDIA_NOT_READY로 거절된다.
 // 업로드 주소는 쿼리의 토큰으로 인증하므로 requiredHeaders만 보내고 Authorization은 붙이지 않는다. 카드에 붙일 mediaId를 돌려준다
 export async function uploadCardPhoto(file: File, { coupleId, idempotencyKey }: IdempotentRequestOptions): Promise<string> {
-  if (USE_MOCK) return mockUploadCardPhoto(file)
+  if (USE_MOCK || (DEMO && demoCardOpen)) return mockUploadCardPhoto(file)
 
   const { data } = await apiFetch<MediaUpload>('/media/uploads', {
     method: 'POST',
@@ -200,7 +221,7 @@ export async function uploadCardPhoto(file: File, { coupleId, idempotencyKey }: 
 
 // DELETE /media/{mediaId} — 올렸지만 카드에 붙이지 못한 사진을 지운다. 카드에 붙은 사진은 409(MEDIA_IN_USE)라 draft PATCH로 뺀다
 export async function discardUploadedPhoto(mediaId: string, { coupleId }: CoupleRequestOptions): Promise<void> {
-  if (USE_MOCK) return mockDiscardUploadedPhoto(mediaId)
+  if (USE_MOCK || isDemoId(mediaId)) return mockDiscardUploadedPhoto(mediaId)
 
   await apiFetch(`/media/${encodeURIComponent(mediaId)}`, { method: 'DELETE', headers: { 'X-Couple-Id': coupleId } })
 }
