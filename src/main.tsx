@@ -1,9 +1,8 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from 'react-router'
 import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css'
 import '@/styles/global.scss'
-import App from './App.tsx'
+import AppStart from './AppStart'
 import { detectBackend } from '@/api/client'
 import DeviceFrame from '@/components/DeviceFrame/DeviceFrame'
 import { preventPageZoom } from '@/utils/preventPageZoom'
@@ -15,15 +14,14 @@ preventPageZoom()
 pwaInstall.start()
 registerServiceWorker()
 
-// 서버가 떠 있는지 먼저 확인하고 그린다. 꺼져 있으면 목 데이터로 보여 준다 (최대 3초)
-void detectBackend().then(() => {
-  createRoot(document.getElementById('root')!).render(
-    <StrictMode>
-      <DeviceFrame>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </DeviceFrame>
-    </StrictMode>,
-  )
-})
+// 스플래시는 바로 그리고, 서버가 떠 있는지 확인(최대 3초)하는 동안 붕붕이가 달린다.
+// 확인이 끝나야 목 데이터를 쓸지 정해지므로 앱 화면은 그 뒤에 그린다
+const backend = detectBackend()
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <DeviceFrame>
+      <AppStart backend={backend} />
+    </DeviceFrame>
+  </StrictMode>,
+)
