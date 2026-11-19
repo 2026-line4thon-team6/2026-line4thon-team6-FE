@@ -1,9 +1,5 @@
 # 🚗 붕붕어스 (BoongBoongUs) FE
 
-<p align="center">
-  <img src="docs/images/screens.webp" width="100%" alt="붕붕어스 주요 화면" />
-</p>
-
 - 배포 URL : https://2026-line4thon-team6-fe.vercel.app
 - 로그인 : 카카오 계정으로 로그인해요. 테스트 계정은 따로 없고, 로그인 없이 보려면 [로컬 실행](#10-로컬-실행)의 목 모드를 써요.
 - 백엔드 저장소 : [boongboongus-backend](https://github.com/2026-line4thon-team6/boongboongus-backend)
@@ -95,7 +91,7 @@
 │    ├── pull_request_template.md
 │    └── workflows/ci.yml       # lint → test → build
 ├── .storybook                  # Storybook 설정 (로컬 전용)
-├── docs/images                 # README 화면 모음 이미지
+├── docs/images                 # README 화면 캡처
 ├── public
 │    ├── icons                  # PWA 아이콘
 │    ├── mocks                  # 목 데이터용 이미지
@@ -193,7 +189,8 @@
 - 24시간 안에 쓰지 않은 드라이브 카드가 있으면 배너와 팝업으로 알려 줘요.
 
 </td>
-<td width="420" align="center"><img src="docs/images/home.webp" width="200" /><img src="docs/images/pending-card-popup.webp" width="200" /></td>
+<td width="210" align="center"><img src="docs/images/home.webp" width="200" /></td>
+<td width="210" align="center"><img src="docs/images/pending-card-popup.webp" width="200" /></td>
 </tr>
 </table>
 
@@ -261,7 +258,8 @@
 - 기록을 링크나 1080×1920 스토리 이미지로 공유해요.
 
 </td>
-<td width="420" align="center"><img src="docs/images/record-map.webp" width="200" /><img src="docs/images/record-preview.webp" width="200" /></td>
+<td width="210" align="center"><img src="docs/images/record-map.webp" width="200" /></td>
+<td width="210" align="center"><img src="docs/images/record-preview.webp" width="200" /></td>
 </tr>
 </table>
 
@@ -311,7 +309,8 @@
 - 커플 페이지에서 사귄 날, 붕붕이 이름, 내 정보를 수정하고 커플 연결을 끊을 수 있어요.
 
 </td>
-<td width="420" align="center"><img src="docs/images/my.webp" width="200" /><img src="docs/images/couple.webp" width="200" /></td>
+<td width="210" align="center"><img src="docs/images/my.webp" width="200" /></td>
+<td width="210" align="center"><img src="docs/images/couple.webp" width="200" /></td>
 </tr>
 </table>
 
