@@ -52,7 +52,7 @@ describe('시연용 안목해변 드라이브 목', () => {
     expect(data.items.filter((area) => area.earned)).toHaveLength(3)
   })
 
-  it('처음 20초는 천천히 달리고, 휴게소에 닿기 전에는 도장을 찍을 수 없고, 강릉대관령휴게소에서 도장을 찍을 때까지 멈췄다가 안목해변까지 간다', async () => {
+  it('처음 35초는 천천히 달리고, 휴게소에 닿기 전에는 도장을 찍을 수 없고, 강릉대관령휴게소에서 도장을 찍을 때까지 멈췄다가 안목해변까지 간다', async () => {
     const { driveId } = await startDemoDrive()
     let position: Position | null = null
     const stop = mockWatchPosition((next) => {
@@ -64,8 +64,11 @@ describe('시연용 안목해변 드라이브 목', () => {
 
     await vi.advanceTimersByTimeAsync(15_000)
     expect(distanceBetween(position!.coordinate, MOCK_CURRENT_COORDINATE)).toBeLessThan(400)
+    // 30초가 지나도 아직 천천히 달려 출발지 근처에 있다
+    await vi.advanceTimersByTimeAsync(15_000)
+    expect(distanceBetween(position!.coordinate, MOCK_CURRENT_COORDINATE)).toBeLessThan(700)
 
-    await vi.advanceTimersByTimeAsync(150_000)
+    await vi.advanceTimersByTimeAsync(135_000)
     expect(distanceBetween(position!.coordinate, DAEGWALLYEONG)).toBeLessThan(100)
 
     await claimStamp(driveId, { restAreaId: DEMO_STOP_REST_AREA_ID, method: 'GPS' }, options)
