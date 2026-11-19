@@ -184,64 +184,136 @@
 
 ### [홈]
 
+<table>
+<tr>
+<td>
+
 - 연애 D+일수, 오늘의 날씨 · 교통 · 추천 테마를 보여 줘요.
 - 바다 · 야경 · 근교 카페 같은 테마 칩으로 큐레이션 장소를 고르고, 하트로 찜해요.
 - 24시간 안에 쓰지 않은 드라이브 카드가 있으면 배너와 팝업으로 알려 줘요.
+
+</td>
+<td width="420" align="center"><img src="docs/images/home.webp" width="200" /><img src="docs/images/pending-card-popup.webp" width="200" /></td>
+</tr>
+</table>
 
 <br>
 
 ### [장소 상세]
 
+<table>
+<tr>
+<td>
+
 - 장소 사진, 태그, 소개, 예상 소요 시간 · 주차 정보, 현재 위치 기준 경로 미리보기를 보여 줘요.
 - **연인에게 보내기**로 장소를 공유하고, **드라이브 시작하기**로 이름만 정하면 바로 출발해요.
+
+</td>
+<td width="280" align="center"><img src="docs/images/place-detail.webp" width="260" /></td>
+</tr>
+</table>
 
 <br>
 
 ### [드라이브]
 
+<table>
+<tr>
+<td>
+
 - 드라이브 이름을 정하면 출발해요. 지도에 현재 위치와 경로, 주행 시간 · 이동 거리 · 도착 예정 시간을 보여 줘요.
 - 아래 시트에서 DJ 플레이리스트, AI 라디오, 게임 같은 콘텐츠와 휴게소 도장을 열어요.
 - 목적지 100m 안에 30초 머무르면 서버가 도착으로 판정하고, 드라이브를 마친 뒤 카드 작성으로 이어져요.
+
+</td>
+<td width="280" align="center"><img src="docs/images/drive.webp" width="260" /></td>
+</tr>
+</table>
 
 <br>
 
 ### [드라이브 카드]
 
+<table>
+<tr>
+<td>
+
 - 이동 거리 · 주행 시간 · 휴게소 도장 수와 함께 들은 플레이리스트가 자동으로 채워져요.
 - 사진을 최대 2장 올리고, 내 칸과 연인 칸에 각자 한 줄 소감(70자)을 남겨요.
 - 드라이브를 마친 뒤 24시간 동안 수정할 수 있고, 기록하지 않으려면 카드를 폐기할 수 있어요.
 
+</td>
+<td width="280" align="center"><img src="docs/images/drive-card.webp" width="260" /></td>
+</tr>
+</table>
+
 <br>
 
 ### [기록 지도]
+
+<table>
+<tr>
+<td>
 
 - 다녀온 곳을 대표 사진 마커로 지도에 모아 보여 줘요. 같은 장소에 기록이 여러 개면 `+N`으로 표시해요.
 - 마커를 누르면 미리보기 카드가 뜨고, 같은 장소의 다른 기록은 양옆 화살표나 끌어서 넘겨 봐요.
 - 목록형으로 바꾸거나, 제목 · 장소로 검색하거나, 캘린더로 날짜를 골라 찾을 수 있어요.
 - 기록을 링크나 1080×1920 스토리 이미지로 공유해요.
 
+</td>
+<td width="420" align="center"><img src="docs/images/record-map.webp" width="200" /><img src="docs/images/record-preview.webp" width="200" /></td>
+</tr>
+</table>
+
 <br>
 
 ### [기록 상세]
 
+<table>
+<tr>
+<td>
+
 - 날짜, 드라이브 이름, 목적지, 주행 기록, 플레이리스트, 사진, 두 사람의 소감을 보여 줘요.
 - 삭제 권한이 있으면 오른쪽 위 휴지통으로 기록을 지워요.
+
+</td>
+<td width="280" align="center"><img src="docs/images/record-detail.webp" width="260" /></td>
+</tr>
+</table>
 
 <br>
 
 ### [알림]
 
+<table>
+<tr>
+<td>
+
 - 장소 공유, 소감 제출, 카드 완성, 커플 연결 · 해제 알림을 최근 7일 / 최근 30일로 나눠 보여 줘요.
 - 알림을 누르면 장소 상세나 기록 상세로 이동해요.
 - 위쪽의 **알림 켜기**로 휴대폰 알림(Web Push)을 받아요. 아이폰은 홈 화면에 추가한 앱에서만 받을 수 있어요.
+
+</td>
+<td width="280" align="center"><img src="docs/images/notifications.webp" width="260" /></td>
+</tr>
+</table>
 
 <br>
 
 ### [마이 · 커플]
 
+<table>
+<tr>
+<td>
+
 - 붕붕이 프로필과 누적 거리, 찜한 드라이브 코스 · 플레이리스트 · 라디오 사연 보관함으로 이동해요.
 - 약관 · FAQ, 로그아웃, 앱 설치 안내, 회원 탈퇴를 제공해요.
 - 커플 페이지에서 사귄 날, 붕붕이 이름, 내 정보를 수정하고 커플 연결을 끊을 수 있어요.
+
+</td>
+<td width="420" align="center"><img src="docs/images/my.webp" width="200" /><img src="docs/images/couple.webp" width="200" /></td>
+</tr>
+</table>
 
 <br>
 
