@@ -122,7 +122,8 @@ async function refreshTokens(expiredToken: string): Promise<string> {
 if (!USE_MOCK) setTokenRefresher(refreshTokens)
 
 // 로그아웃할 때 현재 기기만 끊기 위한 기기 id
-function getDeviceId() {
+// 이 브라우저의 기기 id. 로그아웃 · 푸시 알림 등록에 같은 값을 쓴다
+export function getDeviceId() {
   const saved = read<string>(local, DEVICE_KEY)
   if (saved) return saved
   const id = crypto.randomUUID()

@@ -29,6 +29,7 @@ import useDrivePlaylist from '@/hooks/useDrivePlaylist'
 import usePlaceRoute from '@/hooks/usePlaceRoute'
 import useGpsRecorder from '@/hooks/useGpsRecorder'
 import useDriveCard from '@/hooks/useDriveCard'
+import usePushNotifications from '@/hooks/usePushNotifications'
 import useNotifications from '@/hooks/useNotifications'
 import useHome from '@/hooks/useHome'
 import useGoCard, { type CardNavigationState } from '@/hooks/useGoCard'
@@ -174,6 +175,7 @@ function NotificationsRoute({ onRead }: NotificationsRouteProps) {
   const goBack = useGoBack()
   const goTab = useTabNavigate()
   const { markRead, retry, loadMore, ...list } = useNotifications()
+  const push = usePushNotifications()
 
   const handleClick = (notification: Notification) => {
     if (notification.readAt === null) {
@@ -196,6 +198,8 @@ function NotificationsRoute({ onRead }: NotificationsRouteProps) {
       onRetry={retry}
       onLoadMore={loadMore}
       onTabChange={goTab}
+      pushStatus={push.status}
+      onEnablePush={() => void push.enable()}
     />
   )
 }
@@ -1346,6 +1350,8 @@ function App() {
   const home = homeData.summary
   // 추천 장소는 홈을 떠났다 와도 다시 받지 않도록 App에 둔다. 상세 · 보관함의 찜 변경도 여기에 맞춘다
   const recommendations = useRecommendations(auth.status === 'signedIn' && auth.user !== null)
+  // 휴대폰 알림을 허용한 기기는 로그인할 때마다 이 계정의 기기로 다시 등록한다
+  usePushNotifications({ sync: auth.status === 'signedIn' && auth.user !== null })
   const [pendingPromptSeen, setPendingPromptSeen] = useState(false)
   const [locationNoticeSeen, setLocationNoticeSeen] = useState(false)
   // 로그인한 사용자(GET /me)를 먼저 쓰고, 없으면 홈 응답의 내 정보를 쓴다
