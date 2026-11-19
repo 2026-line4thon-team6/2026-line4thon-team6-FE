@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bearingDegrees, nextCarDirection, toDirection } from './heading'
+import { bearingDegrees, nextCarDirection, steadyDirection, toDirection } from './heading'
 
 const at = (latitude: number, longitude: number) => ({ latitude, longitude })
 const SEOUL = at(37.5665, 126.978)
@@ -39,5 +39,21 @@ describe('nextCarDirection', () => {
   it('조금만 움직이면(GPS 흔들림) 방향을 그대로 둔다', () => {
     const jitter = at(37.56651, 126.97801) // 약 1.4m
     expect(nextCarDirection({ anchor: SEOUL, direction: 'NE' }, jitter)).toEqual({ anchor: SEOUL, direction: 'NE' })
+  })
+})
+
+describe('steadyDirection', () => {
+  it('경계 근처에서 흔들려도 지금 방향을 유지한다', () => {
+    expect(steadyDirection('N', 25)).toBe('N')
+    expect(steadyDirection('N', 33)).toBe('N')
+    expect(steadyDirection('NE', 20)).toBe('NE')
+  })
+
+  it('경계를 충분히 넘으면 새 방향으로 바꾼다', () => {
+    expect(steadyDirection('N', 36)).toBe('NE')
+    expect(steadyDirection('N', 180)).toBe('S')
+    expect(steadyDirection('NW', 340)).toBe('NW')
+    expect(steadyDirection('NW', 10)).toBe('N')
+    expect(steadyDirection('NW', 40)).toBe('NE')
   })
 })

@@ -38,3 +38,13 @@ export function nextCarDirection(previous: CarHeading, current: Coordinate): Car
   if (distanceMeters(previous.anchor, current) < MIN_TURN_METERS) return previous
   return { anchor: current, direction: toDirection(bearingDegrees(previous.anchor, current)) }
 }
+
+// 방향을 바꿀 때 경계(22.5°)를 이만큼 더 넘어야 한다. 경계 근처에서 차 그림이 두 방향을 오가지 않게
+const TURN_MARGIN_DEGREES = 12
+
+// 지금 방향에서 크게 벗어났을 때만 새 방향으로 바꾼다
+export function steadyDirection(current: Direction, bearing: number): Direction {
+  const center = DIRECTIONS.indexOf(current) * 45
+  const diff = Math.abs((((bearing - center) % 360) + 540) % 360 - 180)
+  return diff <= 22.5 + TURN_MARGIN_DEGREES ? current : toDirection(bearing)
+}

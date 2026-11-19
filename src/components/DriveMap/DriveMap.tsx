@@ -15,7 +15,7 @@ import carW from '@/assets/images/drive/car/car-w.webp'
 import heartImage from '@/assets/images/drive/map-heart.webp'
 import restAreaImage from '@/assets/images/stamp/rest-area.webp'
 import type { Coordinate } from '@/types/route'
-import { bearingDegrees, type CarHeading, type Direction, nextCarDirection, toDirection } from '@/utils/heading'
+import { bearingDegrees, type CarHeading, type Direction, nextCarDirection, steadyDirection } from '@/utils/heading'
 import useGlide from '@/hooks/useGlide'
 import { alongOf, cumulativeMeters, pathBetween, pointAtAlong, remainingPath, snapToRoute } from '@/utils/routeProgress'
 import styles from './DriveMap.module.scss'
@@ -44,7 +44,7 @@ const LABEL_Y_ANCHOR = 1.4
 // 경로에서 이만큼 안이면 차를 경로 위에 붙인다. 더 멀면(경로를 벗어남) 실제 위치에 둔다
 const SNAP_METERS = 300
 // 차가 볼 방향은 경로를 따라 이만큼 앞을 보고 정한다 (짧은 꺾임에 흔들리지 않게)
-const LOOK_AHEAD_METERS = 30
+const LOOK_AHEAD_METERS = 60
 
 const toLatLng = ({ latitude, longitude }: Coordinate) => ({ lat: latitude, lng: longitude })
 
@@ -111,10 +111,14 @@ function KakaoDriveMap({
   const glidedAlong = useGlide(targetAlong)
   const glided = onRoute && glidedAlong !== null ? pointAtAlong(path, cumulative, glidedAlong) : null
   const carPosition = glided?.point ?? current
-  const carDirection: Direction =
-    glided && glidedAlong !== null
-      ? toDirection(bearingDegrees(glided.point, pointAtAlong(path, cumulative, glidedAlong + LOOK_AHEAD_METERS).point))
-      : heading.direction
+  // 경로 위에서는 앞을 내다본 방향을 쓰되, 경계 근처에서 두 그림을 오가지 않게 크게 꺾일 때만 바꾼다
+  const [routeDirection, setRouteDirection] = useState<Direction>('S')
+  if (glided && glidedAlong !== null) {
+    const bearing = bearingDegrees(glided.point, pointAtAlong(path, cumulative, glidedAlong + LOOK_AHEAD_METERS).point)
+    const next = steadyDirection(routeDirection, bearing)
+    if (next !== routeDirection) setRouteDirection(next)
+  }
+  const carDirection: Direction = glided ? routeDirection : heading.direction
   // 움직이는 차와, 마지막으로 받은 위치에서 시작하는 경로선 사이를 잇는 짧은 선 (이것만 프레임마다 다시 그린다)
   const connector = useMemo(
     () =>
@@ -180,6 +184,8 @@ function KakaoDriveMap({
       onDragEnd={unfreeze}
       onZoomStart={freeze}
       onZoomChanged={unfreeze}
+      // 최대 · 최소 배율에서 더 확대하면 zoom_start만 오고 zoom_changed가 오지 않는다. 움직임이 끝나면(idle) 항상 푼다
+      onIdle={unfreeze}
     >
       {drawnPath.length > 1 &&
         (compact ? COMPACT_ROUTE_LINES : ROUTE_LINES).map((line) => (
