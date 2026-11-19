@@ -1,32 +1,37 @@
-import { type MouseEvent, type PointerEvent, useRef, useState } from 'react'
-import RecordPhoto from '@/components/RecordPhoto/RecordPhoto'
-import styles from './PhotoCarousel.module.scss'
+import { type MouseEvent, type PointerEvent, type ReactNode, useRef, useState } from 'react'
+import styles from './SwipeCarousel.module.scss'
 
-interface PhotoCarouselProps {
-  // 순서대로 보여 줄 사진 주소. null이면 기본 일러스트
-  photos: (string | null)[]
-  // 보여 줄 사진 순번. 화살표는 쓰는 화면에 둔다
-  index: number
-  // 밀어서 넘겼을 때 바뀐 순번을 알린다
-  onIndexChange: (index: number) => void
-  // 크기는 쓰는 화면에서 정한다
-  className?: string
+export interface CarouselSlide {
+  key: string
+  content: ReactNode
 }
 
-// 사진 폭의 이만큼 넘게 밀면 다음 · 이전 사진으로 넘긴다
+interface SwipeCarouselProps {
+  slides: CarouselSlide[]
+  // 목록 이름 (스크린리더)
+  label: string
+  // 보여 줄 순번. 화살표는 쓰는 화면에 둔다
+  index: number
+  // 끌어서 넘겼을 때 바뀐 순번을 알린다
+  onIndexChange: (index: number) => void
+  className?: string
+  slideClassName?: string
+}
+
+// 폭의 이만큼 넘게 밀면 다음 · 이전으로 넘긴다
 const SWIPE_RATIO = 0.2
-// 이보다 적게 움직였으면 누른 것(카드 열기)으로 본다
+// 이보다 적게 움직였으면 누른 것으로 본다
 const TAP_SLOP = 6
-// 첫 · 마지막 사진에서 더 밀면 덜 따라오게 한다
+// 처음 · 마지막에서 더 밀면 덜 따라오게 한다
 const EDGE_RESISTANCE = 0.3
 
-// 기록 사진을 한 장씩 가로로 넘겨 본다 (손가락 · 마우스로 끌어 넘기기 + 바깥 화살표).
-// 스크롤로 넘기면 소수점 폭에서 옆 사진이 1px 남짓 남아 보여, 사진 줄을 transform으로 정확히 한 장씩 옮긴다
-function PhotoCarousel({ photos, index, onIndexChange, className }: PhotoCarouselProps) {
+// 한 장씩 가로로 넘겨 본다 (손가락 · 마우스로 끌어 넘기기 + 바깥 화살표).
+// 스크롤로 넘기면 소수점 폭에서 옆 장이 1px 남짓 남아 보여, 줄 전체를 transform으로 정확히 한 장씩 옮긴다
+function SwipeCarousel({ slides, label, index, onIndexChange, className, slideClassName }: SwipeCarouselProps) {
   const drag = useRef<{ startX: number; width: number; moved: boolean; dx: number } | null>(null)
   const dragged = useRef(false)
   const [offset, setOffset] = useState<number | null>(null)
-  const last = photos.length - 1
+  const last = slides.length - 1
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (last < 1 || (event.pointerType === 'mouse' && event.button !== 0)) return
@@ -41,7 +46,7 @@ function PhotoCarousel({ photos, index, onIndexChange, className }: PhotoCarouse
     if (!current.moved) {
       if (Math.abs(dx) < TAP_SLOP) return
       current.moved = true
-      // 사진 밖으로 나가도 끝까지 따라오게 한다
+      // 영역 밖으로 나가도 끝까지 따라오게 한다
       event.currentTarget.setPointerCapture?.(event.pointerId)
     }
     current.dx = dx
@@ -82,12 +87,13 @@ function PhotoCarousel({ photos, index, onIndexChange, className }: PhotoCarouse
     >
       <ul
         className={[styles.track, offset !== null && styles.dragging].filter(Boolean).join(' ')}
-        aria-label="드라이브 사진"
+        aria-label={label}
         style={{ transform: translate }}
       >
-        {photos.map((photo, i) => (
-          <li key={`${i}-${photo}`} className={styles.slide} aria-hidden={i !== index}>
-            <RecordPhoto className={styles.photo} src={photo} alt={`드라이브 사진 ${i + 1}`} />
+        {slides.map((slide, i) => (
+          // 보이지 않는 장은 초점 · 스크린리더에서 뺀다
+          <li key={slide.key} className={[styles.slide, slideClassName].filter(Boolean).join(' ')} inert={i !== index}>
+            {slide.content}
           </li>
         ))}
       </ul>
@@ -95,4 +101,4 @@ function PhotoCarousel({ photos, index, onIndexChange, className }: PhotoCarouse
   )
 }
 
-export default PhotoCarousel
+export default SwipeCarousel

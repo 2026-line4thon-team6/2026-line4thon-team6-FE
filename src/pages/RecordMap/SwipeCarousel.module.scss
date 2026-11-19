@@ -1,13 +1,20 @@
 .carousel {
+  // 줄이 높이를 꽉 채우게(stretch) 해서, 쓰는 화면이 높이를 줄이면 각 장도 같이 줄어든다
+  display: flex;
   overflow: hidden;
-  border-radius: 10px;
   // 세로 스크롤은 그대로 두고 가로 밀기만 직접 처리한다
   touch-action: pan-y;
+  user-select: none;
+
+  // 마우스로 끌 때 브라우저 이미지 드래그가 끼어들지 않게 한다
+  img {
+    -webkit-user-drag: none;
+  }
 }
 
 .track {
   display: flex;
-  height: 100%;
+  flex: 0 0 100%;
   transition: transform 0.3s ease;
 
   @media (prefers-reduced-motion: reduce) {
@@ -23,14 +30,4 @@
 .slide {
   flex: 0 0 100%;
   min-width: 0;
-}
-
-.photo {
-  display: block;
-  // 마우스로 끌 때 브라우저 이미지 드래그가 끼어들지 않게 한다
-  -webkit-user-drag: none;
-  user-select: none;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }

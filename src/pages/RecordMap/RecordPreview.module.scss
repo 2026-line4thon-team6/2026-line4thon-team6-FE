@@ -81,7 +81,6 @@
   display: flex;
   flex: 0 1 auto;
   flex-direction: column;
-  gap: 10px;
   width: 269px;
   min-height: 0;
   padding: 14px 13px 14px 14px;
@@ -92,11 +91,25 @@
   cursor: pointer;
 }
 
+// 기록 한 장 (사진 + 제목 · 날짜). 화살표 · 끌기로 장 전체가 넘어간다
+.carousel {
+  flex: 0 1 auto;
+  min-height: 0;
+}
+
+.slide {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 // 기본 242 × 251. 공간이 모자라면 세로만 줄어든다
 .photo {
   flex: 0 1 251px;
   width: 242px;
   min-height: 120px;
+  border-radius: 10px;
+  object-fit: cover;
 }
 
 .text {
