@@ -4,6 +4,7 @@ import { withdraw } from '@/api/auth'
 import { fetchCardShare } from '@/api/cards'
 import { getActiveDrive } from '@/api/drives'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
+import useAppUpdate from '@/hooks/useAppUpdate'
 import useAuth, { type Auth } from '@/hooks/useAuth'
 import useCoupleInvite from '@/hooks/useCoupleInvite'
 import useCouplePage from '@/hooks/useCouplePage'
@@ -15,6 +16,7 @@ import CardPromptModal from '@/components/CardPromptModal/CardPromptModal'
 import PendingCardSheet from '@/components/PendingCardSheet/PendingCardSheet'
 import DriveNameSheet from '@/components/DriveNameSheet/DriveNameSheet'
 import Toast from '@/components/Toast/Toast'
+import AppUpdateBanner from '@/components/AppUpdateBanner/AppUpdateBanner'
 import useCardDetail from '@/hooks/useCardDetail'
 import { arrangeGenres, arrangeMoods, arrangeWeathers } from '@/utils/playlistKeywords'
 import useDrive from '@/hooks/useDrive'
@@ -1347,6 +1349,8 @@ function App() {
 
   // 알림을 읽으면 홈을 다시 불러와 새 알림 표시를 맞춘다
   const handleNotificationRead = () => void homeData.reload()
+  // 새 배포가 올라오면 위쪽에 업데이트 안내를 띄운다 (배포 빌드에서만)
+  const appUpdate = useAppUpdate()
 
   return (
     <RadioPlayerProvider>
@@ -1480,6 +1484,8 @@ function App() {
           />
         </Route>
       </Routes>
+      {/* 새로 불러오면 서비스 워커(skipWaiting)와 함께 새 화면 · 코드를 받는다 */}
+      {appUpdate.available && <AppUpdateBanner onUpdate={() => window.location.reload()} onDismiss={appUpdate.dismiss} />}
     </RadioPlayerProvider>
   )
 }

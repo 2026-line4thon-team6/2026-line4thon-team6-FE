@@ -1,0 +1,70 @@
+// 화면 위쪽(상태 표시줄 아래) 가운데에 떠 있는 안내. 다른 화면 요소보다 위, 토스트와 같은 층
+.banner {
+  position: fixed;
+  top: calc(max(var(--safe-top), 12px) + 8px);
+  left: 50%;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  padding: 8px 8px 8px 16px;
+  border: 1px solid color('coral-2');
+  border-radius: 100px;
+  background-color: color('white');
+  box-shadow: 0 0 10px rgb(0 0 0 / 10%);
+  transform: translateX(-50%);
+  animation: banner-in 0.2s ease-out;
+}
+
+.message {
+  overflow: hidden;
+  color: color('black');
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  @include typo('body-s-medium');
+}
+
+.update {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-radius: 100px;
+  color: color('white');
+  background-color: color('coral');
+  @include typo('body-s-medium');
+
+  &:active {
+    background-color: color('coral-pressed');
+  }
+}
+
+.close {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+}
+
+.update,
+.close {
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
+}
+
+@keyframes banner-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .banner {
+    animation: none;
+  }
+}
