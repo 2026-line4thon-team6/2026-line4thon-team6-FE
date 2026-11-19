@@ -2,8 +2,9 @@ import type { Drive } from '@/types/drive'
 import type { Coordinate, Route } from '@/types/route'
 import type { Position } from '@/utils/location'
 import ANMOK_ROUTE from './anmokRoute.json'
+import { replaceMockCard } from './cards'
 import { findActiveMockDrive, findMockDrive } from './drives'
-import { findMockRestAreaCoordinate, hasMockStamp } from './restAreas'
+import { countMockStampsOfDrive, findMockRestAreaCoordinate, hasMockStamp } from './restAreas'
 import { findMockRoute } from './routes'
 import { ANMOK_BEACH, MOCK_CURRENT_COORDINATE } from './search'
 import { distanceBetween, encodePolyline } from './utils'
@@ -11,8 +12,8 @@ import { distanceBetween, encodePolyline } from './utils'
 // 시연용
 
 export const DEMO_POLYLINE = encodePolyline(ANMOK_ROUTE)
-export const DEMO_ROUTE_DISTANCE_METERS = 219_554
-export const DEMO_ROUTE_DURATION_SECONDS = 11_454
+export const DEMO_ROUTE_DISTANCE_METERS = 232_227
+export const DEMO_ROUTE_DURATION_SECONDS = 12_219
 export const DEMO_STOP_REST_AREA_ID = 'rest_mock_11'
 
 const DESTINATION_RADIUS = 2000
@@ -33,7 +34,7 @@ const TOTAL = ALONG.at(-1) ?? 0
 
 export const isDemoDestination = (coordinate: Coordinate) => distanceBetween(coordinate, ANMOK_BEACH) <= DESTINATION_RADIUS
 
-const isDemoDrive = (drive: Drive | null): drive is Drive =>
+export const isDemoDrive = (drive: Drive | null): drive is Drive =>
   !!drive?.routeId && findMockRoute(drive.routeId)?.polyline === DEMO_POLYLINE
 
 export const isDemoRoute = (route: Route | null) => route?.polyline === DEMO_POLYLINE
@@ -151,4 +152,23 @@ export function mockWatchPosition(onChange: (position: Position) => void): () =>
       timer = null
     }
   }
+}
+
+// 시연은 자동 도착 없이 나가기로 끝내고, 끝나면 이 드라이브의 빈 카드를 만든다
+export function endDemoDrive(drive: Drive) {
+  const endedAt = new Date(drive.endedAt ?? Date.now())
+  const pad = (value: number) => String(value).padStart(2, '0')
+  replaceMockCard({
+    id: `crd_${drive.id}`,
+    driveId: drive.id,
+    coupleId: drive.coupleId,
+    title: drive.title,
+    driveDate: `${endedAt.getFullYear()}-${pad(endedAt.getMonth() + 1)}-${pad(endedAt.getDate())}`,
+    ...(drive.destination && { region: drive.destination.name, destination: drive.destination }),
+    distanceMeters: Math.round(drive.metrics.distanceMeters),
+    activeDurationSeconds: DEMO_ROUTE_DURATION_SECONDS,
+    stampCount: countMockStampsOfDrive(drive.id),
+    driverUserId: drive.driverUserId,
+    editableUntil: drive.editableUntil ?? new Date(endedAt.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+  })
 }

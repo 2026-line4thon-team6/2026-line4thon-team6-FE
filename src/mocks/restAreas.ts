@@ -112,6 +112,9 @@ export async function mockGetDriveRestAreas(
 
 export const hasMockStamp = (restAreaId: string) => earned.has(restAreaId)
 
+export const countMockStampsOfDrive = (driveId: string) =>
+  [...claims.values()].filter((claim) => claim.status === 'VERIFIED' && !claim.alreadyEarned && claim.stamp?.firstDriveId === driveId).length
+
 export const findMockRestAreaCoordinate = (restAreaId: string) => findSeed(restAreaId).coordinate
 
 const findSeed = (restAreaId: string) => {

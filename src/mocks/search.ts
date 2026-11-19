@@ -5,7 +5,7 @@ import type { Coordinate } from '@/types/route'
 import type { ReverseGeocode, SearchHistoryItem, SearchPlace } from '@/types/search'
 import { createMeta, distanceBetween, mockApiError, paginate } from './utils'
 
-export const MOCK_CURRENT_COORDINATE: Coordinate = { latitude: 37.4837, longitude: 127.0324 }
+export const MOCK_CURRENT_COORDINATE: Coordinate = { latitude: 37.5456, longitude: 126.9514 }
 export const ANMOK_BEACH: Coordinate = { latitude: 37.7724, longitude: 128.9473 }
 
 const AVERAGE_SPEED_MPS = 50_000 / 3600
@@ -178,7 +178,7 @@ export async function mockReverseGeocode(coordinate: Coordinate): Promise<ApiRes
     coordinate.latitude >= 33 && coordinate.latitude <= 39 && coordinate.longitude >= 124 && coordinate.longitude <= 132
   return {
     data: inKorea
-      ? { coordinate, address: '서울 서초구 서초동', region: '서울 서초구', available: true }
+      ? { coordinate, address: '서울 마포구 공덕동', region: '서울 마포구', available: true }
       : { coordinate, address: null, region: null, available: false },
     meta: createMeta(),
   }

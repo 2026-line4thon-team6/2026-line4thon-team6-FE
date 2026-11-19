@@ -13,6 +13,7 @@ import type {
   StartDriveRequest,
   UpdateDriveRequest,
 } from '@/types/drive'
+import { endDemoDrive, isDemoDrive } from './demoDrive'
 import { findMockRoute } from './routes'
 import { createMeta, distanceBetween, mockApiError } from './utils'
 
@@ -236,7 +237,7 @@ export async function mockEndDrive(
   activeSince.delete(driveId)
   const endedAt = new Date()
 
-  return save({
+  const ended = save({
     ...drive,
     status: 'ENDED',
     pausedAt: null,
@@ -250,6 +251,8 @@ export async function mockEndDrive(
     editableUntil: new Date(endedAt.getTime() + 24 * 60 * 60 * 1000).toISOString(),
     controlVersion: drive.controlVersion + 1,
   })
+  if (isDemoDrive(ended.data)) endDemoDrive(ended.data)
+  return ended
 }
 
 export async function mockCancelPreparedDrive(
@@ -331,7 +334,7 @@ export async function mockUploadGpsBatch(
     metrics: { ...drive.metrics, distanceMeters: distance, lastGpsAt: ordered.at(-1)?.recordedAt ?? null },
   })
   return {
-    data: { ...receipt, arrivalCandidate: arrivalCandidate(drive), highestContiguousSequence: highest, drive: saved.data },
+    data: { ...receipt, arrivalCandidate: !isDemoDrive(drive) && arrivalCandidate(drive), highestContiguousSequence: highest, drive: saved.data },
     meta: createMeta(),
   }
 }

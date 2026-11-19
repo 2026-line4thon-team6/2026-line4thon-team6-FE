@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { claimStamp, getDriveRestAreas } from '@/api/restAreas'
 import { createRoute } from '@/api/routes'
-import { prepareDrive, startDrive } from '@/api/drives'
+import { fetchDriveCard } from '@/api/cards'
+import { endDrive, getDrive, prepareDrive, startDrive, uploadGpsBatch } from '@/api/drives'
 import type { Position } from '@/utils/location'
-import { DEMO_POLYLINE, DEMO_STOP_REST_AREA_ID, mockWatchPosition, resetDemoDrive } from './demoDrive'
+import { resetMockCards } from './cards'
+import { DEMO_POLYLINE, DEMO_ROUTE_DURATION_SECONDS, DEMO_STOP_REST_AREA_ID, mockWatchPosition, resetDemoDrive } from './demoDrive'
 import { resetMockDrives } from './drives'
 import { resetMockStamps } from './restAreas'
 import { resetMockRoutes } from './routes'
@@ -33,6 +35,7 @@ beforeEach(() => {
   resetMockRoutes()
   resetMockStamps()
   resetDemoDrive()
+  resetMockCards()
 })
 
 afterEach(() => {
@@ -66,5 +69,37 @@ describe('시연용 안목해변 드라이브 목', () => {
     await vi.advanceTimersByTimeAsync(180_000)
     expect(distanceBetween(position!.coordinate, ANMOK_BEACH)).toBeLessThan(500)
     stop()
+  })
+
+  it('안목해변에 머물러도 자동 도착하지 않고, 나가기로 마치면 이동거리 · 주행시간 · 이번에 찍은 도장 수로 카드가 생긴다', async () => {
+    const { driveId } = await startDemoDrive()
+    const stop = mockWatchPosition(() => {})
+    await vi.advanceTimersByTimeAsync(120_000)
+    await claimStamp(driveId, { restAreaId: DEMO_STOP_REST_AREA_ID, method: 'GPS' }, options)
+    stop()
+
+    const at = (sequence: number, seconds: number) => ({
+      sequence,
+      recordedAt: new Date(Date.now() + seconds * 1000).toISOString(),
+      coordinate: ANMOK_BEACH,
+      accuracyMeters: 10,
+      speedMetersPerSecond: 0,
+    })
+    const { data: receipt } = await uploadGpsBatch(driveId, { samples: [at(1, 1), at(2, 11), at(3, 21), at(4, 31), at(5, 41)] }, options)
+    expect(receipt.arrivalCandidate).toBe(false)
+
+    const { data: drive } = await getDrive(driveId)
+    await endDrive(driveId, { expectedVersion: drive.controlVersion, reason: 'USER_ENDED', lastRecordedSequence: 5 }, options)
+
+    const { data: card } = await fetchDriveCard(driveId)
+    expect(card).toMatchObject({
+      driveId,
+      status: 'UNWRITTEN',
+      region: '강릉 안목해변',
+      activeDurationSeconds: DEMO_ROUTE_DURATION_SECONDS,
+      stampCount: 1,
+      photos: [],
+      reflections: [],
+    })
   })
 })

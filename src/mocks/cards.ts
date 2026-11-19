@@ -76,6 +76,12 @@ export function resetMockCards() {
   uploadCount = 0
 }
 
+// 시연 드라이브가 끝나면 그 드라이브의 빈 카드로 바꾼다
+export function replaceMockCard(values: Partial<Card>) {
+  card = { ...createCard(), status: 'UNWRITTEN', playlist: null, ...values }
+  discarded = false
+}
+
 function getCard(cardId: string) {
   if (cardId !== card.id || discarded) throw fail(404, 'NOT_FOUND', '카드를 찾을 수 없어요.')
   if (Date.now() >= Date.parse(card.editableUntil)) {

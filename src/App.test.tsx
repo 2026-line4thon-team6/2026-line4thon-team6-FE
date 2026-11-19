@@ -926,7 +926,7 @@ describe('경로 설정', () => {
   it('처음에는 출발지(내 위치)와 최근 검색을 보여주고, 최근 검색어를 지울 수 있다', async () => {
     const user = await openRouteSetting()
 
-    expect(await screen.findByText('(서초구 서초동)')).toBeInTheDocument()
+    expect(await screen.findByText('(마포구 공덕동)')).toBeInTheDocument()
     const recent = await screen.findByRole('list', { name: '최근 검색' })
     expect(within(recent).getAllByRole('listitem')).toHaveLength(5)
 
