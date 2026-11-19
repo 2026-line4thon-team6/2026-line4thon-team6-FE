@@ -41,6 +41,8 @@ const realDrive = (patch: Partial<Drive> = {}): Drive =>
     ...patch,
   }) as Drive
 
+const PLAYLIST = { id: 'ply_real', title: '바다로 가는 길', trackCount: 12, durationSeconds: 2700, thumbnailUrl: null }
+
 const calls = () => fetchMock.mock.calls.map(([path, init]) => `${init?.method ?? 'GET'} ${path}`)
 
 beforeEach(() => {
@@ -57,13 +59,13 @@ beforeEach(() => {
     if (path === '/drives/drv_real' && method === 'GET') return respond(realDrive({ controlVersion: 2 }))
     if (path === '/drives/drv_real' && method === 'PATCH') return respond(realDrive({ controlVersion: 2 }))
     if (path === '/drives/drv_real/start') return respond(realDrive({ status: 'ACTIVE', controlVersion: 3 }))
-    if (path === '/drives/drv_real/card') return respond({ id: 'crd_real', coupleId: 'cpl_real', version: 1 })
+    if (path === '/drives/drv_real/card') return respond({ id: 'crd_real', coupleId: 'cpl_real', version: 1, playlist: PLAYLIST })
     return respond({ id: 'job_real' })
   })
 })
 
 describe('시연(?demo=1): 안목해변 드라이브만 목으로 돌리기', () => {
-  it('실서버 드라이브에 안목해변 경로를 정하면 목 드라이브로 바뀌고, 실서버 드라이브도 같이 출발해 콘텐츠는 실서버 드라이브로 요청한다', async () => {
+  it('실서버 드라이브에 안목해변 경로를 정하면 목 드라이브로 바뀌고, 실서버 드라이브도 같이 출발해 콘텐츠는 실서버 드라이브로 요청하며, 마치면 그 플리가 시연 카드에 담긴다', async () => {
     const { data: route } = await createRoute(
       {
         origin: { placeId: null, name: '내 위치', address: '', coordinate: MOCK_CURRENT_COORDINATE },
@@ -95,7 +97,7 @@ describe('시연(?demo=1): 안목해변 드라이브만 목으로 돌리기', ()
     expect(calls()).toContain('POST /drives/drv_real/end')
 
     const { data: card } = await fetchDriveCard(ended.id)
-    expect(card).toMatchObject({ driveId: ended.id, coupleId: 'cpl_real', region: '강릉 안목해변' })
+    expect(card).toMatchObject({ driveId: ended.id, coupleId: 'cpl_real', region: '강릉 안목해변', playlist: PLAYLIST })
   })
 
   it('안목해변이 아닌 목적지는 평소처럼 실서버로 경로를 만든다', async () => {

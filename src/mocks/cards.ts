@@ -82,6 +82,10 @@ export function replaceMockCard(values: Partial<Card>) {
   discarded = false
 }
 
+export function patchMockCard(driveId: string, values: Partial<Card>) {
+  if (card.driveId === driveId) card = { ...card, ...values }
+}
+
 function getCard(cardId: string) {
   if (cardId !== card.id || discarded) throw fail(404, 'NOT_FOUND', '카드를 찾을 수 없어요.')
   if (Date.now() >= Date.parse(card.editableUntil)) {
