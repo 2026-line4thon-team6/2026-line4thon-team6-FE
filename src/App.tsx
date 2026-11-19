@@ -1,7 +1,7 @@
 import { useEffect, useState, ViewTransition } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 import { withdraw } from '@/api/auth'
-import { fetchCardShare } from '@/api/cards'
+import { fetchCardPhotoUrls, fetchCardShare } from '@/api/cards'
 import { getActiveDrive } from '@/api/drives'
 import type { NavTab } from '@/components/BottomNav/BottomNav'
 import useAuth, { type Auth } from '@/hooks/useAuth'
@@ -822,6 +822,7 @@ function RecordMapRoute({ pendingCards, pendingReceivedAt, onEnter }: RecordMapR
         onDateClear={() => updateFilter({ date: null })}
         onCardClick={(card) => navigate(`/cards/${encodeURIComponent(card.cardId)}`)}
         onShare={handleShare}
+        loadPhotos={fetchCardPhotoUrls}
         pendingCard={pendingCard}
         onPendingCardClick={pendingPicker.open}
       />

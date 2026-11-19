@@ -39,6 +39,8 @@ interface RecordMapPageProps {
   // 미리보기 카드 · 목록의 기록을 누르면 기록 상세로, 공유 버튼을 누르면 공유로 이동한다
   onCardClick: (card: RecordSummary) => void
   onShare: (card: RecordSummary) => void
+  // 미리보기 카드에서 넘겨 볼 저장된 사진들을 불러온다
+  loadPhotos?: (cardId: string) => Promise<string[]>
   onRetry: () => void
   // 연인과 연결되지 않아 기록을 볼 수 없을 때 '연인 초대하기'를 누르면
   onConnectRequired?: () => void
@@ -93,6 +95,7 @@ function RecordMapPage({
   onLoadMore,
   onCardClick,
   onShare,
+  loadPhotos,
   onRetry,
   onConnectRequired,
   onTabChange,
@@ -232,7 +235,13 @@ function RecordMapPage({
       </div>
 
       {view === 'map' && preview && (
-        <RecordPreview card={preview} onOpen={onCardClick} onShare={onShare} onClose={() => setPreview(null)} />
+        <RecordPreview
+          card={preview}
+          onOpen={onCardClick}
+          onShare={onShare}
+          onClose={() => setPreview(null)}
+          loadPhotos={loadPhotos}
+        />
       )}
 
       <BottomNavBar active="map" onChange={onTabChange} />

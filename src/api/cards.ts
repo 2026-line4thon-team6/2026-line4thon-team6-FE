@@ -35,6 +35,12 @@ export function fetchCard(cardId: string): Promise<ApiResponse<Card>> {
 
 // DELETE /cards/{cardId} — 공동 기록 삭제 (복구 불가). 양쪽 기록 · 지도 · 공유 링크에서 바로 빠진다.
 // 오래된 화면의 요청을 막기 위해 커플 id와 카드 버전을 함께 보낸다. 버전이 다르면 409
+// 카드에 저장된 사진 주소를 순서(order)대로 (기록 지도 미리보기에서 넘겨 보기)
+export async function fetchCardPhotoUrls(cardId: string): Promise<string[]> {
+  const { data } = await fetchCard(cardId)
+  return [...data.photos].sort((a, b) => a.order - b.order).map((photo) => photo.url)
+}
+
 export async function deleteCard(card: Pick<Card, 'id' | 'coupleId' | 'version'>): Promise<void> {
   if (USE_MOCK) return mockDeleteCard(card.id)
 
