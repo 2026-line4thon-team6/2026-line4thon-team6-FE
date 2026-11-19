@@ -33,8 +33,39 @@
   max-height: 100%;
   pointer-events: none;
 
-  > button {
+  > button,
+  .card,
+  .arrow {
     pointer-events: auto;
+  }
+}
+
+// 카드를 가운데 두고, 화살표는 화면 양끝에서 카드 세로 가운데에 놓는다
+.cardRow {
+  position: relative;
+  display: flex;
+  flex: 0 1 auto;
+  justify-content: center;
+  align-self: stretch;
+  min-height: 0;
+}
+
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.prev {
+  left: 16px;
+}
+
+// 뒤로가기 화살표를 좌우반전해 '다음'으로 쓴다
+.next {
+  right: 16px;
+
+  img {
+    transform: scaleX(-1);
   }
 }
 
@@ -50,7 +81,6 @@
   display: flex;
   flex: 0 1 auto;
   flex-direction: column;
-  gap: 10px;
   width: 269px;
   min-height: 0;
   padding: 14px 13px 14px 14px;
@@ -58,11 +88,19 @@
   background-color: color('coral-bg');
   filter: drop-shadow(0 0 5px rgb(0 0 0 / 20%));
   text-align: left;
+  cursor: pointer;
+}
 
-  &:focus-visible {
-    outline: 2px solid color('coral-pressed');
-    outline-offset: 2px;
-  }
+// 기록 한 장 (사진 + 제목 · 날짜). 화살표 · 끌기로 장 전체가 넘어간다
+.carousel {
+  flex: 0 1 auto;
+  min-height: 0;
+}
+
+.slide {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 // 기본 242 × 251. 공간이 모자라면 세로만 줄어든다
@@ -79,6 +117,12 @@
   flex-direction: column;
   flex-shrink: 0;
   padding: 0 5px;
+  text-align: left;
+
+  &:focus-visible {
+    outline: 2px solid color('coral-pressed');
+    outline-offset: 2px;
+  }
 }
 
 .title {

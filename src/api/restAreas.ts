@@ -9,7 +9,7 @@ import {
 import type { ApiResponse, CursorPage } from '@/types/api'
 import type { RestArea, RestAreaDetail, StampBook, StampClaim, StampClaimRequest } from '@/types/restArea'
 import type { Coordinate } from '@/types/route'
-import { apiFetch, USE_MOCK } from './client'
+import { apiFetch, DEMO, isDemoId, USE_MOCK } from './client'
 
 export interface SearchRestAreasParams {
   q?: string
@@ -30,7 +30,7 @@ const withQuery = (path: string, query: URLSearchParams) => {
 }
 
 export function searchRestAreas(params: SearchRestAreasParams = {}): Promise<ApiResponse<CursorPage<RestArea>>> {
-  if (USE_MOCK) return mockSearchRestAreas(params)
+  if (USE_MOCK || DEMO) return mockSearchRestAreas(params)
 
   const query = pageQuery(params)
   if (params.q) query.set('q', params.q)
@@ -45,19 +45,19 @@ export function getDriveRestAreas(
   driveId: string,
   params: { cursor?: string; limit?: number } = {},
 ): Promise<ApiResponse<CursorPage<RestArea>>> {
-  if (USE_MOCK) return mockGetDriveRestAreas(driveId, params)
+  if (USE_MOCK || isDemoId(driveId)) return mockGetDriveRestAreas(driveId, params)
 
   return apiFetch<CursorPage<RestArea>>(withQuery(`/drives/${encodeURIComponent(driveId)}/rest-areas`, pageQuery(params)))
 }
 
 export function getRestArea(restAreaId: string): Promise<ApiResponse<RestAreaDetail>> {
-  if (USE_MOCK) return mockGetRestArea(restAreaId)
+  if (USE_MOCK || isDemoId(restAreaId)) return mockGetRestArea(restAreaId)
 
   return apiFetch<RestAreaDetail>(`/rest-areas/${encodeURIComponent(restAreaId)}`)
 }
 
 export function getStampBook(params: { cursor?: string; limit?: number } = {}): Promise<ApiResponse<StampBook>> {
-  if (USE_MOCK) return mockGetStampBook(params)
+  if (USE_MOCK || DEMO) return mockGetStampBook(params)
 
   return apiFetch<StampBook>(withQuery('/couples/me/stamps', pageQuery(params)))
 }
@@ -67,7 +67,7 @@ export function claimStamp(
   body: StampClaimRequest,
   { coupleId, idempotencyKey }: { coupleId: string; idempotencyKey: string },
 ): Promise<ApiResponse<StampClaim>> {
-  if (USE_MOCK) return mockClaimStamp(driveId, body)
+  if (USE_MOCK || isDemoId(driveId)) return mockClaimStamp(driveId, body)
 
   return apiFetch<StampClaim>(`/drives/${encodeURIComponent(driveId)}/stamp-claims`, {
     method: 'POST',
@@ -77,7 +77,7 @@ export function claimStamp(
 }
 
 export function getStampClaim(claimId: string): Promise<ApiResponse<StampClaim>> {
-  if (USE_MOCK) return mockGetStampClaim(claimId)
+  if (USE_MOCK || isDemoId(claimId)) return mockGetStampClaim(claimId)
 
   return apiFetch<StampClaim>(`/stamp-claims/${encodeURIComponent(claimId)}`)
 }

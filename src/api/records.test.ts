@@ -116,3 +116,46 @@ describe('fetchRecordCalendar', () => {
     ])
   })
 })
+
+describe('fetchRecordGroup', () => {
+  const card = (cardId: string, placeId: string | null, latitude = 37.3, longitude = 126.6) => ({
+    cardId,
+    driveId: `drv_${cardId}`,
+    title: cardId,
+    driveDate: '2026-11-01',
+    destination: { placeId, name: '오이도', address: null, coordinate: { latitude, longitude } },
+    thumbnailUrl: null,
+    distanceMeters: 0,
+    activeDurationSeconds: 0,
+    completedAt: '2026-11-01T00:00:00Z',
+  })
+  const page = (items: unknown[], nextCursor: string | null) =>
+    new Response(JSON.stringify({ data: { totalCount: 9, filteredCount: 9, items, nextCursor, hasMore: !!nextCursor }, meta: {} }))
+
+  it('기록 목록을 넘겨 가며 같은 마커(groupKey)의 카드만 최신순으로 모은다', async () => {
+    fetchMock
+      .mockResolvedValueOnce(page([card('crd_a', 'plc_oido'), card('crd_x', 'plc_other')], 'c1'))
+      .mockResolvedValueOnce(page([card('crd_b', 'plc_oido'), card('crd_c', 'plc_oido')], null))
+    const { fetchRecordGroup } = await loadWithBackend()
+    const marker = { groupKey: 'place:plc_oido', coordinate: { latitude: 37.3, longitude: 126.6 }, latestCard: card('crd_a', 'plc_oido'), recordCount: 3 }
+
+    const cards = await fetchRecordGroup(marker, { q: '바다', date: '2026-11-01' })
+
+    expect(cards.map((item) => item.cardId)).toEqual(['crd_a', 'crd_b', 'crd_c'])
+    const first = new URL(fetchMock.mock.calls[0][0] as string)
+    expect(first.pathname).toBe('/api/v1/records')
+    expect(Object.fromEntries(first.searchParams)).toEqual({ q: '바다', date: '2026-11-01', limit: '100' })
+    expect(new URL(fetchMock.mock.calls[1][0] as string).searchParams.get('cursor')).toBe('c1')
+  })
+
+  it('마커의 기록 수만큼 모이면 더 부르지 않는다', async () => {
+    fetchMock.mockResolvedValueOnce(page([card('crd_a', null, 37.123454, 126.5), card('crd_b', null, 37.123451, 126.5)], 'c1'))
+    const { fetchRecordGroup } = await loadWithBackend()
+    const marker = { groupKey: 'coord:37.12345,126.50000', coordinate: { latitude: 37.12345, longitude: 126.5 }, latestCard: card('crd_a', null, 37.123454, 126.5), recordCount: 2 }
+
+    const cards = await fetchRecordGroup(marker, {})
+
+    expect(cards.map((item) => item.cardId)).toEqual(['crd_a', 'crd_b'])
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+})
