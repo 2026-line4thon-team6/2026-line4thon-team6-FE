@@ -20,7 +20,8 @@ function LoginPage({ status, error, notice = null, onKakaoLogin }: LoginPageProp
       <div className={styles.content}>
         <div className={styles.intro}>
           <h1 className={styles.logo}>
-            <img src={logoText} alt="붕붕어스" width={128} height={31} />
+            {/* 스플래시의 ‘붕붕어스’ 글자가 이 자리로 이어진다 (Splash) */}
+            <img src={logoText} alt="붕붕어스" width={128} height={31} data-splash-logo />
           </h1>
           <p className={styles.description}>
             둘만의 드라이브를 더욱
