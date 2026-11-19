@@ -6,6 +6,7 @@ import type { ReverseGeocode, SearchHistoryItem, SearchPlace } from '@/types/sea
 import { createMeta, distanceBetween, mockApiError, paginate } from './utils'
 
 export const MOCK_CURRENT_COORDINATE: Coordinate = { latitude: 37.4837, longitude: 127.0324 }
+export const ANMOK_BEACH: Coordinate = { latitude: 37.7724, longitude: 128.9473 }
 
 const AVERAGE_SPEED_MPS = 50_000 / 3600
 
@@ -66,6 +67,13 @@ const PLACES: SearchPlaceSeed[] = [
     address: '경기 남양주시 조안면 북한강로',
     coordinate: { latitude: 37.5965, longitude: 127.326 },
     category: 'NEARBY_CAFE',
+  },
+  {
+    name: '강릉 안목해변',
+    region: '강원 강릉시',
+    address: '강원 강릉시 창해로14번길 20-1',
+    coordinate: ANMOK_BEACH,
+    category: 'SEA',
   },
   {
     name: '강릉 헌화로',

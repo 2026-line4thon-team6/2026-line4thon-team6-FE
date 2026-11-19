@@ -1,5 +1,6 @@
 import type { ApiResponse } from '@/types/api'
 import type { CreateRouteRequest, Route } from '@/types/route'
+import { DEMO_POLYLINE, DEMO_ROUTE_DISTANCE_METERS, DEMO_ROUTE_DURATION_SECONDS, isDemoDestination } from './demoDrive'
 import { createMeta, distanceBetween, encodePolyline, mockApiError } from './utils'
 
 const ROAD_FACTOR = 1.3
@@ -25,10 +26,11 @@ export async function mockCreateRoute({
 }: CreateRouteRequest): Promise<ApiResponse<Route>> {
   if (waypoints.length > 3) throw mockApiError(422, 'VALIDATION_FAILED', '경유지는 최대 3개까지 추가할 수 있어요.')
 
+  const demo = waypoints.length === 0 && isDemoDestination(destination.coordinate)
   const stops = [origin, ...waypoints, destination].map((point) => point.coordinate)
   const straight = stops.slice(1).reduce((sum, point, index) => sum + distanceBetween(stops[index], point), 0)
-  const distanceMeters = Math.round(straight * ROAD_FACTOR)
-  const durationSeconds = Math.round(distanceMeters / AVERAGE_SPEED_MPS)
+  const distanceMeters = demo ? DEMO_ROUTE_DISTANCE_METERS : Math.round(straight * ROAD_FACTOR)
+  const durationSeconds = demo ? DEMO_ROUTE_DURATION_SECONDS : Math.round(distanceMeters / AVERAGE_SPEED_MPS)
   const now = Date.now()
 
   const route: Route = {
@@ -36,7 +38,7 @@ export async function mockCreateRoute({
     origin,
     destination,
     waypoints,
-    polyline: encodePolyline(stops),
+    polyline: demo ? DEMO_POLYLINE : encodePolyline(stops),
     distanceMeters,
     durationSeconds,
     estimatedArrivalAt: new Date(now + durationSeconds * 1000).toISOString(),

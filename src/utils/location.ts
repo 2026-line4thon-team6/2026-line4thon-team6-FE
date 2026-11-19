@@ -1,5 +1,5 @@
 import { USE_MOCK } from '@/api/client'
-import { MOCK_CURRENT_COORDINATE } from '@/mocks/search'
+import { mockCurrentCoordinate, mockCurrentPosition, mockWatchPosition } from '@/mocks/demoDrive'
 import type { Coordinate } from '@/types/route'
 
 export interface Position {
@@ -9,16 +9,9 @@ export interface Position {
   speedMetersPerSecond: number | null
 }
 
-const mockPosition = (): Position => ({
-  coordinate: MOCK_CURRENT_COORDINATE,
-  accuracyMeters: 10,
-  recordedAt: new Date().toISOString(),
-  speedMetersPerSecond: null,
-})
-
 // 위치를 못 얻으면 null. 그중 사용자가 권한을 막은 경우만 onDenied로 따로 알린다 (설정 안내용. 시간 초과 등은 조용히 넘긴다)
 export function getCurrentCoordinate(onDenied?: () => void): Promise<Coordinate | null> {
-  if (USE_MOCK) return Promise.resolve(MOCK_CURRENT_COORDINATE)
+  if (USE_MOCK) return Promise.resolve(mockCurrentCoordinate())
   if (!navigator.geolocation) return Promise.resolve(null)
 
   return new Promise((resolve) => {
@@ -43,10 +36,7 @@ const toPosition = ({ coords, timestamp }: GeolocationPosition): Position => ({
 const HIGH_ACCURACY: PositionOptions = { enableHighAccuracy: true, maximumAge: 5000, timeout: 10_000 }
 
 export function watchPosition(onChange: (position: Position) => void, onDenied?: () => void): () => void {
-  if (USE_MOCK) {
-    onChange(mockPosition())
-    return () => {}
-  }
+  if (USE_MOCK) return mockWatchPosition(onChange)
   if (!navigator.geolocation) {
     onDenied?.()
     return () => {}
@@ -61,7 +51,7 @@ export function watchPosition(onChange: (position: Position) => void, onDenied?:
 }
 
 export function requestPosition(): Promise<Position | null> {
-  if (USE_MOCK) return Promise.resolve(mockPosition())
+  if (USE_MOCK) return Promise.resolve(mockCurrentPosition())
   if (!navigator.geolocation) return Promise.resolve(null)
 
   return new Promise((resolve) => {

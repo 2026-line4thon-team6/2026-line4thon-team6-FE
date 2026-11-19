@@ -32,10 +32,10 @@ beforeEach(() => {
 })
 
 describe('휴게소 · 스탬프 목 API', () => {
-  it('도장판은 전체 휴게소와 찍은 수를 준다 (Figma 3 / 16)', async () => {
+  it('도장판은 전체 휴게소와 찍은 수를 준다', async () => {
     const { data } = await getStampBook({ limit: 100 })
 
-    expect(data).toMatchObject({ earnedCount: 3, catalogCount: 16, capacity: 16 })
+    expect(data).toMatchObject({ earnedCount: 3, catalogCount: 18, capacity: 18 })
     expect(data.items.filter((area) => area.earned)).toHaveLength(3)
   })
 
