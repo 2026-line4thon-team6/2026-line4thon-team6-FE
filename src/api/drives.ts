@@ -11,8 +11,10 @@ import {
   mockStartDrive,
   mockUpdateDrive,
 } from '@/mocks/drives'
+import { patchMockCard } from '@/mocks/cards'
 import { findMockRoute } from '@/mocks/routes'
 import type { ApiResponse } from '@/types/api'
+import type { Card } from '@/types/card'
 import type {
   ActiveDrive,
   CancelPreparedDriveRequest,
@@ -28,7 +30,7 @@ import type {
   UpdateDriveRequest,
 } from '@/types/drive'
 import type { Route } from '@/types/route'
-import { discardCard, fetchDriveCard } from './cards'
+import { discardCard } from './cards'
 import { apiFetch, DEMO, isDemoId, USE_MOCK } from './client'
 
 const path = (driveId: string) => `/drives/${encodeURIComponent(driveId)}`
@@ -257,19 +259,28 @@ async function startDemoDrive(driveId: string, body: StartDriveRequest) {
   return started
 }
 
-// 실서버 드라이브도 마치고, 그때 생긴 빈 카드는 버린다 (시연 카드는 목 카드로 쓴다)
+const REAL_CARD_WAIT_MS = 5000
+
 async function endRealDrive(real: RealDrive) {
   const { data: current } = await apiFetch<Drive>(path(real.id))
   await realRequest(real, 'end', { expectedVersion: current.controlVersion, reason: 'USER_ENDED', lastRecordedSequence: 0 })
-  const { data: card } = await fetchDriveCard(real.id)
-  await discardCard(card, crypto.randomUUID())
+  const { data: card } = await apiFetch<Card>(`${path(real.id)}/card`)
+  return card
 }
 
+// 실서버 드라이브도 마치고, 그 드라이브에서 만든 플리를 시연 카드로 옮긴 뒤 실서버의 빈 카드는 버린다.
+// 실서버가 늦으면 시연 카드를 기다리게 하지 않고 플리 없이 넘어간다
 async function endDemoDrive(driveId: string, body: EndDriveRequest) {
   const ended = await mockEndDrive(driveId, body)
   const real = realDrives.get(driveId)
   realDrives.delete(driveId)
-  if (real) void endRealDrive(real).catch(() => undefined)
+  if (real) {
+    const ending = endRealDrive(real)
+    void ending.then((card) => discardCard(card, crypto.randomUUID())).catch(() => undefined)
+    const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), REAL_CARD_WAIT_MS))
+    const card = await Promise.race([ending, timeout]).catch(() => null)
+    if (card?.playlist) patchMockCard(ended.data.id, { playlist: card.playlist })
+  }
   return ended
 }
 
