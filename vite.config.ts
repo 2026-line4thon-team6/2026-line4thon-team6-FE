@@ -1,7 +1,21 @@
 /// <reference types="vitest/config" />
 import { fileURLToPath, URL } from 'node:url'
 import react from '@vitejs/plugin-react'
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
+
+// 배포마다 바뀌는 빌드 id. Vercel이면 커밋 SHA, 아니면 빌드 시각
+const BUILD_ID = process.env.VERCEL_GIT_COMMIT_SHA || Date.now().toString(36)
+
+// dist/version.json 에 빌드 id를 써 둔다. 켜져 있는 앱이 이 파일을 다시 받아 새 배포인지 확인한다 (useAppUpdate)
+function versionFile(): Plugin {
+  return {
+    name: 'bbus-version-file',
+    apply: 'build',
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ buildId: BUILD_ID }) })
+    },
+  }
+}
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -10,7 +24,8 @@ export default defineConfig(({ mode }) => {
   const proxyTarget = loadEnv(mode, process.cwd(), '').API_PROXY_TARGET
 
   return {
-    plugins: [react()],
+    plugins: [react(), versionFile()],
+    define: { __BUILD_ID__: JSON.stringify(BUILD_ID) },
     // 외부 서비스(카카오 등)에 웹 도메인으로 localhost:5173을 등록해 두었다.
     // 포트가 사용 중이면 다른 포트로 넘어가지 않고 실패하게 해서 도메인 불일치를 막는다
     server: {
