@@ -1,0 +1,148 @@
+// 앱을 열 때 화면 전체를 덮는 스플래시. 무대(390 x 844, Figma 스플래시 기획 좌표)를 화면에 맞게 줄여 가운데에 놓는다
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  overflow: hidden;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+// 전환 때 이 배경이 사라지며 뒤의 로그인 · 홈 화면이 드러난다
+.bg {
+  position: absolute;
+  inset: 0;
+  background-color: color('coral-bg');
+}
+
+.stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 390px;
+  height: 844px;
+  transform-origin: 0 0;
+
+  > * {
+    position: absolute;
+  }
+}
+
+.road {
+  top: 0;
+  left: 0;
+  width: 390px;
+  height: 844px;
+  overflow: visible;
+}
+
+// 최종 ‘붕붕어스’ 글자 상자. 로그인으로 넘어갈 때 통째로 로고 자리로 움직인다
+.word {
+  top: 700px;
+  left: 76px;
+  width: 238px;
+  height: 58px;
+  transform-origin: 0 0;
+  will-change: transform, opacity;
+}
+
+.letter {
+  position: absolute;
+  bottom: 0;
+  height: auto;
+  transform-origin: 50% 100%;
+  will-change: transform, opacity;
+}
+
+.puff {
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #f2dcd8;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.shadow {
+  top: 0;
+  left: 0;
+  width: 120px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(150 80 70 / 28%), rgb(150 80 70 / 0%));
+  opacity: 0;
+}
+
+// 붕붕이 드라이브. 차체 그림에서 휠캡 자리를 오려 내고 그 뒤에서 휠캡이 돈다
+.car {
+  top: 0;
+  left: 0;
+  width: 160px;
+  height: 162px;
+  opacity: 0;
+  transform-origin: 50% 100%;
+  will-change: transform, opacity;
+}
+
+.body {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 100%;
+}
+
+.side {
+  position: absolute;
+  inset: 0;
+}
+
+// 오른쪽으로 갈 때 보이는 반대 방향 그림
+.mirrored {
+  opacity: 0;
+  transform: scaleX(-1);
+}
+
+.bodyImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+// 3/4 각도라 휠캡은 가로로 눌린 타원으로 보인다. 그림자는 돌지 않게 바깥 상자에 둔다
+.hub {
+  position: absolute;
+  overflow: hidden;
+  border-radius: 50%;
+  transform: scaleX(0.6);
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    will-change: transform;
+  }
+
+  &::after {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle at 38% 32%, rgb(255 255 255 / 0%) 40%, rgb(90 45 35 / 28%) 100%);
+    content: '';
+  }
+}
+
+.front {
+  top: 134.35px;
+  left: 92.05px;
+  width: 19.3px;
+  height: 19.3px;
+}
+
+.rear {
+  top: 130.45px;
+  left: 137.05px;
+  width: 18.9px;
+  height: 18.9px;
+}
