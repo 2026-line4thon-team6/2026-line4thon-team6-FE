@@ -357,6 +357,7 @@ function DriveRoute({ myUserId }: { myUserId: string }) {
             }}
             radioPlaying={radioPlaying}
             playlist={drivePlaylist}
+            locked={drive?.driverUserId === myUserId}
           />
         }
         stamps={<StampsTab drive={drive} currentCoordinate={map.current} />}

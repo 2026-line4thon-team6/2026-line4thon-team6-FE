@@ -23,6 +23,7 @@ interface ContentCardsProps {
   onContentClick?: (kind: ContentKind) => void
   radioPlaying?: boolean
   playlist?: CardPlaylist | null
+  locked?: boolean
 }
 
 function ContentCards({
@@ -31,13 +32,14 @@ function ContentCards({
   onContentClick,
   radioPlaying = false,
   playlist = null,
+  locked = false,
 }: ContentCardsProps) {
   return (
     <div className={styles.cards}>
       {playlist ? (
-        <PlaylistSummaryCard playlist={playlist} onClick={() => onPlaylistOpen?.(playlist.id)} />
+        <PlaylistSummaryCard playlist={playlist} onClick={locked ? undefined : () => onPlaylistOpen?.(playlist.id)} />
       ) : (
-        <button type="button" className={styles.playlist} onClick={onPlaylistClick}>
+        <button type="button" className={styles.playlist} onClick={onPlaylistClick} disabled={locked}>
           <span className={styles.playlistLabel}>DJ 플레이리스트</span>
           <span className={styles.playlistRow}>
             <span className={styles.playlistText}>
@@ -55,7 +57,7 @@ function ContentCards({
       <ul className={styles.games}>
         {GAMES.map(({ kind, title, description, image, box: [left, top, width, height] }) => (
           <li key={kind}>
-            <button type="button" className={styles.game} onClick={() => onContentClick?.(kind)}>
+            <button type="button" className={styles.game} onClick={() => onContentClick?.(kind)} disabled={locked}>
               <span className={styles.gameTitle}>{title}</span>
               {kind === 'radio' && radioPlaying ? (
                 <span className={styles.playing}>
