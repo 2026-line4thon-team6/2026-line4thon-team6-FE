@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ComponentProps } from 'react'
 import { describe, expect, it, vi } from 'vitest'
@@ -58,6 +58,25 @@ describe('RecordPreview', () => {
     expect(screen.getByRole('button', { name: '다음 사진' })).toBeInTheDocument()
 
     // 화살표를 눌러도 상세로 가지 않는다
+    expect(onOpen).not.toHaveBeenCalled()
+  })
+
+  it('사진을 옆으로 밀면 다음 사진으로 넘어가고, 민 것은 카드 열기로 치지 않는다', async () => {
+    const loadPhotos = vi.fn().mockResolvedValue(['/first.webp', '/second.webp'])
+    const { onOpen } = renderPreview({ loadPhotos })
+    const list = await screen.findByRole('list', { name: '드라이브 사진' })
+    await waitFor(() => expect(within(list).getAllByRole('img', { hidden: true })).toHaveLength(2))
+    const area = list.parentElement!
+
+    // jsdom의 PointerEvent는 좌표를 넘기지 않아 MouseEvent로 포인터 이벤트를 만든다
+    const pointer = (type: string, clientX: number) => fireEvent(area, new MouseEvent(type, { bubbles: true, clientX }))
+    pointer('pointerdown', 200)
+    pointer('pointermove', 100)
+    pointer('pointerup', 100)
+    fireEvent.click(area)
+
+    expect(screen.getByRole('button', { name: '이전 사진' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '다음 사진' })).not.toBeInTheDocument()
     expect(onOpen).not.toHaveBeenCalled()
   })
 
