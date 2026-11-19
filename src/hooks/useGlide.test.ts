@@ -35,6 +35,21 @@ describe('useGlide', () => {
     expect(result.current).toBe(100)
   })
 
+  it('오래 멈췄다 다시 움직이면 몇 번 안에 원래 간격(0.3초)에 맞춰 따라간다', () => {
+    const { result, rerender } = renderHook(({ target }) => useGlide(target), { initialProps: { target: 0 as number | null } })
+    advance(16)
+    advance(180_000) // 휴게소에서 3분 멈춤
+    for (let tick = 1; tick <= 6; tick += 1) {
+      rerender({ target: tick * 10 })
+      advance(300)
+    }
+    rerender({ target: 100 })
+
+    // 멈춘 3분을 그대로 평균에 넣으면 계속 1.5초씩 걸려 뒤처진다
+    advance(700)
+    expect(result.current).toBe(100)
+  })
+
   it('너무 멀리 튀거나 뒤로 가면 이어 움직이지 않고 바로 옮긴다', () => {
     const { result, rerender } = renderHook(({ target }) => useGlide(target), { initialProps: { target: 1000 as number | null } })
     advance(500)

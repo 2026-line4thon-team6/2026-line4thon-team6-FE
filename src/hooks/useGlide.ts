@@ -26,7 +26,8 @@ function useGlide(target: number | null): number | null {
     const now = performance.now()
     const from = shown.current
     if (lastTargetAt.current !== null) {
-      const interval = now - lastTargetAt.current
+      // 멈췄다 출발하면 그동안의 긴 간격이 평균을 부풀려 차가 한참 뒤처진다. 한 번의 간격은 최대 이동 시간까지만 센다
+      const interval = Math.min(now - lastTargetAt.current, MAX_DURATION_MS)
       const average = averageInterval.current
       averageInterval.current = average === null ? interval : average + (interval - average) * INTERVAL_SMOOTHING
     }

@@ -1,4 +1,5 @@
 import type { Coordinate } from '@/types/route'
+import { bearingDegrees } from './heading'
 import { distanceMeters } from './location'
 
 export interface RouteSnap {
@@ -99,4 +100,29 @@ export function pathBetween(path: Coordinate[], cumulative: number[], from: numb
   const start = pointAtAlong(path, cumulative, from)
   const end = pointAtAlong(path, cumulative, to)
   return [start.point, ...path.slice(start.segment + 1, end.segment + 1), end.point]
+}
+
+// 경로에 붙을 때 기준으로 삼는 구간 번호. 앞으로만 늘어나고(GPS가 뒤로 튀어도 되돌아가지 않게),
+// 경로가 바뀌면 처음부터 다시 센다
+export interface RouteHint {
+  path: Coordinate[]
+  segment: number
+}
+
+export function hintFor(hint: RouteHint, path: Coordinate[]): number {
+  return hint.path === path ? hint.segment : 0
+}
+
+export function advanceHint(hint: RouteHint, path: Coordinate[], snap: RouteSnap | null): RouteHint {
+  if (hint.path !== path) return { path, segment: snap?.segment ?? 0 }
+  if (snap && snap.segment > hint.segment) return { path, segment: snap.segment }
+  return hint
+}
+
+// 경로를 따라 along m 지점에서 lookAhead m 앞을 본 방위각. 도착지에 닿아 앞이 없으면 null (방향을 그대로 둔다)
+export function bearingAlong(path: Coordinate[], cumulative: number[], along: number, lookAhead: number): number | null {
+  const here = pointAtAlong(path, cumulative, along).point
+  const ahead = pointAtAlong(path, cumulative, along + lookAhead).point
+  if (distanceMeters(here, ahead) < 1) return null
+  return bearingDegrees(here, ahead)
 }

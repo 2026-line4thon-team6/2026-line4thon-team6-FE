@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { distanceMeters } from './location'
-import { alongOf, cumulativeMeters, pathBetween, pointAtAlong, remainingPath, snapToRoute } from './routeProgress'
+import { advanceHint, alongOf, bearingAlong, cumulativeMeters, hintFor, pathBetween, pointAtAlong, remainingPath, snapToRoute } from './routeProgress'
 
 const at = (latitude: number, longitude: number) => ({ latitude, longitude })
 // 동쪽으로 갔다가 북쪽으로 꺾는 경로 (한 칸 약 88m)
@@ -73,5 +73,37 @@ describe('경로를 따라 잰 거리', () => {
     expect(pointAtAlong(PATH, cumulative, -10).point).toEqual(PATH[0])
     expect(pointAtAlong(PATH, cumulative, 99999).point).toEqual(PATH[4])
     expect(pathBetween(PATH, cumulative, 50, 50)).toEqual([])
+  })
+})
+
+describe('advanceHint', () => {
+  it('붙은 구간이 앞으로 가면 따라가고, 뒤로 튀면 그대로 둔다', () => {
+    const hint = { path: PATH, segment: 2 }
+    const ahead = snapToRoute(PATH, at(37.5015, 127.002))!
+    const behind = { ...ahead, segment: 1 }
+
+    expect(advanceHint(hint, PATH, ahead)).toEqual({ path: PATH, segment: 3 })
+    expect(advanceHint(hint, PATH, behind)).toBe(hint)
+  })
+
+  it('경로가 바뀌면 처음부터 다시 센다', () => {
+    const rerouted = [...PATH]
+    const hint = { path: PATH, segment: 3 }
+
+    expect(hintFor(hint, rerouted)).toBe(0)
+    expect(advanceHint(hint, rerouted, null)).toEqual({ path: rerouted, segment: 0 })
+  })
+})
+
+describe('bearingAlong', () => {
+  const cumulative = cumulativeMeters(PATH)
+
+  it('앞을 본 방위각을 준다 (동쪽 구간은 약 90°, 꺾인 뒤 북쪽 구간은 약 0°)', () => {
+    expect(bearingAlong(PATH, cumulative, 20, 30)).toBeCloseTo(90, 0)
+    expect(bearingAlong(PATH, cumulative, 200, 30)).toBeCloseTo(0, 0)
+  })
+
+  it('도착지에 닿아 앞이 없으면 방향을 정하지 않는다 (북쪽으로 돌지 않게)', () => {
+    expect(bearingAlong(PATH, cumulative, cumulative[4], 30)).toBeNull()
   })
 })
