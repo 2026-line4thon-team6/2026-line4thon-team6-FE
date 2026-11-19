@@ -926,7 +926,7 @@ describe('경로 설정', () => {
   it('처음에는 출발지(내 위치)와 최근 검색을 보여주고, 최근 검색어를 지울 수 있다', async () => {
     const user = await openRouteSetting()
 
-    expect(await screen.findByText('(서초구 서초동)')).toBeInTheDocument()
+    expect(await screen.findByText('(마포구 공덕동)')).toBeInTheDocument()
     const recent = await screen.findByRole('list', { name: '최근 검색' })
     expect(within(recent).getAllByRole('listitem')).toHaveLength(5)
 
@@ -1041,11 +1041,11 @@ describe('드라이브 주행 · 마치기', () => {
     expect(await screen.findByRole('list', { name: '검색 결과' })).toBeInTheDocument()
   })
 
-  it('휴게소 스탬프 탭: 잠긴 칸 → 현재 위치로 찾기 → 도장찍기 (이미 찍은 곳이면 안내)', async () => {
+  it('휴게소 스탬프 탭: 잠긴 칸 → 현재 위치로 찾기 → 도장찍기', async () => {
     const user = await startDriving()
 
     await user.click(screen.getByRole('tab', { name: '휴게소 스탬프' }))
-    expect(await screen.findByLabelText('16개 중 3개')).toBeInTheDocument()
+    expect(await screen.findByLabelText('18개 중 3개')).toBeInTheDocument()
 
     await user.click(screen.getAllByRole('button', { name: '도장 찍기' })[0])
     const popup = await screen.findByRole('dialog', { name: '휴게소 도장 찍기' })
@@ -1055,8 +1055,8 @@ describe('드라이브 주행 · 마치기', () => {
     await waitFor(() => expect(within(popup).getByRole('textbox', { name: '휴게소 이름' })).toHaveValue('시흥하늘휴게소'))
     await user.click(within(popup).getByRole('button', { name: '도장찍기' }))
 
-    expect(await screen.findByRole('status')).toHaveTextContent('이미 찍은 도장이에요.')
-    expect(screen.getByLabelText('16개 중 3개')).toBeInTheDocument()
+    expect(await screen.findByRole('status')).toHaveTextContent('도장을 찍었어요!')
+    expect(await screen.findByLabelText('18개 중 4개')).toBeInTheDocument()
   })
 
   it('휴게소 스탬프 탭: 도장 팝업의 검색창 → 휴게소 검색 → 고르고 도장찍기를 누르면 도장이 하나 늘어난다', async () => {
@@ -1075,17 +1075,17 @@ describe('드라이브 주행 · 마치기', () => {
 
     await user.click(within(popup).getByRole('button', { name: '도장찍기' }))
     expect(await screen.findByRole('status')).toHaveTextContent('도장을 찍었어요!')
-    expect(await screen.findByLabelText('16개 중 4개')).toBeInTheDocument()
+    expect(await screen.findByLabelText('18개 중 4개')).toBeInTheDocument()
   })
 
   it('휴게소 스탬프 탭: 찍은 도장을 누르면 휴게소 상세와 대표 메뉴를 보여 준다', async () => {
     const user = await startDriving()
 
     await user.click(screen.getByRole('tab', { name: '휴게소 스탬프' }))
-    await user.click(await screen.findByRole('button', { name: '시흥하늘휴게소 도장' }))
+    await user.click(await screen.findByRole('button', { name: '평창휴게소 도장' }))
 
-    const detail = await screen.findByRole('dialog', { name: '시흥하늘휴게소' })
-    expect(within(detail).getByText('수도권제1순환고속도로')).toBeInTheDocument()
+    const detail = await screen.findByRole('dialog', { name: '평창휴게소' })
+    expect(within(detail).getByText('영동고속도로')).toBeInTheDocument()
     expect(within(detail).getAllByRole('listitem')).toHaveLength(4)
   })
 

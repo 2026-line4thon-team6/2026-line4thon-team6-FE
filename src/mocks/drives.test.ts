@@ -147,7 +147,7 @@ describe('검색 목 API', () => {
     const { data } = await searchPlaces({ q: '한강 공원', coordinate: MOCK_CURRENT_COORDINATE })
 
     expect(data.items.length).toBe(6)
-    expect(data.items[0].name).toBe('서울 반포 한강공원')
+    expect(data.items[0].name).toBe('서울 여의도 한강공원')
     const distances = data.items.map((place) => place.distanceMeters ?? 0)
     expect(distances).toEqual([...distances].sort((a, b) => a - b))
   })

@@ -13,6 +13,7 @@ import type {
   StartDriveRequest,
   UpdateDriveRequest,
 } from '@/types/drive'
+import { endDemoDrive, isDemoDrive } from './demoDrive'
 import { findMockRoute } from './routes'
 import { createMeta, distanceBetween, mockApiError } from './utils'
 
@@ -51,7 +52,7 @@ export function findMockDrive(driveId: string) {
   return store.get(driveId) ?? null
 }
 
-const findActive = () => [...store.values()].find((drive) => IN_PROGRESS.includes(drive.status)) ?? null
+export const findActiveMockDrive = () => [...store.values()].find((drive) => IN_PROGRESS.includes(drive.status)) ?? null
 
 function getOrThrow(driveId: string) {
   const drive = findMockDrive(driveId)
@@ -90,7 +91,7 @@ export async function mockPrepareDrive(
   { coupleId }: DriveRequestOptions,
 ): Promise<ApiResponse<Drive>> {
   // 409 오류 코드 이름이 명세에 없어 CONFLICT로 둔다 — 백엔드 확인 필요
-  if (findActive()) throw mockApiError(409, 'CONFLICT', '이미 진행 중인 드라이브가 있어요.')
+  if (findActiveMockDrive()) throw mockApiError(409, 'CONFLICT', '이미 진행 중인 드라이브가 있어요.')
   if (title && title.length > 50) throw mockApiError(422, 'VALIDATION_FAILED', '드라이브명은 50자까지 쓸 수 있어요.')
 
   const drive: Drive = {
@@ -126,7 +127,7 @@ export async function mockPrepareDrive(
 }
 
 export async function mockGetActiveDrive(): Promise<ApiResponse<ActiveDrive>> {
-  const drive = findActive()
+  const drive = findActiveMockDrive()
   return { data: { drive: drive && withActiveTime(drive) }, meta: createMeta() }
 }
 
@@ -236,7 +237,7 @@ export async function mockEndDrive(
   activeSince.delete(driveId)
   const endedAt = new Date()
 
-  return save({
+  const ended = save({
     ...drive,
     status: 'ENDED',
     pausedAt: null,
@@ -250,6 +251,8 @@ export async function mockEndDrive(
     editableUntil: new Date(endedAt.getTime() + 24 * 60 * 60 * 1000).toISOString(),
     controlVersion: drive.controlVersion + 1,
   })
+  if (isDemoDrive(ended.data)) endDemoDrive(ended.data)
+  return ended
 }
 
 export async function mockCancelPreparedDrive(
@@ -331,7 +334,7 @@ export async function mockUploadGpsBatch(
     metrics: { ...drive.metrics, distanceMeters: distance, lastGpsAt: ordered.at(-1)?.recordedAt ?? null },
   })
   return {
-    data: { ...receipt, arrivalCandidate: arrivalCandidate(drive), highestContiguousSequence: highest, drive: saved.data },
+    data: { ...receipt, arrivalCandidate: !isDemoDrive(drive) && arrivalCandidate(drive), highestContiguousSequence: highest, drive: saved.data },
     meta: createMeta(),
   }
 }
