@@ -1,7 +1,7 @@
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { logout } from '@/api/auth'
 import { ApiError } from '@/api/client'
 import * as drivesApi from '@/api/drives'
@@ -26,6 +26,7 @@ import { mockCreateRoute, resetMockRoutes } from '@/mocks/routes'
 import { resetMockNotifications } from '@/mocks/notifications'
 import { resetMockSearchHistory } from '@/mocks/search'
 import { resetMockRecordDeletions } from './mocks/records'
+import { preloadAllPages } from './utils/lazyPage'
 import App from './App'
 import type { ApiResponse } from './types/api'
 import type { RecordCalendar, RecordMapMarker } from './types/record'
@@ -55,6 +56,9 @@ vi.mock('./api/records', async (importOriginal) => {
     fetchRecordCalendar: (month: string) => calendarOverride.current?.(month) ?? actual.fetchRecordCalendar(month),
   }
 })
+
+// 페이지 코드는 처음 열 때 따로 받는다 (lazyPage). 화면을 그리자마자 확인할 수 있게 미리 모두 받아 둔다
+beforeAll(() => preloadAllPages())
 
 // 목 서버에서 지운 기록이 다른 테스트에 남지 않게 한다
 afterEach(() => {

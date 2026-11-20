@@ -9,6 +9,7 @@ import { resetMockPlaces } from '@/mocks/places'
 import { resetMockStamps } from '@/mocks/restAreas'
 import { resetMockRoutes } from '@/mocks/routes'
 import { MOCK_CURRENT_COORDINATE, resetMockSearchHistory } from '@/mocks/search'
+import { preloadAllPages } from '@/utils/lazyPage'
 import type { Position } from '@/utils/location'
 import App from './App'
 
@@ -18,6 +19,8 @@ vi.mock('./components/DriveMap/DriveMap', () => ({ default: () => <div data-test
 // 동작은 그대로 두고 이 파일의 findBy · waitFor 대기만 늘린다
 const defaultAsyncTimeout = getConfig().asyncUtilTimeout
 // 테스트 하나의 제한 시간(기본 5초)도 늘린다. 대기만 늘리면 대기가 끝나기 전에 테스트 제한 시간에 먼저 걸린다
+// 페이지 코드는 처음 열 때 따로 받는다 (lazyPage). 화면을 그리자마자 확인할 수 있게 미리 모두 받아 둔다
+beforeAll(() => preloadAllPages())
 beforeAll(() => {
   configure({ asyncUtilTimeout: 5000 })
   vi.setConfig({ testTimeout: 15_000 })
