@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, ViewTransition } from 'react'
+import { Suspense, useCallback, useEffect, useState, ViewTransition } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 import { withdraw } from '@/api/auth'
 import { fetchCardShare } from '@/api/cards'
@@ -57,42 +57,20 @@ import useRouteRestAreas from '@/hooks/useRouteRestAreas'
 import useRouteSetting from '@/hooks/useRouteSetting'
 import useStartDrive, { type DriveLocationState } from '@/hooks/useStartDrive'
 import useTimeOfDay from '@/hooks/useTimeOfDay'
-import FavoritesPage from '@/pages/Archive/FavoritesPage'
-import PlaylistsPage from '@/pages/Archive/PlaylistsPage'
-import RadioStoriesPage from '@/pages/Archive/RadioStoriesPage'
 import RadioPlayerProvider from '@/components/RadioPlayerProvider/RadioPlayerProvider'
-import DriveRadioPage from '@/pages/DriveRadio/DriveRadioPage'
-import BalanceGamePage from '@/pages/Game/BalanceGamePage'
-import NonsenseQuizPage, { type Winner } from '@/pages/Game/NonsenseQuizPage'
-import MemoryGamePage from '@/pages/Game/MemoryGamePage'
+import type { Winner } from '@/pages/Game/NonsenseQuizPage'
 import useGameSession from '@/hooks/useGameSession'
 import RadioStoriesDrawer from '@/pages/DriveRadio/RadioStoriesDrawer'
 import { fetchRadioEpisode, RADIO_STORY_MAX_LENGTH } from '@/api/radio'
 import type { RadioEpisode } from '@/types/radio'
-import CouplePage from '@/pages/Couple/CouplePage'
-import CoupleInvitePage from '@/pages/CoupleInvite/CoupleInvitePage'
 import ContentCards from '@/pages/Drive/ContentCards'
-import PlaylistGeneratingPage from '@/pages/DjPlaylist/PlaylistGeneratingPage'
-import PlaylistPreferencePage from '@/pages/DjPlaylist/PlaylistPreferencePage'
-import PlaylistResultPage from '@/pages/DjPlaylist/PlaylistResultPage'
-import DrivePage from '@/pages/Drive/DrivePage'
 import RestAreaDetailModal from '@/pages/Drive/RestAreaDetailModal'
 import StampsTab from '@/pages/Drive/StampsTab'
-import DriveCardPage from '@/pages/DriveCard/DriveCardPage'
-import HomePage from '@/pages/Home/HomePage'
-import FaqPage from '@/pages/Faq/FaqPage'
-import LegalDocumentPage from '@/pages/LegalDocument/LegalDocumentPage'
-import MyPage, { type MyMenu } from '@/pages/My/MyPage'
+import type { MyMenu } from '@/pages/My/MyPage'
 import type { WithdrawOutcome } from '@/pages/My/WithdrawSheet'
-import NotificationsPage from '@/pages/Notifications/NotificationsPage'
-import PlaceDetailPage from '@/pages/PlaceDetail/PlaceDetailPage'
-import PublicPlacePage from '@/pages/PublicPlace/PublicPlacePage'
-import RadioStoryPage from '@/pages/RadioStory/RadioStoryPage'
-import RecordDetailPage from '@/pages/RecordDetail/RecordDetailPage'
 import RecordCalendarSheet from '@/pages/RecordMap/RecordCalendarSheet'
-import RecordMapPage, { type RecordView } from '@/pages/RecordMap/RecordMapPage'
+import type { RecordView } from '@/pages/RecordMap/RecordMapPage'
 import RecordShareSheet from '@/pages/RecordMap/RecordShareSheet'
-import RouteSettingPage from '@/pages/RouteSetting/RouteSettingPage'
 import {
   AnniversaryStep,
   BirthdayStep,
@@ -123,6 +101,34 @@ import { formatDate } from '@/utils/formatDate'
 import { distanceMeters } from '@/utils/location'
 import { copyImage, copyText, saveImage, type ShareChannel, shareInviteCode, type ShareLink, shareTo } from '@/utils/share'
 import { createStoryImage, shareStory, type StoryContent } from '@/utils/storyImage'
+import lazyPage from '@/utils/lazyPage'
+
+// 페이지 코드는 처음 열 때 따로 받는다. 첫 화면에 필요한 코드만 먼저 받아 앱이 빨리 뜨게 한다
+const FavoritesPage = lazyPage(() => import('@/pages/Archive/FavoritesPage'))
+const PlaylistsPage = lazyPage(() => import('@/pages/Archive/PlaylistsPage'))
+const RadioStoriesPage = lazyPage(() => import('@/pages/Archive/RadioStoriesPage'))
+const DriveRadioPage = lazyPage(() => import('@/pages/DriveRadio/DriveRadioPage'))
+const BalanceGamePage = lazyPage(() => import('@/pages/Game/BalanceGamePage'))
+const NonsenseQuizPage = lazyPage(() => import('@/pages/Game/NonsenseQuizPage'))
+const MemoryGamePage = lazyPage(() => import('@/pages/Game/MemoryGamePage'))
+const CouplePage = lazyPage(() => import('@/pages/Couple/CouplePage'))
+const CoupleInvitePage = lazyPage(() => import('@/pages/CoupleInvite/CoupleInvitePage'))
+const PlaylistGeneratingPage = lazyPage(() => import('@/pages/DjPlaylist/PlaylistGeneratingPage'))
+const PlaylistPreferencePage = lazyPage(() => import('@/pages/DjPlaylist/PlaylistPreferencePage'))
+const PlaylistResultPage = lazyPage(() => import('@/pages/DjPlaylist/PlaylistResultPage'))
+const DrivePage = lazyPage(() => import('@/pages/Drive/DrivePage'))
+const DriveCardPage = lazyPage(() => import('@/pages/DriveCard/DriveCardPage'))
+const HomePage = lazyPage(() => import('@/pages/Home/HomePage'))
+const FaqPage = lazyPage(() => import('@/pages/Faq/FaqPage'))
+const LegalDocumentPage = lazyPage(() => import('@/pages/LegalDocument/LegalDocumentPage'))
+const MyPage = lazyPage(() => import('@/pages/My/MyPage'))
+const NotificationsPage = lazyPage(() => import('@/pages/Notifications/NotificationsPage'))
+const PlaceDetailPage = lazyPage(() => import('@/pages/PlaceDetail/PlaceDetailPage'))
+const PublicPlacePage = lazyPage(() => import('@/pages/PublicPlace/PublicPlacePage'))
+const RadioStoryPage = lazyPage(() => import('@/pages/RadioStory/RadioStoryPage'))
+const RecordDetailPage = lazyPage(() => import('@/pages/RecordDetail/RecordDetailPage'))
+const RecordMapPage = lazyPage(() => import('@/pages/RecordMap/RecordMapPage'))
+const RouteSettingPage = lazyPage(() => import('@/pages/RouteSetting/RouteSettingPage'))
 
 // 화면 주소
 const TAB_PATHS: Partial<Record<NavTab, string>> = {
@@ -397,6 +403,13 @@ function DjPlaylistRoute() {
   const { playlistId = null } = (location.state ?? {}) as { playlistId?: string }
   const generation = usePlaylistGeneration(drive?.id ?? null, playlistId)
   const { config } = generation
+
+  // 고르기 → 만드는 중 → 결과는 상태에 따라 바뀌는 화면이라, 바뀌는 순간 빈 화면이 보이지 않게 세 화면 코드를 함께 받아 둔다
+  useEffect(() => {
+    void PlaylistPreferencePage.preload()
+    void PlaylistGeneratingPage.preload()
+    void PlaylistResultPage.preload()
+  }, [])
 
   if (generation.step === 'loading') return null
 
@@ -1367,136 +1380,139 @@ function App() {
 
   return (
     <RadioPlayerProvider>
-      <Routes>
-        <Route path={LOGIN_PATH} element={<LoginRoute auth={auth} />} />
-        <Route path="/oauth/callback" element={<OAuthCallbackRoute auth={auth} />} />
-        <Route path="/onboarding" element={<OnboardingFlow auth={auth} />}>
-          <Route index element={<Navigate to="welcome" replace />} />
-          <Route path="welcome" element={<WelcomeStep />} />
-          <Route path="intro" element={<IntroStep />} />
-          <Route path="nickname" element={<NicknameStep />} />
-          <Route path="birthday" element={<BirthdayStep />} />
-          <Route path="gender" element={<GenderStep />} />
-          <Route path="anniversary" element={<AnniversaryStep />} />
-          <Route path="mascot" element={<MascotStep />} />
-        </Route>
-        {/* 약관 문서는 가입 중(로그인 전 동의 화면)에도 볼 수 있다 */}
-        {Object.entries(LEGAL_PATHS).map(([type, path]) => (
-          <Route
-            key={type}
-            path={path}
-            element={<LegalDocumentRoute key={type} type={type as LegalDocumentType} />}
-          />
-        ))}
+      {/* 페이지 코드를 받는 동안 (처음 열 때만). 화면 이동은 transition이라 받는 동안 이전 화면이 그대로 보인다 */}
+      <Suspense fallback={null}>
+        <Routes>
+          <Route path={LOGIN_PATH} element={<LoginRoute auth={auth} />} />
+          <Route path="/oauth/callback" element={<OAuthCallbackRoute auth={auth} />} />
+          <Route path="/onboarding" element={<OnboardingFlow auth={auth} />}>
+            <Route index element={<Navigate to="welcome" replace />} />
+            <Route path="welcome" element={<WelcomeStep />} />
+            <Route path="intro" element={<IntroStep />} />
+            <Route path="nickname" element={<NicknameStep />} />
+            <Route path="birthday" element={<BirthdayStep />} />
+            <Route path="gender" element={<GenderStep />} />
+            <Route path="anniversary" element={<AnniversaryStep />} />
+            <Route path="mascot" element={<MascotStep />} />
+          </Route>
+          {/* 약관 문서는 가입 중(로그인 전 동의 화면)에도 볼 수 있다 */}
+          {Object.entries(LEGAL_PATHS).map(([type, path]) => (
+            <Route
+              key={type}
+              path={path}
+              element={<LegalDocumentRoute key={type} type={type as LegalDocumentType} />}
+            />
+          ))}
 
-        <Route element={<MemberGate auth={auth} />}>
-          <Route
-            path="/"
-            element={
-              <HomeRoute
-                home={home}
-                pendingCards={homeData.pendingCards}
-                pendingReceivedAt={homeData.receivedAt}
-                onEnter={() => void homeData.reload()}
-                myUserId={me.id}
-                category={recommendations.category}
-                places={recommendations.places}
-                onCategoryChange={recommendations.setCategory}
-                pendingPromptSeen={pendingPromptSeen}
-                onPendingPromptSeen={() => setPendingPromptSeen(true)}
-                locationNoticeOpen={homeData.locationDenied && !locationNoticeSeen}
-                onLocationNoticeDone={() => setLocationNoticeSeen(true)}
-                onLikeToggle={(placeId, liked) => void recommendations.toggleFavorite(placeId, liked)}
-              />
-            }
-          />
-          <Route
-            path="/map"
-            element={
-              <RecordMapRoute
-                pendingCards={homeData.pendingCards}
-                pendingReceivedAt={homeData.receivedAt}
-                onEnter={() => void homeData.reload()}
-              />
-            }
-          />
-          <Route
-            path="/cards/:cardId"
-            element={
-              <RecordDetailRouteByParam
-                myUserId={me.id}
-                myNickname={me.nickname}
-                partnerNickname={partnerNickname}
-                myGender={me.gender}
-              />
-            }
-          />
-          <Route path="/notifications" element={<NotificationsRoute onRead={handleNotificationRead} />} />
-          <Route path="/drive" element={<DriveRoute myUserId={me.id} />} />
-          <Route path="/drive/route" element={<RouteSettingRoute partnerNickname={partnerNickname} />} />
-          <Route path="/drive/playlist" element={<DjPlaylistRoute />} />
-          <Route path="/drive/radio" element={<DriveRadioRoute />} />
-          <Route
-            path="/drive/game/balance"
-            element={
-              <BalanceGameRoute
-                myUserId={me.id}
-                myNickname={me.nickname}
-                partnerNickname={partnerNickname}
-                myGender={me.gender}
-              />
-            }
-          />
-          <Route
-            path="/drive/game/nonsense"
-            element={<NonsenseQuizRoute myUserId={me.id} myNickname={me.nickname} partnerNickname={partnerNickname} />}
-          />
-          <Route
-            path="/drive/game/memory"
-            element={<MemoryGameRoute myUserId={me.id} myNickname={me.nickname} partnerNickname={partnerNickname} />}
-          />
-          <Route path="/my" element={<MyRoute auth={auth} />} />
-          <Route path="/my/couple" element={<CoupleRoute />} />
-          <Route path="/couple/invite" element={<CoupleInviteRoute />} />
-          <Route
-            path="/my/favorites"
-            element={<FavoritesRoute onFavoriteChange={(placeId, favorite) => recommendations.syncFavorite(placeId, favorite)} />}
-          />
-          <Route path="/my/playlists" element={<PlaylistsRoute />} />
-          <Route path="/my/stories" element={<RadioStoriesRoute />} />
-          <Route path="/my/stories/:episodeId" element={<RadioStoryRouteByParam />} />
-          <Route path="/my/faq" element={<FaqRoute />} />
-          <Route
-            path="/drives/:driveId/card"
-            element={
-              <DriveCardRouteByParam
-                userId={me.id}
-                myNickname={me.nickname}
-                partnerNickname={partnerNickname}
-                myGender={me.gender}
-              />
-            }
-          />
-        </Route>
+          <Route element={<MemberGate auth={auth} />}>
+            <Route
+              path="/"
+              element={
+                <HomeRoute
+                  home={home}
+                  pendingCards={homeData.pendingCards}
+                  pendingReceivedAt={homeData.receivedAt}
+                  onEnter={() => void homeData.reload()}
+                  myUserId={me.id}
+                  category={recommendations.category}
+                  places={recommendations.places}
+                  onCategoryChange={recommendations.setCategory}
+                  pendingPromptSeen={pendingPromptSeen}
+                  onPendingPromptSeen={() => setPendingPromptSeen(true)}
+                  locationNoticeOpen={homeData.locationDenied && !locationNoticeSeen}
+                  onLocationNoticeDone={() => setLocationNoticeSeen(true)}
+                  onLikeToggle={(placeId, liked) => void recommendations.toggleFavorite(placeId, liked)}
+                />
+              }
+            />
+            <Route
+              path="/map"
+              element={
+                <RecordMapRoute
+                  pendingCards={homeData.pendingCards}
+                  pendingReceivedAt={homeData.receivedAt}
+                  onEnter={() => void homeData.reload()}
+                />
+              }
+            />
+            <Route
+              path="/cards/:cardId"
+              element={
+                <RecordDetailRouteByParam
+                  myUserId={me.id}
+                  myNickname={me.nickname}
+                  partnerNickname={partnerNickname}
+                  myGender={me.gender}
+                />
+              }
+            />
+            <Route path="/notifications" element={<NotificationsRoute onRead={handleNotificationRead} />} />
+            <Route path="/drive" element={<DriveRoute myUserId={me.id} />} />
+            <Route path="/drive/route" element={<RouteSettingRoute partnerNickname={partnerNickname} />} />
+            <Route path="/drive/playlist" element={<DjPlaylistRoute />} />
+            <Route path="/drive/radio" element={<DriveRadioRoute />} />
+            <Route
+              path="/drive/game/balance"
+              element={
+                <BalanceGameRoute
+                  myUserId={me.id}
+                  myNickname={me.nickname}
+                  partnerNickname={partnerNickname}
+                  myGender={me.gender}
+                />
+              }
+            />
+            <Route
+              path="/drive/game/nonsense"
+              element={<NonsenseQuizRoute myUserId={me.id} myNickname={me.nickname} partnerNickname={partnerNickname} />}
+            />
+            <Route
+              path="/drive/game/memory"
+              element={<MemoryGameRoute myUserId={me.id} myNickname={me.nickname} partnerNickname={partnerNickname} />}
+            />
+            <Route path="/my" element={<MyRoute auth={auth} />} />
+            <Route path="/my/couple" element={<CoupleRoute />} />
+            <Route path="/couple/invite" element={<CoupleInviteRoute />} />
+            <Route
+              path="/my/favorites"
+              element={<FavoritesRoute onFavoriteChange={(placeId, favorite) => recommendations.syncFavorite(placeId, favorite)} />}
+            />
+            <Route path="/my/playlists" element={<PlaylistsRoute />} />
+            <Route path="/my/stories" element={<RadioStoriesRoute />} />
+            <Route path="/my/stories/:episodeId" element={<RadioStoryRouteByParam />} />
+            <Route path="/my/faq" element={<FaqRoute />} />
+            <Route
+              path="/drives/:driveId/card"
+              element={
+                <DriveCardRouteByParam
+                  userId={me.id}
+                  myNickname={me.nickname}
+                  partnerNickname={partnerNickname}
+                  myGender={me.gender}
+                />
+              }
+            />
+          </Route>
 
-        {/* 장소 공유 링크({PLACE_SHARE_BASE_URL}/places/{placeId})는 받은 사람이 로그인하지 않았어도 열려야 한다.
-            로그인 전이면 공개 장소 화면, 로그인했으면 기존 회원용 상세를 같은 주소에서 보여 준다 */}
-        <Route element={<GuestOrMemberGate auth={auth} guest={<PublicPlaceRouteByParam />} />}>
-          <Route
-            path="/places/:placeId"
-            element={
-              <PlaceDetailRouteByParam
-                couple={home.couple}
-                mascotName={home.mascotName}
-                myUserId={me.id}
-                // 상세에서 바꾼 찜 상태를 홈 카드에도 반영한다
-                onFavoriteChange={(placeId, favorite) => recommendations.syncFavorite(placeId, favorite)}
-                onCoupleChanged={() => void homeData.reload()}
-              />
-            }
-          />
-        </Route>
-      </Routes>
+          {/* 장소 공유 링크({PLACE_SHARE_BASE_URL}/places/{placeId})는 받은 사람이 로그인하지 않았어도 열려야 한다.
+              로그인 전이면 공개 장소 화면, 로그인했으면 기존 회원용 상세를 같은 주소에서 보여 준다 */}
+          <Route element={<GuestOrMemberGate auth={auth} guest={<PublicPlaceRouteByParam />} />}>
+            <Route
+              path="/places/:placeId"
+              element={
+                <PlaceDetailRouteByParam
+                  couple={home.couple}
+                  mascotName={home.mascotName}
+                  myUserId={me.id}
+                  // 상세에서 바꾼 찜 상태를 홈 카드에도 반영한다
+                  onFavoriteChange={(placeId, favorite) => recommendations.syncFavorite(placeId, favorite)}
+                  onCoupleChanged={() => void homeData.reload()}
+                />
+              }
+            />
+          </Route>
+        </Routes>
+      </Suspense>
       {/* 새로 불러오면 서비스 워커(skipWaiting)와 함께 새 화면 · 코드를 받는다 */}
       {appUpdate.available && <AppUpdateBanner onUpdate={() => window.location.reload()} onDismiss={appUpdate.dismiss} />}
     </RadioPlayerProvider>
