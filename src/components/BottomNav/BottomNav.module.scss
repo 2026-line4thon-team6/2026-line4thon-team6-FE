@@ -1,12 +1,17 @@
 // Figma Navigation small 변형(홈-small · 기록지도-small · 마이-small, 63:1377) 기준.
 // Figma 프레임(155px) 위쪽의 빈 12px을 뺀 143px로 그린다. 아래 좌표는 모두 Figma y에서 12px을 뺀 값
-// 양쪽 탭 중심이 가장자리에서 86px (볼록한 배경의 중심과 같은 위치)
+// 양쪽 탭 중심은 가장자리에서 86px (볼록한 배경의 중심과 같은 위치, Figma 폭 390 기준)
 $side-center: 86px;
+// 화면이 390px보다 좁으면 양쪽 탭 중심을 폭에 비례해 바깥으로 옮긴다. 볼록한 배경도 같이 옮기는데,
+// SVG에서 볼록한 부분 바깥의 모서리 · 평평한 구간이 약 26px이라 그 이상 옮기면 볼록한 부분이 잘린다
+$side-center-min: 60px;
 // 선택된 탭의 원 아이콘 폭. 가운데 탭은 이보다 좁아지지 않는다
 $active-icon-width: 66px;
 
 .nav {
   position: relative;
+  // 100%는 쓰는 곳의 기준 폭(.background의 left · right, .list의 칸)인데 모두 네비바 폭과 같다
+  --side-center: clamp(#{$side-center-min}, 100% * 86 / 390, #{$side-center});
   width: 100%;
   height: $nav-height;
 }
@@ -26,8 +31,10 @@ $active-icon-width: 66px;
 }
 
 // 왼쪽 160px(볼록한 부분)과 오른쪽 40px(모서리)은 원래 크기로 두고 가운데만 늘린다
+// 볼록한 중심(SVG x 97)이 탭 중심(--side-center)에 오도록 왼쪽으로 민다. 넘친 모서리는 .bar가 잘라 낸다
 .home {
   top: 16.5px;
+  left: calc(var(--side-center) - 97.5px);
   height: 148px;
   border: solid transparent;
   border-width: 0 40px 0 160px;
@@ -41,6 +48,7 @@ $active-icon-width: 66px;
 
 .my {
   top: 14.5px;
+  right: calc(var(--side-center) - 97.5px);
   height: 150px;
   border: solid transparent;
   border-width: 0 160px 0 40px;
@@ -90,13 +98,17 @@ $active-icon-width: 66px;
 .list {
   position: relative;
   display: grid;
-  // 양쪽 탭은 중심을 볼록한 배경과 같은 위치(가장자리에서 86px)에 고정하고, 가운데 탭이 남는 폭을 쓴다.
-  // 좁은 화면(약 350px 이하)에서는 가운데 탭이 원 아이콘 폭을 지키도록 양쪽 탭 폭(최대 110px)을 줄인다.
-  // 100%는 .list의 폭이고, 양쪽 여백은 탭 중심이 86px에 오도록 탭 폭에 맞춰 계산한다
-  --side-tab-width: clamp(#{$active-icon-width}, 100% - #{$side-center * 2 + $active-icon-width}, 110px);
+  // 양쪽 탭은 중심을 볼록한 배경과 같은 위치(--side-center)에 두고, 가운데 탭이 남는 폭을 쓴다.
+  // 그래도 좁으면 가운데 탭이 원 아이콘 폭을 지키도록 양쪽 탭 폭(최대 110px)을 줄인다.
+  // 100%는 .list의 폭이고, 양쪽 여백은 탭 중심이 --side-center에 오도록 탭 폭에 맞춰 계산한다
+  --side-tab-width: clamp(
+    #{$active-icon-width},
+    100% - var(--side-center) * 2 - #{$active-icon-width},
+    110px
+  );
   grid-template-columns:
-    calc(#{$side-center} - var(--side-tab-width) / 2) var(--side-tab-width) minmax(0, 1fr)
-    var(--side-tab-width) calc(#{$side-center} - var(--side-tab-width) / 2);
+    calc(var(--side-center) - var(--side-tab-width) / 2) var(--side-tab-width) minmax(0, 1fr)
+    var(--side-tab-width) calc(var(--side-center) - var(--side-tab-width) / 2);
   height: 100%;
 
   // 첫 칸은 여백이라 탭은 둘째 칸부터 놓는다
