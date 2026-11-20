@@ -47,6 +47,18 @@ export default defineConfig(({ mode }) => {
           }
         : undefined,
     },
+    build: {
+      rolldownOptions: {
+        output: {
+          codeSplitting: {
+            groups: [
+              // 모든 화면이 쓰는 React · 라우터는 따로 묶는다. 앱 코드만 바뀐 배포에서는 이 파일을 브라우저 캐시에서 그대로 쓴다
+              { name: 'react-vendor', test: /node_modules[\\/](react|react-dom|react-router|scheduler)[\\/]/ },
+            ],
+          },
+        },
+      },
+    },
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
