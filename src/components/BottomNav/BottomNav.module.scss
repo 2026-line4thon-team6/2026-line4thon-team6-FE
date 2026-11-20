@@ -1,8 +1,9 @@
 // Figma Navigation small 변형(홈-small · 기록지도-small · 마이-small, 63:1377) 기준.
 // Figma 프레임(155px) 위쪽의 빈 12px을 뺀 143px로 그린다. 아래 좌표는 모두 Figma y에서 12px을 뺀 값
-$side-tab-width: 110px;
 // 양쪽 탭 중심이 가장자리에서 86px (볼록한 배경의 중심과 같은 위치)
-$side-inset: 86px - $side-tab-width * 0.5;
+$side-center: 86px;
+// 선택된 탭의 원 아이콘 폭. 가운데 탭은 이보다 좁아지지 않는다
+$active-icon-width: 66px;
 
 .nav {
   position: relative;
@@ -89,10 +90,19 @@ $side-inset: 86px - $side-tab-width * 0.5;
 .list {
   position: relative;
   display: grid;
-  // 양쪽 탭은 폭을 고정해 볼록한 배경과 항상 같은 위치에 오게 하고, 가운데 탭이 남는 폭을 쓴다
-  grid-template-columns: $side-tab-width 1fr $side-tab-width;
+  // 양쪽 탭은 중심을 볼록한 배경과 같은 위치(가장자리에서 86px)에 고정하고, 가운데 탭이 남는 폭을 쓴다.
+  // 좁은 화면(약 350px 이하)에서는 가운데 탭이 원 아이콘 폭을 지키도록 양쪽 탭 폭(최대 110px)을 줄인다.
+  // 100%는 .list의 폭이고, 양쪽 여백은 탭 중심이 86px에 오도록 탭 폭에 맞춰 계산한다
+  --side-tab-width: clamp(#{$active-icon-width}, 100% - #{$side-center * 2 + $active-icon-width}, 110px);
+  grid-template-columns:
+    calc(#{$side-center} - var(--side-tab-width) / 2) var(--side-tab-width) minmax(0, 1fr)
+    var(--side-tab-width) calc(#{$side-center} - var(--side-tab-width) / 2);
   height: 100%;
-  padding: 0 $side-inset;
+
+  // 첫 칸은 여백이라 탭은 둘째 칸부터 놓는다
+  li:first-child {
+    grid-column-start: 2;
+  }
 }
 
 // 아이콘 칸(42px)은 y 70부터, 라벨은 모든 탭이 y 110
